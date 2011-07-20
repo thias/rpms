@@ -1,10 +1,10 @@
 Summary: Freshrpms.net release file and package configuration
 Name: freshrpms-release
-Version: 1.2
+Version: 1.3
 Release: 1
 License: GPL
 Group: System Environment/Base
-Source0: GPL
+Source0: GPLv2+
 Source1: RPM-GPG-KEY-freshrpms
 Source2: freshrpms.repo
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -25,24 +25,24 @@ used to sign them.
 
 
 %install
-%{__rm} -rf %{buildroot}
+rm -rf %{buildroot}
 # Install license to be included in the docs and gpg key as pubkey
-%{__cp} -a %{SOURCE0} %{SOURCE1} .
+cp -a %{SOURCE0} %{SOURCE1} .
 # Install gpg public key
-%{__install} -D -p -m 0644 %{SOURCE1} \
+install -D -p -m 0644 %{SOURCE1} \
     %{buildroot}%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-freshrpms
 # Install yum repo file
-%{__install} -D -p -m 0644 %{SOURCE2} \
+install -D -p -m 0644 %{SOURCE2} \
     %{buildroot}%{_sysconfdir}/yum.repos.d/freshrpms.repo
 
 
 %clean
-%{__rm} -rf %{buildroot}
+rm -rf %{buildroot}
 
 
 %files
 %defattr(-,root,root,0755)
-%doc GPL
+%doc GPLv2
 %pubkey RPM-GPG-KEY-freshrpms
 %{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-freshrpms
 %config(noreplace) %{_sysconfdir}/yum.repos.d/freshrpms.repo

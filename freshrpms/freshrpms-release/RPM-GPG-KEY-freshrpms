@@ -2,7 +2,7 @@ The following public key can be used to verify RPM packages
 downloaded from http://freshrpms.net/ using `rpm -K' if you
 have the GNU GPG package.
 Questions about this key should be sent to :
-Matthias Saou <matthias.saou@est.une.marmotte.net>
+Matthias Saou <matthias@saou.eu>
 
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v1.0.4 (GNU/Linux)
