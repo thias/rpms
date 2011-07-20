@@ -1,0 +1,3 @@
+:%s/http:\/\/freshrpms\.net\//matthias@saou.eu/g
+:%s/matthias.saou@est.une.marmotte.net/matthias@saou.eu/g
+
