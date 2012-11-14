@@ -1,0 +1,6 @@
+/var/log/graylog2/graylog2-server*.log {
+    missingok
+    notifempty
+    # We are logging stdout, we can't easily reopen the file descriptor
+    copytruncate
+}
