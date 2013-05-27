@@ -16,8 +16,8 @@
 %endif
 
 # VERSION is subbed out during rake srpm process
-%global realversion 3.1.1
-%global rpmversion 3.1.1
+%global realversion 3.2.1
+%global rpmversion 3.2.1
 
 %global confdir ext/redhat
 
@@ -56,6 +56,7 @@ Requires:       facter >= 1.6.11
 # Ruby 1.8.7 available for el5 at: yum.puppetlabs.com/el/5/devel/$ARCH
 Requires:       ruby >= 1.8.7
 Requires:       hiera >= 1.0.0
+Requires:       ruby-rgen
 Obsoletes:      hiera-puppet < 1.0.0
 Provides:       hiera-puppet >= 1.0.0
 %{!?_without_augeas:Requires: ruby-augeas}
@@ -168,12 +169,22 @@ echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
 # Create puppet modules directory for puppet module tool
 mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 
+
+# Install a NetworkManager dispatcher script to pickup changes to
+# # /etc/resolv.conf and such (https://bugzilla.redhat.com/532085).
+mkdir -p %{buildroot}%{_sysconfdir}/NetworkManager/dispatcher.d
+cp -pr ext/puppet-nm-dispatcher \
+  %{buildroot}%{_sysconfdir}/NetworkManager/dispatcher.d/98-%{name}
+
 %files
 %defattr(-, root, root, 0755)
 %doc LICENSE README.md examples
 %{_bindir}/puppet
 %{_bindir}/extlookup2hiera
 %{puppet_libdir}/*
+%dir %{_sysconfdir}/NetworkManager
+%dir %{_sysconfdir}/NetworkManager/dispatcher.d
+%{_sysconfdir}/NetworkManager/dispatcher.d/98-puppet
 %if 0%{?_with_systemd}
 %{_unitdir}/puppetagent.service
 %else
@@ -377,14 +388,20 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-* Fri Mar 08 2013 Puppet Labs Release <info@puppetlabs.com> -  3.1.1-1
-- Build for 3.1.1
+* Wed May 22 2013 Puppet Labs Release <info@puppetlabs.com> -  3.2.1-1
+- Build for 3.2.1
+
+* Fri Apr 12 2013 Matthaus Owens <matthaus@puppetlabs.com> - 3.2.0-0.1rc0
+- Add requires on ruby-rgen for new parser in Puppet 3.2
 
 * Fri Jan 25 2013 Matthaus Owens <matthaus@puppetlabs.com> - 3.1.0-0.1rc1
 - Add extlookup2hiera.8.gz to the files list
 
 * Wed Jan 9  2013 Ryan Uber <ru@ryanuber.com> - 3.1.0-0.1rc1
 - Work-around for RH Bugzilla 681540
+
+* Fri Dec 28 2012 Michael Stahnke <stahnma@puppetlabs.com> -  3.0.2-2
+- Added a script for Network Manager for bug https://bugzilla.redhat.com/532085
 
 * Tue Dec 18 2012 Matthaus Owens <matthaus@puppetlabs.com>
 - Remove for loop on examples/ code which no longer exists. Add --no-run-if-empty to xargs invocations.
