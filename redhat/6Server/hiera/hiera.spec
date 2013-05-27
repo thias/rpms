@@ -11,8 +11,8 @@
 %endif
 
 # VERSION is subbed out during rake srpm process
-%global realversion 1.2.0
-%global rpmversion 1.2.0
+%global realversion 1.2.1
+%global rpmversion 1.2.1
 
 Name:           hiera
 Version:        %{rpmversion}
@@ -66,8 +66,8 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Wed Apr 03 2013 Puppet Labs Release <info@puppetlabs.com> -  1.2.0-1
-- Build for 1.2.0
+* Thu Apr 18 2013 Puppet Labs Release <info@puppetlabs.com> -  1.2.1-1
+- Build for 1.2.1
 
 * Mon May 14 2012 Matthaus Litteken <matthaus@puppetlabs.com> - 1.0.0-0.1rc2
 - 1.0.0rc2 release
