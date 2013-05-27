@@ -7,8 +7,8 @@
 %endif
 
 # VERSION is subbed out during rake srpm process
-%global realversion 1.6.18
-%global rpmversion 1.6.18
+%global realversion 1.7.0
+%global rpmversion 1.7.0
 
 Summary:        Ruby module for collecting simple facts about a host operating system
 Name:           facter
@@ -31,6 +31,7 @@ Requires:       which
 Requires:       dmidecode
 Requires:       pciutils
 %endif
+Requires:       virt-what
 Requires:       ruby(abi) >= 1.8
 BuildRequires:  ruby >= 1.8.5
 
@@ -69,8 +70,11 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Wed Mar 13 2013 Puppet Labs Release <info@puppetlabs.com> -  1:1.6.18-1
-- Build for 1.6.18
+* Mon Apr 15 2013 Puppet Labs Release <info@puppetlabs.com> -  1:1.7.0-1
+- Build for 1.7.0
+
+* Mon Apr 01 2013 Matthaus Owens <matthaus@puppetlabs.com> - 1:1.7.0-0.1rc1
+- Add dependency on virt-what to facter for better virutalization detection
 
 * Wed Aug 08 2012 Moses Mendoza <moses@puppetlabs.com> - 1.6.11-2
 - Use correct ruby libdir for fedora 17 / ruby 1.9
@@ -84,17 +88,14 @@ rm -rf %{buildroot}
 * Sat Jul 07 2012 Michael Stahnke <stahnma@puppetlabs.com> - 1.6.10-2
 - Attempt to build fro Ruby 1.9.3
 
-* Wed Jun 13 2012 Moses Mendoza <moses@puppetlabs.com> - 1.6.10-1
-- Update for 1.6.10
+* Tue May 22 2012 Moses Mendoza <moses@puppetlabs.com> - 2.0.0-0.1rc3
+- Update for 2.0.0rc3 release
 
-* Fri Jun 8 2012 Moses Mendoza <moses@puppetlabs.com> - 1.6.10-0.1rc1.2
-- Bump epoch to 1 to address errant Facter 2.0 rc release
+* Thu May 17 2012 Moses Mendoza <moses@puppetlabs.com> - 2.0.0-0.1rc2
+- Update for 2.0.0rc2 release
 
-* Wed Jun 6 2012 Moses Mendoza <moses@puppetlabs.com> - 1.6.10-0.1rc1
-- Update for 1.6.10rc1
-
-* Thu May 17 2012 Moses Mendoza <moses@puppetlabs.com> - 1.6.9-1
-- Update for 1.6.9
+* Tue May 15 2012 Matthaus Litteken <matthaus@puppetlabs.com> - 2.0.0-0.1rc1
+- Facter 2.0.0rc1 release
 
 * Thu May 10 2012 Matthaus Litteken <matthaus@puppetlabs.com> - 1.6.9-0.1rc1
 - Update for 1.6.9rc1
