@@ -2,7 +2,7 @@
 %global         _name rgen
 
 Name:           ruby-%{_name}
-Version:        0.6.2
+Version:        0.6.5
 Release:        1%{?dist}
 Summary:        Ruby Modeling and Generator Framework
 Group:          Development/Languages
@@ -47,6 +47,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Jun 27 2013 Moses Mendoza <msoes@puppetlabs.com> - 0.6.5-1
+- Update for upstream 0.6.5
+
 * Fri Apr 12 2013 Moses Mendoza <msoes@puppetlabs.com> - 0.6.2-1
 - Package rgen as a library. The tarball is created from a `gem unpack`
 - of rubygem-rgen and tarring up the resulting contents.
