@@ -16,8 +16,8 @@
 %endif
 
 # VERSION is subbed out during rake srpm process
-%global realversion 3.2.1
-%global rpmversion 3.2.1
+%global realversion 3.2.3
+%global rpmversion 3.2.3
 
 %global confdir ext/redhat
 
@@ -56,7 +56,7 @@ Requires:       facter >= 1.6.11
 # Ruby 1.8.7 available for el5 at: yum.puppetlabs.com/el/5/devel/$ARCH
 Requires:       ruby >= 1.8.7
 Requires:       hiera >= 1.0.0
-Requires:       ruby-rgen
+Requires:       ruby-rgen >= 0.6.5
 Obsoletes:      hiera-puppet < 1.0.0
 Provides:       hiera-puppet >= 1.0.0
 %{!?_without_augeas:Requires: ruby-augeas}
@@ -388,8 +388,11 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-* Wed May 22 2013 Puppet Labs Release <info@puppetlabs.com> -  3.2.1-1
-- Build for 3.2.1
+* Thu Jul 11 2013 Puppet Labs Release <info@puppetlabs.com> -  3.2.3-1
+- Build for 3.2.3
+
+* Thu Jun 27 2013 Matthaus Owens <matthaus@puppetlabs.com> - 3.2.3-0.1rc0
+- Bump requires on ruby-rgen to 0.6.5
 
 * Fri Apr 12 2013 Matthaus Owens <matthaus@puppetlabs.com> - 3.2.0-0.1rc0
 - Add requires on ruby-rgen for new parser in Puppet 3.2
