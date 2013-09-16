@@ -16,8 +16,8 @@
 %endif
 
 # VERSION is subbed out during rake srpm process
-%global realversion 3.2.3
-%global rpmversion 3.2.3
+%global realversion 3.3.0
+%global rpmversion 3.3.0
 
 %global confdir ext/redhat
 
@@ -37,9 +37,8 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  facter < 1:2.0
 # Puppet 3.x drops ruby 1.8.5 support and adds ruby 1.9 support
 BuildRequires:  ruby >= 1.8.7
-
 BuildArch:      noarch
-Requires:       ruby(abi) >= 1.8
+Requires:       ruby >= 1.8
 Requires:       ruby-shadow
 
 # Pull in ruby selinux bindings where available
@@ -67,6 +66,11 @@ Requires:       shadow-utils
 %if 0%{?_with_systemd}
 # Required for %%post, %%preun, %%postun
 Requires:       systemd
+%if 0%{?fedora} >= 18
+BuildRequires:  systemd
+%else
+BuildRequires:  systemd-units
+%endif
 %else
 # Required for %%post and %%preun
 Requires:       chkconfig
@@ -94,7 +98,6 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q -n %{name}-%{realversion}
-patch -s -p1 < ext/redhat/rundir-perms.patch
 
 
 %build
@@ -388,8 +391,8 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-* Thu Jul 11 2013 Puppet Labs Release <info@puppetlabs.com> -  3.2.3-1
-- Build for 3.2.3
+* Thu Sep 12 2013 Puppet Labs Release <info@puppetlabs.com> -  3.3.0-1
+- Build for 3.3.0
 
 * Thu Jun 27 2013 Matthaus Owens <matthaus@puppetlabs.com> - 3.2.3-0.1rc0
 - Bump requires on ruby-rgen to 0.6.5
