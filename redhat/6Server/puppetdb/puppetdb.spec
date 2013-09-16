@@ -1,49 +1,68 @@
 %global realname puppetdb
-%global realversion 1.3.1
-%global rpmversion 1.3.1
+%global realversion 1.4.0
+%global rpmversion 1.4.0
 
 # Fedora 17 ships with openjdk 1.7.0
-%if 0%{?fedora} >= 17
+%if 0%{?fedora} >= 17 || ( 0%{?suse_version} >= 1200 && %{undefined sles_version} )
 %global open_jdk          java-1.7.0-openjdk
 %else
-%if 0%{?suse_version}
+%if 0%{?sles_version}
 %global open_jdk          java-1_6_0-ibm
 %else
+%if 0%{?suse_version}
+%global open_jdk          java-1_6_0-openjdk
+%else
 %global open_jdk          java-1.6.0-openjdk
+%endif
 %endif
 %endif
 
 # On FOSS releases for platforms with ruby 1.9, puppet uses vendorlibdir instead of sitelibdir
 # On PE, we use sitelibdir
 %if 0%{?fedora} >= 17
-%global puppet_libdir     %(ruby -rrbconfig -e "puts Config::CONFIG['vendorlibdir']")
+%global puppet_libdir     %(ruby -rrbconfig -e "puts RbConfig::CONFIG['vendorlibdir']")
 %else
-%global puppet_libdir     %(ruby -rrbconfig -e "puts Config::CONFIG['sitelibdir']")
+%global puppet_libdir     %(ruby -rrbconfig -e "puts RbConfig::CONFIG['sitelibdir']")
 %endif
 
 # These macros are not always defined on much older rpm-based systems
 %global  _sharedstatedir /var/lib
 %global  _realsysconfdir /etc
-%global  _initddir   %{_realsysconfdir}/rc.d/init.d
-%global _rundir /var/run
+%if 0%{?suse_version}
+%global  _initddir       %{_realsysconfdir}/init.d
+%else
+%global  _initddir       %{_realsysconfdir}/rc.d/init.d
+%endif
+%global  _rundir         /var/run
 
 
 Name:          puppetdb
-Version:       1.3.1
+Version:       1.4.0
 Release:       1%{?dist}
 BuildRoot:     %{_tmppath}/%{realname}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Summary:       Puppet Centralized Storage Daemon
+%if 0%{?suse_version}
+License:       Apache-2.0
+%else
 License:       ASL 2.0
+%endif
+
 URL:           http://github.com/puppetlabs/puppetdb
 Source0:       http://downloads.puppetlabs.com/puppetdb/%{realname}-%{realversion}.tar.gz
 
+%if 0%{?suse_version}
+Group:         System/Daemons
+%else
 Group:         System Environment/Daemons
+%endif
 
-BuildRequires: facter, puppet
+BuildRequires: facter >= 1.6.8
+BuildRequires: puppet >= 2.7.12
 BuildRequires: rubygem-rake
 BuildRequires: ruby
 Requires:      puppet >= 2.7.12
+Requires:      facter >= 1.6.8
 BuildArch:     noarch
 %if 0%{?suse_version}
 BuildRequires: aaa_base
@@ -51,6 +70,8 @@ BuildRequires: unzip
 BuildRequires: sles-release
 Requires:      aaa_base
 Requires:      pwdutils
+Requires:      logrotate
+Requires:      procps
 %else
 BuildRequires: /usr/sbin/useradd
 Requires:      chkconfig
@@ -63,7 +84,11 @@ Puppet Centralized Storage.
 
 %package terminus
 Summary: Puppet terminus files to connect to PuppetDB
+%if 0%{?suse_version}
+Group: System/Libraries
+%else
 Group: Development/Libraries
+%endif
 Requires: puppet >= 2.7.12
 
 %description terminus
@@ -88,7 +113,6 @@ rake terminus PARAMS_FILE= DESTDIR=$RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/%{_localstatedir}/log/%{name}
 mkdir -p $RPM_BUILD_ROOT/%{_rundir}/%{name}
 touch  $RPM_BUILD_ROOT/%{_localstatedir}/log/%{name}/%{name}.log
-
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -168,6 +192,10 @@ fi
 %defattr(-, root, root)
 %doc *.md
 %doc documentation
+%if 0%{?suse_version}
+%dir %{_sysconfdir}/%{realname}
+%dir %{_sysconfdir}/%{realname}/conf.d
+%endif
 %config(noreplace)%{_sysconfdir}/%{realname}/conf.d/config.ini
 %config(noreplace)%{_sysconfdir}/%{realname}/log4j.properties
 %config(noreplace)%{_sysconfdir}/%{realname}/conf.d/database.ini
@@ -179,6 +207,7 @@ fi
 %{_sbindir}/puppetdb-foreground
 %{_sbindir}/puppetdb-import
 %{_sbindir}/puppetdb-export
+%{_sbindir}/puppetdb-anonymize
 %{_datadir}/%{realname}
 %{_initddir}/%{name}
 %{_sharedstatedir}/%{realname}
@@ -196,6 +225,7 @@ fi
 %{puppet_libdir}/puppet/face/storeconfigs.rb
 %{puppet_libdir}/puppet/indirector/catalog/puppetdb.rb
 %{puppet_libdir}/puppet/indirector/facts/puppetdb.rb
+%{puppet_libdir}/puppet/indirector/facts/puppetdb_apply.rb
 %{puppet_libdir}/puppet/indirector/node/puppetdb.rb
 %{puppet_libdir}/puppet/indirector/resource/puppetdb.rb
 %{puppet_libdir}/puppet/reports/puppetdb.rb
@@ -206,7 +236,7 @@ fi
 %{puppet_libdir}/puppet/util/puppetdb/config.rb
 
 %changelog
-* Wed May 22 2013 jenkins <jenkins@rpm-builder.delivery.puppetlabs.net> - 1.3.1-1- Autobuild from Rake task
+* Wed Aug 07 2013 jenkins <jenkins@rpm-builder.delivery.puppetlabs.net> - 1.4.0-1- Autobuild from Rake task
 
 * Mon Apr 02 2012 Michael Stahnke <stahnma@puppetlabs.com> - 0.1.0-1
 - Initial Packaging
