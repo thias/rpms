@@ -10,9 +10,11 @@
 %global _sharedstatedir %{_prefix}/lib
 %endif
 
+%define ruby            %{_bindir}/ruby
+
 # VERSION is subbed out during rake srpm process
-%global realversion 1.2.1
-%global rpmversion 1.2.1
+%global realversion 1.3.1
+%global rpmversion 1.3.1
 
 Name:           hiera
 Version:        %{rpmversion}
@@ -26,7 +28,6 @@ Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{realversion}.t
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 BuildRequires:  ruby >= 1.8.5
-Requires:       ruby(abi) >= 1.8
 Requires:       ruby >= 1.8.5
 Requires:       rubygem-json
 
@@ -42,14 +43,13 @@ A simple pluggable Hierarchical Database.
 
 %install
 rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/%{hiera_libdir}
-mkdir -p $RPM_BUILD_ROOT/%{_bindir}
-mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}
 mkdir -p $RPM_BUILD_ROOT/%{_sharedstatedir}/hiera
-cp -pr lib/hiera $RPM_BUILD_ROOT/%{hiera_libdir}
-cp -pr lib/hiera.rb $RPM_BUILD_ROOT/%{hiera_libdir}
-install -p -m0755 bin/hiera $RPM_BUILD_ROOT/%{_bindir}
-install -p -m0644 ext/hiera.yaml $RPM_BUILD_ROOT/%{_sysconfdir}
+%{ruby} install.rb \
+  --destdir=$RPM_BUILD_ROOT \
+  --sitelibdir=%{hiera_libdir} \
+  --bindir=%{_bindir} \
+  --configdir=%{_sysconfdir} \
+  --configs
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -66,8 +66,8 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Thu Apr 18 2013 Puppet Labs Release <info@puppetlabs.com> -  1.2.1-1
-- Build for 1.2.1
+* Tue Jan 21 2014 Puppet Labs Release <info@puppetlabs.com> -  1.3.1-1
+- Build for 1.3.1
 
 * Mon May 14 2012 Matthaus Litteken <matthaus@puppetlabs.com> - 1.0.0-0.1rc2
 - 1.0.0rc2 release
