@@ -1,7 +1,7 @@
 Summary: Log management solution using Elasticsearch and MongoDB
 Name: graylog2-server
 Version: 0.9.6p1
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv3+
 Group: System Environment/Daemons
 URL: http://graylog2.org/
@@ -82,6 +82,9 @@ fi
 
 
 %changelog
+* Tue Dec 11 2012 Matthias Saou <matthias@saou.eu> 0.9.6p1-2
+- Fix jar location in the init script.
+
 * Wed Nov 14 2012 Matthias Saou <matthias@saou.eu> 0.9.6p1-1
 - Initial RPM release.
 

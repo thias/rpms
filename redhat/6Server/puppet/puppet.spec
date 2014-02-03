@@ -16,8 +16,8 @@
 %endif
 
 # VERSION is subbed out during rake srpm process
-%global realversion 3.3.0
-%global rpmversion 3.3.0
+%global realversion 3.3.2
+%global rpmversion 3.3.2
 
 %global confdir ext/redhat
 
@@ -391,8 +391,8 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-* Thu Sep 12 2013 Puppet Labs Release <info@puppetlabs.com> -  3.3.0-1
-- Build for 3.3.0
+* Thu Nov 07 2013 Puppet Labs Release <info@puppetlabs.com> -  3.3.2-1
+- Build for 3.3.2
 
 * Thu Jun 27 2013 Matthaus Owens <matthaus@puppetlabs.com> - 3.2.3-0.1rc0
 - Bump requires on ruby-rgen to 0.6.5

@@ -1,6 +1,6 @@
 %global realname puppetdb
-%global realversion 1.4.0
-%global rpmversion 1.4.0
+%global realversion 1.5.2
+%global rpmversion 1.5.2
 
 # Fedora 17 ships with openjdk 1.7.0
 %if 0%{?fedora} >= 17 || ( 0%{?suse_version} >= 1200 && %{undefined sles_version} )
@@ -37,7 +37,7 @@
 
 
 Name:          puppetdb
-Version:       1.4.0
+Version:       1.5.2
 Release:       1%{?dist}
 BuildRoot:     %{_tmppath}/%{realname}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -234,9 +234,10 @@ fi
 %{puppet_libdir}/puppet/util/puppetdb/command.rb
 %{puppet_libdir}/puppet/util/puppetdb/command_names.rb
 %{puppet_libdir}/puppet/util/puppetdb/config.rb
+%{puppet_libdir}/puppet/util/puppetdb/blacklist.rb
 
 %changelog
-* Wed Aug 07 2013 jenkins <jenkins@rpm-builder.delivery.puppetlabs.net> - 1.4.0-1- Autobuild from Rake task
+* Tue Oct 22 2013 jenkins <jenkins@verne-builder-1.delivery.puppetlabs.net> - 1.5.2-1- Autobuild from Rake task
 
 * Mon Apr 02 2012 Michael Stahnke <stahnma@puppetlabs.com> - 0.1.0-1
 - Initial Packaging

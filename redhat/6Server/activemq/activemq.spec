@@ -1,6 +1,6 @@
 %define debug_package %{nil}
 
-%global amqversion 5.6.0
+%global amqversion 5.8.0
 # If this is a snapshot, put the date here and uncomment
 #global snapshot_version 20100519
 
@@ -14,7 +14,7 @@
 
 Name:           activemq
 Version:        %{rpmversion}
-Release:        %{!?snapshot_version:5}%{?snapshot_version:0.%{snapshot_version}_SNAPSHOT}%{?dist}
+Release:        %{!?snapshot_version:1}%{?snapshot_version:0.%{snapshot_version}_SNAPSHOT}%{?dist}
 Summary:        ActiveMQ Messaging Broker
 Group:          Networking/Daemons
 License:        ASL 2.0
@@ -159,23 +159,33 @@ fi
 %{_javadir}
 
 %changelog
+* Thu Apr 11 2013 Matthias Saou <matthias@saou.eu> 5.8.0-1
+- Update to 5.8.0.
+
 * Thu Nov 08 2012 Brenton Leanhardt <bleanhar@redhat.com> - 5.4.2-3%{?dist}
 - Specifying we need java 1:1.6.0
+
 * Thu Jan 06 2011 James Casey <james.casey@cern.ch> - 5.4.2-1%{?dist}
 - rebuild for 5.4.2
+
 * Sun Nov 07 2010 James Casey <jamesc.000@gmail.com> - 5.4.1-1%{?dist}
 - rebuild for 5.4.1
+
 * Tue May 18 2010 James Casey <james.casey@cern.ch> - 5.4-1%{?dist}
 - rebuild for 5.4
+
 * Tue May 18 2010 James Casey <james.casey@cern.ch> - 5.3.2-3%{?dist}
 - Fix bug where /var/lib/activemq/data would not be installed
+
 * Tue May 18 2010 James Casey <james.casey@cern.ch> - 5.3.2-2%{?dist}
 - Rename package to activemq from apache-activemq
 - Integrated comments from Marc Schöchlin
-  - moved /var/cache/activemq to /var/lib/activemq
+- moved /var/cache/activemq to /var/lib/activemq
 - added dependency on java
 - Fixed file permissions (executable bit set on many files)
 - Fixed rpmlint errors
 - move platform dependant binaries to /usr/lib
+
 * Fri May 07 2010 James Casey <james.casey@cern.ch> - 5.3.2-1
 - First version of specfile
+

@@ -41,7 +41,7 @@ start() {
         exit 1
     fi
     if [ -n "${USER}" ]; then
-        su -s /bin/sh ${USER} -c "java -jar /opt/graylog2-server/graylog2-server.jar -p ${pidfile} ${OPTIONS} &>>/var/log/graylog2/${prog}-${USER}.log &"
+        su -s /bin/sh ${USER} -c "java -jar /usr/share/graylog2-server/graylog2-server.jar -p ${pidfile} ${OPTIONS} &>>/var/log/graylog2/${prog}-${USER}.log &"
     else
         java -jar /opt/graylog2-server/graylog2-server.jar -p ${pidfile} ${OPTIONS} &>>/var/log/graylog2/${prog}.log &
     fi
