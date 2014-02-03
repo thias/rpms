@@ -16,8 +16,8 @@
 %endif
 
 # VERSION is subbed out during rake srpm process
-%global realversion 3.3.2
-%global rpmversion 3.3.2
+%global realversion 3.4.2
+%global rpmversion 3.4.2
 
 %global confdir ext/redhat
 
@@ -122,7 +122,8 @@ install -d -m0750 %{buildroot}%{_localstatedir}/log/puppet
 %if 0%{?_with_systemd}
 # Systemd for fedora >= 17
 %{__install} -d -m0755  %{buildroot}%{_unitdir}
-install -Dp -m0644 ext/systemd/puppetagent.service %{buildroot}%{_unitdir}/puppetagent.service
+install -Dp -m0644 ext/systemd/puppet.service %{buildroot}%{_unitdir}/puppet.service
+ln -s %{_unitdir}/puppet.service %{buildroot}%{_unitdir}/puppetagent.service
 install -Dp -m0644 ext/systemd/puppetmaster.service %{buildroot}%{_unitdir}/puppetmaster.service
 %else
 # Otherwise init.d for fedora < 17 or el 5, 6
@@ -189,6 +190,7 @@ cp -pr ext/puppet-nm-dispatcher \
 %dir %{_sysconfdir}/NetworkManager/dispatcher.d
 %{_sysconfdir}/NetworkManager/dispatcher.d/98-puppet
 %if 0%{?_with_systemd}
+%{_unitdir}/puppet.service
 %{_unitdir}/puppetagent.service
 %else
 %{_initrddir}/puppet
@@ -251,6 +253,10 @@ cp -pr ext/puppet-nm-dispatcher \
 %defattr(-, puppet, puppet, 0750)
 %{_localstatedir}/log/puppet
 %{_localstatedir}/lib/puppet
+# Return the default attributes to 0755 to
+# prevent incorrect permission assignment on EL6
+%defattr(-, root, root, 0755)
+
 
 %files server
 %defattr(-, root, root, 0755)
@@ -289,7 +295,7 @@ if [ "$1" -ge 1 ]; then
   newpid="%{_localstatedir}/run/puppet/agent.pid"
   if [ -s "$oldpid" -a ! -s "$newpid" ]; then
     (kill $(< "$oldpid") && rm -f "$oldpid" && \
-      /bin/systemctl start puppetagent.service) >/dev/null 2>&1 || :
+      /bin/systemctl start puppet.service) >/dev/null 2>&1 || :
   fi
 fi
 %else
@@ -302,6 +308,15 @@ if [ "$1" -ge 1 ]; then
   if [ -s "$oldpid" -a ! -s "$newpid" ]; then
     (kill $(< "$oldpid") && rm -f "$oldpid" && \
       /sbin/service puppet start) >/dev/null 2>&1 || :
+  fi
+
+  # If an old puppet process (one whose binary is located in /sbin) is running,
+  # kill it and then start up a fresh with the new binary.
+  if [ -e "$newpid" ]; then
+    if ps aux | grep `cat "$newpid"` | grep -v grep | awk '{ print $12 }' | grep -q sbin; then
+      (kill $(< "$newpid") && rm -f "$newpid" && \
+        /sbin/service puppet start) >/dev/null 2>&1 || :
+    fi
   fi
 fi
 %endif
@@ -338,7 +353,9 @@ fi
 if [ "$1" -eq 0 ] ; then
     # Package removal, not upgrade
     /bin/systemctl --no-reload disable puppetagent.service > /dev/null 2>&1 || :
+    /bin/systemctl --no-reload disable puppet.service > /dev/null 2>&1 || :
     /bin/systemctl stop puppetagent.service > /dev/null 2>&1 || :
+    /bin/systemctl stop puppet.service > /dev/null 2>&1 || :
     /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 fi
 %else
@@ -391,8 +408,13 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-* Thu Nov 07 2013 Puppet Labs Release <info@puppetlabs.com> -  3.3.2-1
-- Build for 3.3.2
+* Mon Jan 06 2014 Puppet Labs Release <info@puppetlabs.com> -  3.4.2-1
+- Build for 3.4.2
+
+* Wed Oct 2 2013 Jason Antman <jason@jasonantman.com>
+- Move systemd service and unit file names back to "puppet" from erroneous "puppetagent"
+- Add symlink to puppetagent unit file for compatibility with current bug
+- Alter package removal actions to deactivate and stop both service names
 
 * Thu Jun 27 2013 Matthaus Owens <matthaus@puppetlabs.com> - 3.2.3-0.1rc0
 - Bump requires on ruby-rgen to 0.6.5
