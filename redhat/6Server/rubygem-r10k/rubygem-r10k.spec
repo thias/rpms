@@ -6,7 +6,7 @@
 
 Summary: Puppet environment and module deployment
 Name: rubygem-%{gemname}
-Version: 1.1.0
+Version: 1.1.3
 Release: 1%{?dist}
 Group: Development/Languages
 License: ASL 2.0
@@ -64,6 +64,9 @@ find %{buildroot}%{geminstdir}/bin -type f | xargs chmod a+x
 
 
 %changelog
+* Tue Feb  4 2014 Matthias Saou <matthias@saou.eu> - 1.1.3-1
+- Update to 1.1.3.
+
 * Thu Oct 17 2013 Matthias Saou <matthias@saou.eu> - 1.1.0-1
 - Initial package, using gem2rpm.
 
