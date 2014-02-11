@@ -1,0 +1,138 @@
+diff -up DB-1.7.14/php-pear-DB.xml.testfix DB-1.7.14/php-pear-DB.xml
+--- DB-1.7.14/php-pear-DB.xml.testfix	2011-08-27 14:40:39.000000000 +0200
++++ DB-1.7.14/php-pear-DB.xml	2012-08-04 07:57:17.000000000 +0200
+@@ -167,13 +167,13 @@ sqlite:
+    <file md5sum="c3e4846c2f59f16c2a38363c629b3b78" name="tests/driver/13limit.phpt" role="test" />
+    <file md5sum="6dbec4ef8338d15d0a0edbedcbe2a965" name="tests/driver/14fetchmode_object.phpt" role="test" />
+    <file md5sum="50155394c628ff23097443f63a0900bd" name="tests/driver/15quote.phpt" role="test" />
+-   <file md5sum="1d04313c838eaa4fe4a85e63932be583" name="tests/driver/16tableinfo.phpt" role="test" />
++   <file name="tests/driver/16tableinfo.phpt" role="test" />
+    <file md5sum="adca18fce73dfc07cb68d3e6ac163d53" name="tests/driver/17query.phpt" role="test" />
+    <file md5sum="c9394ed4d9551f4ff05c489273e40c22" name="tests/driver/18get.phpt" role="test" />
+    <file md5sum="7656b1bc93efabee5309347b7bddd6e8" name="tests/driver/19getlistof.phpt" role="test" />
+    <file md5sum="9d0c8f2c9eacf45f5560a197c24d9f20" name="tests/driver/20locale.phpt" role="test" />
+    <file md5sum="f7f2649da44dfb69977042553666b95c" name="tests/driver/21freeResult.phpt" role="test" />
+-   <file md5sum="bd445d809df6cbffe91a5ec5ff2dac5f" name="tests/driver/connect.inc" role="test" />
++   <file name="tests/driver/connect.inc" role="test" />
+    <file md5sum="1907486b8d6727884eebd5a211f4a08b" name="tests/driver/droptable.inc" role="test" />
+    <file md5sum="1dce41f4c0ee49a1c3774186d50b911b" name="tests/driver/mktable.inc" role="test" />
+    <file md5sum="1580c0152b795f5d46a9b57e209f8cdd" name="tests/driver/multiconnect.php" role="test" />
+@@ -182,18 +182,18 @@ sqlite:
+     <tasks:replace from="@include_path@" to="php_dir" type="pear-config" />
+    </file>
+    <file md5sum="a9c1be8f95121cd2a093d36f6aee242d" name="tests/driver/skipif.inc" role="test" />
+-   <file md5sum="569e53e60fc290d320fa886f9de9119c" name="tests/db_error.phpt" role="test" />
+-   <file md5sum="262760253e89fe29aa13bdcb7d2ec290" name="tests/db_error2.phpt" role="test" />
++   <file name="tests/db_error.phpt" role="test" />
++   <file name="tests/db_error2.phpt" role="test" />
+    <file md5sum="1f59c948dc5d8dcd6eb9346eb9da6e47" name="tests/db_factory.phpt" role="test" />
+    <file md5sum="33a8ee7358ef8fbfa7e7f9efcec82207" name="tests/db_ismanip.phpt" role="test" />
+    <file md5sum="5e2a64c8b25099d381755a1c2343bd85" name="tests/db_parsedsn.phpt" role="test" />
+    <file md5sum="fd4a6cc263727e518207271452d78c8c" name="tests/errors.inc" role="test" />
+    <file md5sum="44111a828870046fa9fefbf26f6837cd" name="tests/fetchmodes.inc" role="test" />
+-   <file md5sum="a14f4b73fdaa3d45e63e1841930dd1e2" name="tests/fetchmode_object.inc" role="test" />
+-   <file md5sum="49eeb3e7fb63bc93c46d064427545094" name="tests/include.inc" role="test">
++   <file name="tests/fetchmode_object.inc" role="test" />
++   <file name="tests/include.inc" role="test">
+     <tasks:replace from="@include_path@" to="php_dir" type="pear-config" />
+    </file>
+-   <file md5sum="dd89763529fdf91fd7c3d5f234d0bf68" name="tests/limit.inc" role="test" />
++   <file name="tests/limit.inc" role="test" />
+    <file md5sum="17eb2cf3be887f1ef298eeb7d273ed13" name="tests/numcols.inc" role="test" />
+    <file md5sum="68eeb6f19d5dc56b1a91d002dffce1e0" name="tests/numrows.inc" role="test" />
+    <file md5sum="df607755101bf93e03cca634f910ba00" name="tests/prepexe.inc" role="test" />
+diff -up DB-1.7.14/tests/db_error2.phpt.testfix DB-1.7.14/tests/db_error2.phpt
+--- DB-1.7.14/tests/db_error2.phpt.testfix	2011-08-27 14:40:39.000000000 +0200
++++ DB-1.7.14/tests/db_error2.phpt	2012-08-04 07:47:14.000000000 +0200
+@@ -7,7 +7,7 @@ DB::Error 2
+ require_once dirname(__FILE__) . '/include.inc';
+ require_once 'DB.php';
+ 
+-error_reporting(E_ALL);
++error_reporting(E_ALL & ~E_STRICT);
+ 
+ function myfunc($obj) {
+     print 'myfunc here, obj='
+diff -up DB-1.7.14/tests/db_error.phpt.testfix DB-1.7.14/tests/db_error.phpt
+--- DB-1.7.14/tests/db_error.phpt.testfix	2011-08-27 14:40:39.000000000 +0200
++++ DB-1.7.14/tests/db_error.phpt	2012-08-04 07:47:14.000000000 +0200
+@@ -35,7 +35,7 @@ function test_error_handler($errno, $err
+     print "\n$prefix: $errmsg in " . basename($file) . " on line XXX\n";
+ }
+ 
+-error_reporting(E_ALL);
++error_reporting(E_ALL & ~E_STRICT);
+ set_error_handler('test_error_handler');
+ 
+ print "testing different error codes...\n";
+diff -up DB-1.7.14/tests/driver/16tableinfo.phpt.testfix DB-1.7.14/tests/driver/16tableinfo.phpt
+--- DB-1.7.14/tests/driver/16tableinfo.phpt.testfix	2012-08-04 07:51:04.000000000 +0200
++++ DB-1.7.14/tests/driver/16tableinfo.phpt	2012-08-04 07:55:13.000000000 +0200
+@@ -168,6 +168,9 @@ function examineArrayData($array, $expec
+                         {
+                             $actual .= "$key ... matched expected value\n";
+                         } else {
++                            if (is_array($value)) {
++                                $value = 'Array';
++                            }
+                             $actual .= "$key ... was '$value' but we expected 'phptest_fk'\n";
+                         }
+                     }
+@@ -185,6 +188,9 @@ function examineArrayData($array, $expec
+                     }
+                 }
+             } else {
++                if (is_array($value)) {
++                    $value = 'Array';
++                }
+                 $actual .= "$key => $value\n";
+             }
+         }
+diff -up DB-1.7.14/tests/driver/connect.inc.testfix DB-1.7.14/tests/driver/connect.inc
+--- DB-1.7.14/tests/driver/connect.inc.testfix	2012-08-04 07:47:39.000000000 +0200
++++ DB-1.7.14/tests/driver/connect.inc	2012-08-04 07:47:50.000000000 +0200
+@@ -20,7 +20,7 @@
+  * @link       http://pear.php.net/package/DB
+  */
+ 
+-error_reporting(E_ALL);
++error_reporting(E_ALL & ~E_STRICT);
+ 
+ // Setting of $options and requiring DB are done in setup.inc
+ 
+diff -up DB-1.7.14/tests/fetchmode_object.inc.testfix DB-1.7.14/tests/fetchmode_object.inc
+--- DB-1.7.14/tests/fetchmode_object.inc.testfix	2012-08-04 07:49:29.000000000 +0200
++++ DB-1.7.14/tests/fetchmode_object.inc	2012-08-04 07:49:43.000000000 +0200
+@@ -22,7 +22,7 @@
+  * @link       http://pear.php.net/package/DB
+  */
+ 
+-error_reporting(E_ALL);
++error_reporting(E_ALL & ~E_STRICT);
+ 
+ /**
+  * Local error callback handler
+diff -up DB-1.7.14/tests/include.inc.testfix DB-1.7.14/tests/include.inc
+--- DB-1.7.14/tests/include.inc.testfix	2011-08-27 14:40:39.000000000 +0200
++++ DB-1.7.14/tests/include.inc	2012-08-04 07:47:14.000000000 +0200
+@@ -21,7 +21,7 @@
+  * @link       http://pear.php.net/package/DB
+  */
+ 
+-error_reporting(E_ALL);
++error_reporting(E_ALL & ~E_STRICT);
+ 
+ if (!defined('PATH_SEPARATOR')) {
+     if (stristr(PHP_OS, 'WIN')) {
+diff -up DB-1.7.14/tests/limit.inc.testfix DB-1.7.14/tests/limit.inc
+--- DB-1.7.14/tests/limit.inc.testfix	2012-08-04 07:48:46.000000000 +0200
++++ DB-1.7.14/tests/limit.inc	2012-08-04 07:48:53.000000000 +0200
+@@ -22,7 +22,7 @@
+  * @link       http://pear.php.net/package/DB
+  */
+ 
+-error_reporting(E_ALL);
++error_reporting(E_ALL & ~E_STRICT);
+ 
+ /**
+  * Local error callback handler
