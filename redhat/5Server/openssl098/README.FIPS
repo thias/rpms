@@ -1,0 +1,108 @@
+User guide for the FIPS Red Hat Enterprise Linux - OpenSSL Module
+=================================================================
+
+This package contains libraries which comprise the FIPS 140-2
+Red Hat Enterprise Linux - OPENSSL Module.
+
+The module files
+================
+/lib[64]/libcrypto.so.0.9.8e
+/lib[64]/libssl.so.0.9.8e
+/lib[64]/.libcrypto.so.0.9.8e.hmac
+/lib[64]/.libssl.so.0.9.8e.hmac
+
+Dependencies
+============
+
+The approved mode of operation requires kernel with /dev/urandom RNG running
+with properties as defined in the security policy of the module. This is
+provided by kernel packages with validated Red Hat Enterprise Linux - IPSec
+Crytographic Module.
+
+Installation
+============
+
+The RPM package of the module can be installed by standard tools recommended
+for installation of RPM packages on the Red Hat Enterprise Linux system (yum,
+rpm, RHN remote management tool).
+
+For proper operation of the in-module integrity verification the prelink has to
+be disabled. This can be done with setting PRELINKING=no in the
+/etc/sysconfig/prelink configuration file. If the libraries were already
+prelinked the prelink should be undone on all the system files with the
+'prelink -u -a' command.
+
+Usage and API
+=============
+
+The module respects kernel command line FIPS setting. If the kernel command
+line contains option fips=1 the module will initialize in the FIPS approved
+mode of operation automatically. To allow for the automatic initialization the
+application using the module has to call one of the following API calls:
+
+- void OPENSSL_init(void) - this will do only a basic initialization of the
+library and does initialization of the FIPS approved mode without setting up
+EVP API with supported algorithms.
+
+- void OPENSSL_add_all_algorithms(void) - this API function calls
+OPENSSL_init() implicitly and also adds all approved algorithms to the EVP API
+in the approved mode 
+
+- void SSL_library_init(void) - it calls OPENSSL_init() implicitly and also
+adds algorithms which are necessary for TLS protocol support and initializes
+the SSL library.
+
+To explicitely put the library to the approved mode the application can call
+the following function:
+
+- int FIPS_mode_set(int on) - if called with 1 as a parameter it will switch
+the library from the non-approved to the approved mode. If any of the selftests
+and integrity verification tests fail, the library is put into the error state
+and 0 is returned. If they succeed the return value is 1.
+
+To query the module whether it is in the approved mode or not:
+
+- int FIPS_mode(void) - returns 1 if the module is in the approved mode,
+0 otherwise.
+
+To query whether the module is in the error state:
+
+- int FIPS_selftest_failed(void) - returns 1 if the module is in the error
+state, 0 otherwise.
+
+To zeroize the FIPS RNG key and internal state the application calls:
+
+- void RAND_cleanup(void)
+
+Possible error states of the OpenSSL FIPS module
+================================================
+
+The effects of self-test failures in the OpenSSL module differ depending
+on the type of self-test that failed.  
+The FIPS_mode_set() function verifies the integrity of the runtime executable
+using a HMAC SHA-256 digest, which is computed at build time. If this computed
+HMAC SHA-256 digest matches the stored, known digest, then the power-up
+self-test (consisting of the algorithm-specific Pairwise Consistency and Known
+Answer tests) is performed.
+
+Non-fatal self-test errors transition the module into an error state. The
+application must be restarted to recover from these errors. The non-fatal
+self-test errors are:
+FIPS_R_FINGERPRINT_DOES_NOT_MATCH - the integrity verification check failed
+FIPS_R_FIPS_SELFTEST_FAILED - a known answer test failed
+FIPS_R_PAIRWISE_TEST_FAILED – a pairwise consistency test during DSA or RSA
+                              key generation failed
+FIPS_R_FIPS_MODE_ALREADY_SET - the application tries to initialize the FIPS
+                               approved mode when it is already initialized
+These errors are reported through the regular ERR interface of the OpenSSL
+library and can be queried by functions such as ERR_get_error(). See the
+OpenSSL manual page for the function description.
+
+A fatal error occurs only when the module is already in the error state
+(a self test has failed) and the application calls a crypto function of
+the module that cannot return an error in normal circumstances (void return
+functions). The error message: 'FATAL FIPS SELFTEST FAILURE' is printed to
+stderr and the application is terminated with the abort() call.
+The only way to recover from a fatal error is to restart the application.
+If failures persist, you must reinstall the Module. If you downloaded the
+software, verify the package hash to confirm a proper download.
