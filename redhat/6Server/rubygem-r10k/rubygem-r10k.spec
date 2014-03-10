@@ -13,17 +13,18 @@ License: ASL 2.0
 URL: http://github.com/adrienthebo/r10k
 Source0: http://rubygems.org/gems/%{gemname}-%{version}.gem
 Requires: ruby(abi) = %{rubyabi}
-Requires: ruby(rubygems) 
+Requires: ruby(rubygems)
 Requires: rubygem(colored) >= 1.2
 Requires: rubygem(cri) => 2.4.0
 Requires: rubygem(cri) < 2.5
 Requires: rubygem(systemu) => 2.5.2
 Requires: rubygem(systemu) < 2.6
 Requires: rubygem(log4r) >= 1.1.10
-Requires: rubygem(json_pure) 
+Requires: rubygem(json_pure)
+Requires: rubygem(multi_json) >= 1.8.2
 BuildRequires: ruby(abi) = %{rubyabi}
-BuildRequires: ruby(rubygems) 
-BuildRequires: ruby 
+BuildRequires: ruby(rubygems)
+BuildRequires: ruby
 BuildArch: noarch
 Provides: rubygem(%{gemname}) = %{version}
 
