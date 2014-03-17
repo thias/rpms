@@ -17,7 +17,6 @@ Requires: ruby(abi) = %{rubyabi}
 Requires: ruby(rubygems) >= 1.3.6
 Requires: rubygem(faraday) >= 0.7.4
 Requires: rubygem(faraday) < 0.9
-Requires: rubygem(system_timer)
 BuildRequires: ruby(abi) = %{rubyabi}
 BuildRequires: ruby(rubygems) >= 1.3.6
 BuildRequires: ruby 
@@ -63,9 +62,6 @@ cp -pa .%{gemdir}/* \
 
 
 %changelog
-* Mon Mar 17 2014 Matthias Saou <matthias@saou.eu> - 0.9.0-2
-- Add rubygem(system_timer) requirement.
-
 * Mon Mar 10 2014 Matthias Saou <matthias@saou.eu> - 0.9.0-1
 - Initial package
 
