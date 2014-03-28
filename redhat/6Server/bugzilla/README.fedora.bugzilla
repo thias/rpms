@@ -1,0 +1,25 @@
+Bugzilla is a powerful bug tracking system used by a large number of open
+source projects.  
+
+In order to use Bugzilla, you will first need to configure it for your 
+environment.  The first step to doing this is to run the checksetup.pl
+script, which will perform module version checks and create an initial
+config file in /etc/bugzilla called localconfig.  You then need to ensure
+the values in this file are accurate for your environment.
+
+Once this is done, you may need to modify default settings for your database
+to ensure it accepts Bugzilla data properly.  Please see 
+http://www.bugzilla.org/docs/2.22/html/configuration.html for specifics of 
+database setting modifications.
+
+Lastly, simply re-run checksetup.pl to populate the database tables, set up
+the templates, and add the administrator ID.  You should be done at this point.
+
+There are two useful cron jobs which are included with Bugzilla which should be
+put in place after configuration is done.  The first is a daily cron job for 
+statistics collection.  This is in the file "cron.daily" and can be enabled by
+simply copying this file to /etc/cron.daily/bugzilla (or any other file name
+in the /etc/cron.daily/ directory).  The second is the "whine" cron job,
+designed to run every 15 minutes.  To enable this job, simply coopy the
+cron.whine file to /etc/cron.d/bugzilla (or any othe filename within the
+/etc/cron.d/ directory).

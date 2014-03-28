@@ -1,0 +1,9 @@
+Alias /var/lib/bugzilla/data/webdot /var/lib/bugzilla/data/webdot
+Alias /bugzilla /usr/share/bugzilla
+
+<Directory /usr/share/bugzilla>
+  AddHandler cgi-script .cgi
+  Options +Indexes +ExecCGI +FollowSymLinks
+  DirectoryIndex index.cgi
+  AllowOverride Limit Options FileInfo
+</Directory>

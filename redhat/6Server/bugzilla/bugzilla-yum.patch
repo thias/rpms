@@ -1,0 +1,20 @@
+--- bugzilla-4.01/Bugzilla/Install/Requirements.pm	2011-05-01 17:09:35.000000000 +0200
++++ bugzilla-4.01-yum/Bugzilla/Install/Requirements.pm	2011-05-01 17:11:28.000000000 +0200
+@@ -587,7 +587,7 @@
+     if ($output && $check_results->{any_missing} && !ON_ACTIVESTATE
+         && !$check_results->{hide_all}) 
+     {
+-        print install_string('install_all', { perl => $^X });
++        # print install_string('install_all', { perl => $^X });
+     }
+     if (!$check_results->{pass}) {
+         print colored(install_string('installation_failed'), COLOR_ERROR),
+@@ -732,7 +732,7 @@
+         $package = $module->{package};
+     }
+     else {
+-        $command = "$^X install-module.pl \%s";
++        $command = "yum install \"perl(\%s)\"";
+         # Non-Windows installations need to use module names, because
+         # CPAN doesn't understand package names.
+         $package = $module->{module};
