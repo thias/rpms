@@ -4,7 +4,7 @@
 Summary: Bug tracking system
 URL: http://www.bugzilla.org/
 Name: bugzilla
-Version: 4.0.8
+Version: 4.0.11
 Group: Applications/Publishing
 Release: 1%{?dist}
 License: MPLv1.1
@@ -190,6 +190,9 @@ popd > /dev/null)
 %{bzinstallprefix}/bugzilla/contrib/yp_nomail.sh
 
 %changelog
+* Fri Mar 28 2014 Matthias Saou <matthias@saou.eu> 4.0.11-1
+- Update to 4.0.11.
+
 * Sat Nov  3 2012 Matthias Saou <matthias@saou.eu> 4.0.8-1
 - Update to 4.0.8.
 
