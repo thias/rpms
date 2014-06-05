@@ -6,7 +6,7 @@
 
 Summary: Puppet environment and module deployment
 Name: rubygem-%{gemname}
-Version: 1.2.0
+Version: 1.2.1
 Release: 1%{?dist}
 Group: Development/Languages
 License: ASL 2.0
@@ -15,13 +15,16 @@ Source0: http://rubygems.org/gems/%{gemname}-%{version}.gem
 Requires: ruby(abi) = %{rubyabi}
 Requires: ruby(rubygems)
 Requires: rubygem(colored) >= 1.2
-Requires: rubygem(cri) => 2.4.0
-Requires: rubygem(cri) < 2.5
+Requires: rubygem(cri) => 2.5.0
+Requires: rubygem(cri) < 2.6
 Requires: rubygem(systemu) => 2.5.2
 Requires: rubygem(systemu) < 2.6
 Requires: rubygem(log4r) >= 1.1.10
-Requires: rubygem(json_pure)
+Requires: rubygem(json_pure) >= 1.8.1
 Requires: rubygem(multi_json) >= 1.8.2
+Requires: rubygem(faraday) >= 0.8.8
+Requires: rubygem(faraday_middleware) >= 0.9.0
+Requires: rubygem(faraday_middleware-multi_json) >= 0.0.5
 BuildRequires: ruby(abi) = %{rubyabi}
 BuildRequires: ruby(rubygems)
 BuildRequires: ruby
@@ -65,6 +68,10 @@ find %{buildroot}%{geminstdir}/bin -type f | xargs chmod a+x
 
 
 %changelog
+* Thu Jun  5 2014 Matthias Saou <matthias@saou.eu> - 1.2.1-1
+- Update to 1.2.1.
+- Update rubygem(cri) requirement.
+
 * Mon Mar 10 2014 Matthias Saou <matthias@saou.eu> - 1.2.0-1
 - Update to 1.2.0.
 
