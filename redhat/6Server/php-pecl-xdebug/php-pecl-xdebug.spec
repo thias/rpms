@@ -1,14 +1,36 @@
-%{!?__pecl:     %{expand: %%global __pecl     %{_bindir}/pecl}}
+# spec file for php-pecl-xdebug
+#
+# Copyright (c) 2010-2014 Remi Collet
+# Copyright (c) 2006-2009 Christopher Stone
+#
+# License: MIT
+# http://opensource.org/licenses/MIT
+#
+# Please, preserve the changelog entries
+#
+
+%{?scl:          %scl_package         php-pecl-xdebug}
+%{!?php_inidir:  %global php_inidir   %{_sysconfdir}/php.d}
+%{!?__pecl:      %global __pecl       %{_bindir}/pecl}
+%{!?__php:       %global __php        %{_bindir}/php}
 
 %global pecl_name xdebug
+%global with_zts  0%{?__ztsphp:1}
 #global commit    b1ce1e3ecc95c2e24d2df73cffce7e501df53215
 #global gitver    %(c=%{commit}; echo ${c:0:7})
 #global prever    dev
 
-Name:           php-pecl-xdebug
+# XDebug should be loaded after opcache
+%if "%{php_version}" < "5.6"
+%global ini_name  %{pecl_name}.ini
+%else
+%global ini_name  15-%{pecl_name}.ini
+%endif
+
+Name:           %{?scl_prefix}php-pecl-xdebug
 Summary:        PECL package for debugging PHP scripts
-Version:        2.2.3
-Release:        1%{?dist}
+Version:        2.2.5
+Release:        2%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
 %if 0%{?gitver:1}
 Source0:        https://github.com/%{pecl_name}/%{pecl_name}/archive/%{commit}/%{pecl_name}-%{version}-%{gitver}.tar.gz
 %else
@@ -22,34 +44,42 @@ Group:          Development/Languages
 URL:            http://xdebug.org/
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  php-pear
-BuildRequires:  php-devel
+BuildRequires:  %{?scl_prefix}php-pear
+BuildRequires:  %{?scl_prefix}php-devel
 BuildRequires:  libedit-devel
 BuildRequires:  libtool
 
 Requires(post): %{__pecl}
 Requires(postun): %{__pecl}
-Requires:       php(zend-abi) = %{php_zend_api}
-Requires:       php(api) = %{php_core_api}
+Requires:       %{?scl_prefix}php(zend-abi) = %{php_zend_api}
+Requires:       %{?scl_prefix}php(api) = %{php_core_api}
 
-Provides:       php-%{pecl_name} = %{version}
-Provides:       php-%{pecl_name}%{?_isa} = %{version}
-Provides:       php-pecl(Xdebug) = %{version}
-Provides:       php-pecl(Xdebug)%{?_isa} = %{version}
+Provides:       %{?scl_prefix}php-%{pecl_name} = %{version}
+Provides:       %{?scl_prefix}php-%{pecl_name}%{?_isa} = %{version}
+Provides:       %{?scl_prefix}php-pecl(Xdebug) = %{version}
+Provides:       %{?scl_prefix}php-pecl(Xdebug)%{?_isa} = %{version}
 
+%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
 # Other third party repo stuff
 Obsoletes:     php53-pecl-%{pecl_name}
 Obsoletes:     php53u-pecl-%{pecl_name}
-%if "%{php_version}" > "5.4"
 Obsoletes:     php54-pecl-%{pecl_name}
-%endif
+Obsoletes:     php54w-pecl-%{pecl_name}
 %if "%{php_version}" > "5.5"
-Obsoletes:     php55-pecl-%{pecl_name}
+Obsoletes:     php55u-pecl-%{pecl_name}
+Obsoletes:     php55w-pecl-%{pecl_name}
+%endif
+%if "%{php_version}" > "5.6"
+Obsoletes:     php56u-pecl-%{pecl_name}
+Obsoletes:     php56w-pecl-%{pecl_name}
+%endif
 %endif
 
+%if 0%{?fedora} < 20 && 0%{?rhel} < 7
 # Filter private shared
 %{?filter_provides_in: %filter_provides_in %{_libdir}/.*\.so$}
 %{?filter_setup}
+%endif
 
 
 %description
@@ -76,10 +106,12 @@ Xdebug also provides:
 %if 0%{?gitver:1}
 sed -e '/release/s/2.2.1/%{version}%{?prever}/' \
     %{pecl_name}-%{commit}/package.xml >package.xml
-mv %{pecl_name}-%{commit} %{pecl_name}-%{version}%{?prever}
+mv %{pecl_name}-%{commit} NTS
+%else
+mv %{pecl_name}-%{version}%{?prever} NTS
 %endif
 
-cd %{pecl_name}-%{version}%{?prever}
+cd NTS
 
 # Check extension version
 ver=$(sed -n '/XDEBUG_VERSION/{s/.* "//;s/".*$//;p}' php_xdebug.h)
@@ -89,63 +121,88 @@ if test "$ver" != "%{version}%{?prever}"; then
 fi
 
 cd ..
-cp -r %{pecl_name}-%{version}%{?prever} %{pecl_name}-zts
+
+%if %{with_zts}
+# Duplicate source tree for NTS / ZTS build
+cp -pr NTS ZTS
+%endif
 
 
 %build
-cd %{pecl_name}-%{version}%{?prever}
+cd NTS
 %{_bindir}/phpize
-%configure --enable-xdebug  --with-php-config=%{_bindir}/php-config
+%configure \
+    --enable-xdebug  \
+    --with-php-config=%{_bindir}/php-config
 make %{?_smp_mflags}
 
 # Build debugclient
 pushd debugclient
-# buildconf only required when build from git snapshot
-[ -f configure ] || ./buildconf
+# buildconf required for aarch64 support
+%if 0%{?rhel} != 5
+./buildconf
+%endif
 %configure --with-libedit
 make %{?_smp_mflags}
 popd
 
-cd ../%{pecl_name}-zts
+%if %{with_zts}
+cd ../ZTS
 %{_bindir}/zts-phpize
-%configure --enable-xdebug  --with-php-config=%{_bindir}/zts-php-config
+%configure \
+    --enable-xdebug  \
+    --with-php-config=%{_bindir}/zts-php-config
 make %{?_smp_mflags}
+%endif
 
 
 %install
 rm -rf %{buildroot}
 
 # install NTS extension
-make -C %{pecl_name}-%{version}%{?prever} \
-     install INSTALL_ROOT=%{buildroot}
+make -C NTS install INSTALL_ROOT=%{buildroot}
 
 # install debugclient
-install -Dpm 755 %{pecl_name}-%{version}%{?prever}/debugclient/debugclient \
+install -Dpm 755 NTS/debugclient/debugclient \
         %{buildroot}%{_bindir}/debugclient
 
 # install package registration file
 install -Dpm 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
 
 # install config file
-install -d %{buildroot}%{_sysconfdir}/php.d
-cat > %{buildroot}%{php_inidir}/%{pecl_name}.ini << 'EOF'
+install -d %{buildroot}%{php_inidir}
+cat << 'EOF' | tee %{buildroot}%{php_inidir}/%{ini_name}
 ; Enable xdebug extension module
+%if "%{php_version}" > "5.5"
+zend_extension=%{pecl_name}.so
+%else
 zend_extension=%{php_extdir}/%{pecl_name}.so
+%endif
 
 ; see http://xdebug.org/docs/all_settings
 EOF
 
+%if %{with_zts}
 # Install ZTS extension
-make -C %{pecl_name}-zts \
-     install INSTALL_ROOT=%{buildroot}
+make -C ZTS install INSTALL_ROOT=%{buildroot}
 
 install -d %{buildroot}%{php_ztsinidir}
-cat > %{buildroot}%{php_ztsinidir}/%{pecl_name}.ini << 'EOF'
+cat << 'EOF' | tee %{buildroot}%{php_ztsinidir}/%{ini_name}
 ; Enable xdebug extension module
+%if "%{php_version}" > "5.5"
+zend_extension=%{pecl_name}.so
+%else
 zend_extension=%{php_ztsextdir}/%{pecl_name}.so
+%endif
 
 ; see http://xdebug.org/docs/all_settings
 EOF
+%endif
+
+# Test & Documentation
+for i in $(grep 'role="doc"' package.xml | sed -e 's/^.*name="//;s/".*$//')
+do install -Dpm 644 NTS/$i %{buildroot}%{pecl_docdir}/%{pecl_name}/$i
+done
 
 
 %check
@@ -155,10 +212,12 @@ EOF
     --define zend_extension=%{buildroot}%{php_extdir}/%{pecl_name}.so \
     --modules | grep Xdebug
 
+%if %{with_zts}
 %{_bindir}/zts-php \
     --no-php-ini \
     --define zend_extension=%{buildroot}%{php_ztsextdir}/%{pecl_name}.so \
     --modules | grep Xdebug
+%endif
 
 
 %post
@@ -177,17 +236,37 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%doc  %{pecl_name}-%{version}%{?prever}/{CREDITS,LICENSE,NEWS,README}
-%config(noreplace) %{php_inidir}/%{pecl_name}.ini
-%{php_extdir}/%{pecl_name}.so
+%doc %{pecl_docdir}/%{pecl_name}
+%config(noreplace) %{php_inidir}/%{ini_name}
 %{_bindir}/debugclient
+
+%{php_extdir}/%{pecl_name}.so
 %{pecl_xmldir}/%{name}.xml
 
-%config(noreplace) %{php_ztsinidir}/%{pecl_name}.ini
+%if %{with_zts}
+%config(noreplace) %{php_ztsinidir}/%{ini_name}
 %{php_ztsextdir}/%{pecl_name}.so
+%endif
 
 
 %changelog
+* Mon Aug 25 2014 Remi Collet <rcollet@redhat.com> - 2.2.5-2
+- improve SCL build
+
+* Wed Apr 30 2014 Remi Collet <remi@fedoraproject.org> - 2.2.5-1
+- Update to 2.2.5 (stable)
+
+* Wed Apr  9 2014 Remi Collet <remi@fedoraproject.org> - 2.2.4-3
+- add numerical prefix to extension configuration file
+- drop uneeded full extension path
+
+* Wed Mar 19 2014 Remi Collet <rcollet@redhat.com> - 2.2.4-2
+- allow SCL build
+
+* Sun Mar 02 2014 Remi Collet <remi@fedoraproject.org> - 2.2.4-1
+- Update to 2.2.4 (stable)
+- move documentation in pecl_docdir
+
 * Wed May 22 2013 Remi Collet <remi@fedoraproject.org> - 2.2.3-1
 - Update to 2.2.3
 
