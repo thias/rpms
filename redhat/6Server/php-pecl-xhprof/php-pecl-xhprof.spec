@@ -1,18 +1,29 @@
 # spec file for php-pecl-xhprof
 #
-# Copyright (c) 2012-2013 Remi Collet
+# Copyright (c) 2012-2014 Remi Collet
 # License: CC-BY-SA
 # http://creativecommons.org/licenses/by-sa/3.0/
 #
 # Please, preserve the changelog entries
 #
-%{!?__pecl:         %{expand: %%global __pecl %{_bindir}/pecl}}
+%{?scl:          %scl_package             php-pecl-xhprof}
+%{!?scl:         %global _root_bindir     %{_bindir}}
+%{!?scl:         %global _root_sysconfdir %{_sysconfdir}}
+%{!?php_inidir:  %global php_inidir       %{_sysconfdir}/php.d}
+%{!?__pecl:      %global __pecl           %{_bindir}/pecl}
+%{!?__php:       %global __php            %{_bindir}/php}
 
 %global pecl_name xhprof
+%global with_zts  0%{?__ztsphp:1}
+%if "%{php_version}" < "5.6"
+%global ini_name  %{pecl_name}.ini
+%else
+%global ini_name  40-%{pecl_name}.ini
+%endif
 
-Name:           php-pecl-xhprof
+Name:           %{?scl_prefix}php-pecl-xhprof
 Version:        0.9.4
-Release:        1%{?gitver:.git%{gitver}}%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
+Release:        5%{?gitver:.git%{gitver}}%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
 
 Summary:        PHP extension for XHProf, a Hierarchical Profiler
 Group:          Development/Languages
@@ -24,30 +35,40 @@ Source0:        http://pecl.php.net/get/%{pecl_name}-%{version}.tgz
 ExclusiveArch:  %{ix86} x86_64
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  php-devel >= 5.2.0
-BuildRequires:  php-pear
+BuildRequires:  %{?scl_prefix}php-devel >= 5.2.0
+BuildRequires:  %{?scl_prefix}php-pear
 
-Requires:       php(zend-abi) = %{php_zend_api}
-Requires:       php(api) = %{php_core_api}
+Requires:       %{?scl_prefix}php(zend-abi) = %{php_zend_api}
+Requires:       %{?scl_prefix}php(api) = %{php_core_api}
 Requires(post): %{__pecl}
 Requires(postun): %{__pecl}
 
-Provides:       php-%{pecl_name} = %{version}
-Provides:       php-%{pecl_name}%{?_isa} = %{version}
-Provides:       php-pecl(%{pecl_name}) = %{version}
-Provides:       php-pecl(%{pecl_name})%{?_isa} = %{version}
+Provides:       %{?scl_prefix}php-%{pecl_name} = %{version}
+Provides:       %{?scl_prefix}php-%{pecl_name}%{?_isa} = %{version}
+Provides:       %{?scl_prefix}php-pecl(%{pecl_name}) = %{version}
+Provides:       %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
 
+%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
 # Other third party repo stuff
 Obsoletes:     php53-pecl-%{pecl_name}
 Obsoletes:     php53u-pecl-%{pecl_name}
 Obsoletes:     php54-pecl-%{pecl_name}
+Obsoletes:     php54w-pecl-%{pecl_name}
 %if "%{php_version}" > "5.5"
-Obsoletes:     php55-pecl-%{pecl_name}
+Obsoletes:     php55u-pecl-%{pecl_name}
+Obsoletes:     php55w-pecl-%{pecl_name}
+%endif
+%if "%{php_version}" > "5.6"
+Obsoletes:     php56u-pecl-%{pecl_name}
+Obsoletes:     php56w-pecl-%{pecl_name}
+%endif
 %endif
 
-# Filter private provides
+%if 0%{?fedora} < 20 && 0%{?rhel} < 7
+# Filter private shared object
 %{?filter_provides_in: %filter_provides_in %{_libdir}/.*\.so$}
 %{?filter_setup}
+%endif
 
 
 %description
@@ -59,18 +80,18 @@ implemented in C (as a PHP extension).
 The HTML based navigational interface is provided in the "xhprof" package.
 
 
-%package -n xhprof
+%package -n %{?scl_prefix}xhprof
 Summary:       A Hierarchical Profiler for PHP - Web interface
 Group:         Development/Tools
 %if 0%{?fedora} > 11 || 0%{?rhel} > 5
 BuildArch:     noarch
 %endif
 
-Requires:      php-pecl-xhprof = %{version}-%{release}
-Requires:      php >= 5.2.0
-Requires:      %{_bindir}/dot
+Requires:      %{name} = %{version}-%{release}
+Requires:      %{?scl_prefix}php >= 5.2.0
+Requires:      %{_root_bindir}/dot
 
-%description -n xhprof
+%description -n %{?scl_prefix}xhprof
 XHProf is a function-level hierarchical profiler for PHP and has a simple HTML
 based navigational interface.
 
@@ -84,21 +105,19 @@ for each function.
 Additionally, it supports ability to compare two runs (hierarchical DIFF
 reports), or aggregate results from multiple runs.
 
-%if "%{?_pkgdocdir}" == "%{_docdir}/%{name}"
-Documentation : %{_docdir}/xhprof/index.html
-%else
-Documentation : %{_docdir}/xhprof-%{version}/index.html
-%endif
+Documentation: %{pecl_docdir}/%{pecl_name}/xhprof_html/docs/index.html
 
 
 %prep
 %setup -c -q
 
-# All files as src to avoid registration in pear file list
-sed -e 's/role="[a-z]*"/role="src"/' -i package.xml
+# Mark "php" files as "src" to avoid registration in pear file list
+# xhprof_html should be web, but www_dir is /var/www/html
+# xhprof_lib  should be php, really a lib
+sed -e 's/role="php"/role="src"/' -i package.xml
 
 # Extension configuration file
-cat >%{pecl_name}.ini <<EOF
+cat >%{ini_name} <<EOF
 ; Enable %{pecl_name} extension module
 extension = xhprof.so
 
@@ -109,9 +128,9 @@ EOF
 
 # Apache configuration file
 cat >httpd.conf <<EOF
-Alias /xhprof /usr/share/xhprof/xhprof_html
+Alias /xhprof %{_datadir}/xhprof/xhprof_html
 
-<Directory /usr/share/xhprof/xhprof_html>
+<Directory %{_datadir}/xhprof/xhprof_html>
    # For security reason, the web interface
    # is only allowed from the server
    <IfModule mod_authz_core.c>
@@ -130,11 +149,10 @@ EOF
 
 cd %{pecl_name}-%{version}
 
+%if %{with_zts}
 # duplicate for ZTS build
 cp -r extension ext-zts
-
-# not to be installed
-mv xhprof_html/docs ../docs
+%endif
 
 
 %build
@@ -144,44 +162,59 @@ cd %{pecl_name}-%{version}/extension
     --with-php-config=%{_bindir}/php-config
 make %{?_smp_mflags}
 
+%if %{with_zts}
 cd ../ext-zts
 %{_bindir}/zts-phpize
 %configure \
     --with-php-config=%{_bindir}/zts-php-config
 make %{?_smp_mflags}
+%endif
 
 
 %install
 rm -rf %{buildroot}
 make install -C %{pecl_name}-%{version}/extension  INSTALL_ROOT=%{buildroot}
-install -D -m 644 %{pecl_name}.ini %{buildroot}%{_sysconfdir}/php.d/%{pecl_name}.ini
+install -D -m 644 %{ini_name} %{buildroot}%{php_inidir}/%{ini_name}
 
+%if %{with_zts}
 make install -C %{pecl_name}-%{version}/ext-zts    INSTALL_ROOT=%{buildroot}
-install -D -m 644 %{pecl_name}.ini %{buildroot}%{php_ztsinidir}/%{pecl_name}.ini
+install -D -m 644 %{ini_name} %{buildroot}%{php_ztsinidir}/%{ini_name}
+%endif
 
 # Install XML package description
 install -D -m 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
 
-# Install the web interface
-install -D -m 644 httpd.conf %{buildroot}%{_sysconfdir}/httpd/conf.d/xhprof.conf
+# Install the Apache configuration
+install -D -m 644 httpd.conf %{buildroot}%{_root_sysconfdir}/httpd/conf.d/%{?scl_prefix}xhprof.conf
 
+# Install the web interface
 mkdir -p %{buildroot}%{_datadir}/xhprof
 cp -pr %{pecl_name}-%{version}/xhprof_html %{buildroot}%{_datadir}/xhprof/xhprof_html
 cp -pr %{pecl_name}-%{version}/xhprof_lib  %{buildroot}%{_datadir}/xhprof/xhprof_lib
+rm -r %{buildroot}%{_datadir}/xhprof/xhprof_html/docs
+
+# Test & Documentation
+cd %{pecl_name}-%{version}
+for i in $(grep 'role="test"' ../package.xml | sed -e 's/^.*name="//;s/".*$//')
+do install -Dpm 644 $i %{buildroot}%{pecl_testdir}/%{pecl_name}/$i
+done
+for i in $(grep 'role="doc"' ../package.xml | sed -e 's/^.*name="//;s/".*$//')
+do install -Dpm 644 $i %{buildroot}%{pecl_docdir}/%{pecl_name}/$i
+done
 
 
 %check
 : simple module load TEST for NTS extension
-php --no-php-ini \
-    --define extension_dir=%{pecl_name}-%{version}/extension/modules \
-    --define extension=%{pecl_name}.so \
+%{__php} --no-php-ini \
+    --define extension=%{buildroot}%{php_extdir}/%{pecl_name}.so \
     --modules | grep %{pecl_name}
 
+%if %{with_zts}
 : simple module load TEST for ZTS extension
 %{__ztsphp} --no-php-ini \
-    --define extension_dir=%{pecl_name}-%{version}/ext-zts/modules \
-    --define extension=%{pecl_name}.so \
+    --define extension=%{buildroot}%{php_ztsextdir}/%{pecl_name}.so \
     --modules | grep %{pecl_name}
+%endif
 
 
 %clean
@@ -200,23 +233,43 @@ fi
 
 %files
 %defattr(-,root,root,-)
-%doc %{pecl_name}-%{version}/{CHANGELOG,CREDITS,README,LICENSE,examples}
-%config(noreplace) %{_sysconfdir}/php.d/%{pecl_name}.ini
-%{php_extdir}/%{pecl_name}.so
+%doc %{pecl_docdir}/%{pecl_name}
+%exclude %{pecl_docdir}/%{pecl_name}/examples
+%exclude %{pecl_docdir}/%{pecl_name}/xhprof_html
 %{pecl_xmldir}/%{name}.xml
 
-%config(noreplace) %{php_ztsinidir}/%{pecl_name}.ini
+%config(noreplace) %{php_inidir}/%{ini_name}
+%{php_extdir}/%{pecl_name}.so
+
+%if %{with_zts}
+%config(noreplace) %{php_ztsinidir}/%{ini_name}
 %{php_ztsextdir}/%{pecl_name}.so
+%endif
 
 
-%files -n xhprof
+%files -n %{?scl_prefix}xhprof
 %defattr(-,root,root,-)
-%doc docs/*
-%config(noreplace) %{_sysconfdir}/httpd/conf.d/xhprof.conf
+%doc %{pecl_docdir}/%{pecl_name}/examples
+%doc %{pecl_docdir}/%{pecl_name}/xhprof_html
+%doc %{pecl_testdir}/%{pecl_name}
+%config(noreplace) %{_root_sysconfdir}/httpd/conf.d/%{?scl_prefix}xhprof.conf
 %{_datadir}/xhprof
 
 
 %changelog
+* Mon Aug 25 2014 Remi Collet <rcollet@redhat.com> - 0.9.4-5
+- improve SCL build
+
+* Thu Apr 17 2014 Remi Collet <remi@fedoraproject.org> - 0.9.4-4
+- add numerical prefix to extension configuration file (php 5.6)
+
+* Wed Mar 19 2014 Remi Collet <rcollet@redhat.com> - 0.9.4-3
+- allow SCL build
+
+* Sat Mar 15 2014 Remi Collet <remi@fedoraproject.org> - 0.9.4-2
+- install doc in pecl_docdir
+- install test in pecl_testdir
+
 * Tue Oct  1 2013 Remi Collet <remi@fedoraproject.org> - 0.9.4-1
 - update to 0.9.4
 
