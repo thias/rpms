@@ -1,47 +1,65 @@
-%{!?__pecl:  %{expand: %%global __pecl     %{_bindir}/pecl}}
+%{?scl:          %scl_package        php-pecl-geoip}
+%{!?php_inidir:  %global php_inidir   %{_sysconfdir}/php.d}
+%{!?__pecl:      %global __pecl       %{_bindir}/pecl}
+%{!?__php:       %global __php        %{_bindir}/php}
 
-%define pecl_name geoip
+%define pecl_name  geoip
+%global with_zts   0%{?__ztsphp:1}
+%if "%{php_version}" < "5.6"
+%global ini_name  %{pecl_name}.ini
+%else
+%global ini_name  40-%{pecl_name}.ini
+%endif
 
-Name:           php-pecl-geoip
-Version:        1.0.8
-Release:        3%{?dist}.5
+
+Name:           %{?scl_prefix}php-pecl-geoip
+Version:        1.1.0
+Release:        2%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
 Summary:        Extension to map IP addresses to geographic places
 Group:          Development/Languages
 License:        PHP
 URL:            http://pecl.php.net/package/%{pecl_name}
 Source0:        http://pecl.php.net/get/%{pecl_name}-%{version}.tgz
 
-# https://bugs.php.net/bug.php?id=59804
-Patch1:         geoip-tests.patch
+# http://svn.php.net/viewvc?view=revision&revision=333464
+Patch0:         geoip-build.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  GeoIP-devel
-BuildRequires:  php-devel
-BuildRequires:  php-pear >= 1:1.4.0
+BuildRequires:  %{?scl_prefix}php-devel
+BuildRequires:  %{?scl_prefix}php-pear
 
-Requires:       php(zend-abi) = %{php_zend_api}
-Requires:       php(api) = %{php_core_api}
+Requires:       %{?scl_prefix}php(zend-abi) = %{php_zend_api}
+Requires:       %{?scl_prefix}php(api) = %{php_core_api}
 Requires(post): %{__pecl}
 Requires(postun): %{__pecl}
 
-Provides:       php-%{pecl_name} = %{version}
-Provides:       php-%{pecl_name}%{?_isa} = %{version}
-Provides:       php-pecl(%{pecl_name}) = %{version}
-Provides:       php-pecl(%{pecl_name})%{?_isa} = %{version}
+Provides:       %{?scl_prefix}php-%{pecl_name} = %{version}
+Provides:       %{?scl_prefix}php-%{pecl_name}%{?_isa} = %{version}
+Provides:       %{?scl_prefix}php-pecl(%{pecl_name}) = %{version}
+Provides:       %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
 
+%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
 # Other third party repo stuff
 Obsoletes:     php53-pecl-%{pecl_name}
 Obsoletes:     php53u-pecl-%{pecl_name}
-%if "%{php_version}" > "5.4"
 Obsoletes:     php54-pecl-%{pecl_name}
-%endif
+Obsoletes:     php54w-pecl-%{pecl_name}
 %if "%{php_version}" > "5.5"
-Obsoletes:     php55-pecl-%{pecl_name}
+Obsoletes:     php55u-pecl-%{pecl_name}
+Obsoletes:     php55w-pecl-%{pecl_name}
+%endif
+%if "%{php_version}" > "5.6"
+Obsoletes:     php56u-pecl-%{pecl_name}
+Obsoletes:     php56w-pecl-%{pecl_name}
+%endif
 %endif
 
-# Filter private shared
+%if 0%{?fedora} < 20 && 0%{?rhel} < 7
+# Filter shared private
 %{?filter_provides_in: %filter_provides_in %{_libdir}/.*\.so$}
 %{?filter_setup}
+%endif
 
 
 %description
@@ -54,56 +72,81 @@ database
 %prep
 %setup -c -q
 
-extver=$(sed -n '/#define PHP_GEOIP_VERSION/{s/.* "//;s/".*$//;p}' %{pecl_name}-%{version}/php_geoip.h)
+mv %{pecl_name}-%{version} NTS
+
+cd NTS
+%patch0 -p0 -b .svn
+
+extver=$(sed -n '/#define PHP_GEOIP_VERSION/{s/.* "//;s/".*$//;p}' php_geoip.h)
 if test "x${extver}" != "x%{version}"; then
    : Error: Upstream version is ${extver}, expecting %{version}.
    exit 1
 fi
-
-cd %{pecl_name}-%{version}
-%patch1 -p0 -b .tests
 cd ..
 
-cat > %{pecl_name}.ini << 'EOF'
+cat > %{ini_name} << 'EOF'
 ; Enable %{pecl_name} extension module
 extension=%{pecl_name}.so
 EOF
 
-cp -pr %{pecl_name}-%{version} %{pecl_name}-%{version}-zts
+%if %{with_zts}
+cp -pr NTS ZTS
+%endif
 
 
 %build
-cd %{pecl_name}-%{version}
+cd NTS
 %{_bindir}/phpize
 %configure  --with-php-config=%{_bindir}/php-config
 make %{?_smp_mflags}
 
-cd ../%{pecl_name}-%{version}-zts
+%if %{with_zts}
+cd ../ZTS
 %{_bindir}/zts-phpize
 %configure  --with-php-config=%{_bindir}/zts-php-config
 make %{?_smp_mflags}
+%endif
 
 
 %install
 rm -rf %{buildroot}
 
-make -C %{pecl_name}-%{version} \
-     install INSTALL_ROOT=%{buildroot}
+make -C NTS install INSTALL_ROOT=%{buildroot}
 
-make -C %{pecl_name}-%{version}-zts \
-     install INSTALL_ROOT=%{buildroot}
+%if %{with_zts}
+make -C ZTS install INSTALL_ROOT=%{buildroot}
+install -Dpm644 %{ini_name} %{buildroot}%{php_ztsinidir}/%{ini_name}
+%endif
 
 # Install XML package description
 install -Dpm 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
 
 # install config file
-install -Dpm644 %{pecl_name}.ini %{buildroot}%{php_inidir}/%{pecl_name}.ini
-install -Dpm644 %{pecl_name}.ini %{buildroot}%{php_ztsinidir}/%{pecl_name}.ini
+install -Dpm644 %{ini_name} %{buildroot}%{php_inidir}/%{ini_name}
+
+# Test & Documentation
+for i in $(grep 'role="test"' package.xml | sed -e 's/^.*name="//;s/".*$//')
+do install -Dpm 644 NTS/$i %{buildroot}%{pecl_testdir}/%{pecl_name}/$i
+done
+for i in $(grep 'role="doc"' package.xml | sed -e 's/^.*name="//;s/".*$//')
+do install -Dpm 644 NTS/$i %{buildroot}%{pecl_docdir}/%{pecl_name}/$i
+done
 
 
 %check
-cd %{pecl_name}-%{version}
+: Minimal load test for NTS extension
+%{__php} -n \
+    -d extension=%{buildroot}%{php_extdir}/%{pecl_name}.so \
+    -m | grep %{pecl_name}
 
+%if %{with_zts}
+: Minimal load test for ZTS extension
+%{__ztsphp} -n \
+    -d extension=%{buildroot}%{php_ztsextdir}/%{pecl_name}.so \
+    -m | grep %{pecl_name}
+%endif
+
+cd NTS
 TEST_PHP_EXECUTABLE=%{__php} \
 REPORT_EXIT_STATUS=1 \
 NO_INTERACTION=1 \
@@ -116,6 +159,7 @@ NO_INTERACTION=1 \
 %clean
 rm  -rf %{buildroot}
 
+
 %post
 %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
 
@@ -127,15 +171,37 @@ fi
 
 %files
 %defattr(-,root,root,-)
-%doc %{pecl_name}-%{version}/{README,ChangeLog}
-%config(noreplace) %{php_inidir}/%{pecl_name}.ini
-%config(noreplace) %{php_ztsinidir}/%{pecl_name}.ini
+%doc %{pecl_docdir}/%{pecl_name}
+%doc %{pecl_testdir}/%{pecl_name}
+%config(noreplace) %{php_inidir}/%{ini_name}
 %{php_extdir}/%{pecl_name}.so
-%{php_ztsextdir}/%{pecl_name}.so
 %{pecl_xmldir}/%{name}.xml
+%if %{with_zts}
+%{php_ztsextdir}/%{pecl_name}.so
+%config(noreplace) %{php_ztsinidir}/%{ini_name}
+%endif
 
 
 %changelog
+* Mon Aug 25 2014 Remi Collet <rcollet@redhat.com> - 1.1.0-2
+- improve SCL build
+
+* Sat May 03 2014 Remi Collet <remi@fedoraproject.org> - 1.1.0-1
+- Update to 1.1.0 (beta)
+- upstream patch for old auto* version (rhel <= 6)
+
+* Wed Apr  9 2014 Remi Collet <remi@fedoraproject.org> - 1.0.8-8
+- add numerical prefix to extension configuration file
+
+* Wed Mar 19 2014 Remi Collet <remi@fedoraproject.org> - 1.0.8-7
+- allow SCL build
+
+* Sun Mar  2 2014 Remi Collet <remi@fedoraproject.org> - 1.0.8-6
+- cleaups
+- install doc in pecl_docdir
+- install tests in pecl_testdir
+- add missing License file
+
 * Fri Nov 30 2012 Remi Collet <remi@fedoraproject.org> - 1.0.8-3.1
 - also provides php-geoip
 
