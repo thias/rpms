@@ -2,20 +2,24 @@
 %global metadir %{_localstatedir}/lib/pear
 
 %global getoptver 1.3.1
-%global arctarver 1.3.11
+%global arctarver 1.3.12
 # https://pear.php.net/bugs/bug.php?id=19367
 # Structures_Graph 1.0.4 - incorrect FSF address
 %global structver 1.0.4
-%global xmlutil   1.2.1
+%global xmlutil   1.2.3
 
 # Tests are only run with rpmbuild --with tests
 # Can't be run in mock / koji because PEAR is the first package
 %global with_tests       %{?_with_tests:1}%{!?_with_tests:0}
 
+%global macrosdir %(d=%{_rpmconfigdir}/macros.d; [ -d $d ] || d=%{_sysconfdir}/rpm; echo $d)
+
+#global pearprever dev1
+
 Summary: PHP Extension and Application Repository framework
 Name: php-pear
-Version: 1.9.4
-Release: 23%{?dist}
+Version: 1.9.5
+Release: 2%{?dist}
 Epoch: 1
 # PEAR, Archive_Tar, XML_Util are BSD
 # Console_Getopt is PHP
@@ -23,7 +27,7 @@ Epoch: 1
 License: BSD and PHP and LGPLv2+
 Group: Development/Languages
 URL: http://pear.php.net/package/PEAR
-Source0: http://download.pear.php.net/package/PEAR-%{version}.tgz
+Source0: http://download.pear.php.net/package/PEAR-%{version}%{?pearprever}.tgz
 # wget https://raw.github.com/pear/pear-core/master/install-pear.php
 Source1: install-pear.php
 Source3: strip.php
@@ -54,7 +58,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: php-cli >= 5.1.0-1, php-xml, gnupg
 %if %{with_tests}
-BuildRequires:  php-pear(pear.phpunit.de/PHPUnit)
+BuildRequires:  %{_bindir}/phpunit
 %endif
 
 Provides: php-pear(Console_Getopt) = %{getoptver}
@@ -64,6 +68,19 @@ Provides: php-pear(Structures_Graph) = %{structver}
 Provides: php-pear(XML_Util) = %{xmlutil}
 Obsoletes: php-pear-XML-Util < %{xmlutil}
 Provides:  php-pear-XML-Util = %{xmlutil}
+
+%if "%{?vendor}" == "Remi Collet"
+# From other third party
+Obsoletes: php53-pear
+Obsoletes: php53u-pear
+Obsoletes: php54-pear
+%if "%{php_version}" > "5.5"
+Obsoletes: php55u-pear
+%endif
+%if "%{php_version}" > "5.5"
+Obsoletes: php56u-pear
+%endif
+%endif
 
 Requires:  php-cli
 # phpci detected extension
@@ -106,6 +123,10 @@ cp %{SOURCE1} %{SOURCE30} %{SOURCE31} %{SOURCE32} %{SOURCE33} .
 # apply patches on used PEAR during install
 %patch1 -p0 -b .metadata
 
+sed -e 's:@BINDIR@:%{_bindir}:' \
+    -e 's:@LIBDIR@:%{_localstatedir}/lib:' \
+    %{SOURCE13} > macros.pear
+
 
 %build
 # This is an empty build section.
@@ -129,7 +150,6 @@ install -d $RPM_BUILD_ROOT%{peardir} \
            $RPM_BUILD_ROOT%{_localstatedir}/cache/php-pear \
            $RPM_BUILD_ROOT%{_localstatedir}/www/html \
            $RPM_BUILD_ROOT%{_localstatedir}/lib/pear/pkgxml \
-           $RPM_BUILD_ROOT%{_sysconfdir}/rpm \
            $RPM_BUILD_ROOT%{_docdir}/pecl \
            $RPM_BUILD_ROOT%{_datadir}/tests/pecl \
            $RPM_BUILD_ROOT%{_sysconfdir}/pear
@@ -162,8 +182,8 @@ install -m 755 %{SOURCE12} $RPM_BUILD_ROOT%{_bindir}/peardev
 %{_bindir}/php -r "print_r(unserialize(substr(file_get_contents('$RPM_BUILD_ROOT%{_sysconfdir}/pear.conf'),17)));"
 
 
-install -m 644 -c %{SOURCE13} \
-           $RPM_BUILD_ROOT%{_sysconfdir}/rpm/macros.pear     
+install -m 644 -D macros.pear \
+           $RPM_BUILD_ROOT%{macrosdir}/macros.pear
 
 # apply patches on installed PEAR tree
 pushd $RPM_BUILD_ROOT%{peardir} 
@@ -197,17 +217,23 @@ grep -rl $RPM_BUILD_ROOT $RPM_BUILD_ROOT && exit 1
 
 
 %if %{with_tests}
-cd $RPM_BUILD_ROOT%{pear_phpdir}/test/Structures_Graph/tests
-phpunit \
-   -d date.timezone=UTC \
-   -d include_path=.:$RPM_BUILD_ROOT%{pear_phpdir}:%{pear_phpdir}: \
-   AllTests || exit 1
+LOG=$PWD/rpmlog
+ret=0
 
-cd $RPM_BUILD_ROOT%{pear_phpdir}/test/XML_Util/tests
+cd $RPM_BUILD_ROOT%{_datadir}/tests/pear/Structures_Graph/tests
 phpunit \
    -d date.timezone=UTC \
-   -d include_path=.:$RPM_BUILD_ROOT%{pear_phpdir}:%{pear_phpdir}: \
-   AllTests || exit 1
+   --include-path=$RPM_BUILD_ROOT%{pear_phpdir} \
+   AllTests || ret=1
+
+cd $RPM_BUILD_ROOT%{_datadir}/tests/pear/XML_Util/tests
+php -d include_path=.:$RPM_BUILD_ROOT%{pear_phpdir} \
+   $RPM_BUILD_ROOT/usr/share/pear/pearcmd.php \
+   run-tests \
+   | tee $LOG
+grep "FAILED TESTS" $LOG && ret=1
+
+exit $ret
 %else
 echo 'Test suite disabled (missing "--with tests" option)'
 %endif
@@ -285,7 +311,7 @@ fi
 %{metadir}/pkgxml
 %{_bindir}/*
 %config(noreplace) %{_sysconfdir}/pear.conf
-%{_sysconfdir}/rpm/macros.pear
+%{macrosdir}/macros.pear
 %dir %{_localstatedir}/cache/php-pear
 %dir %{_localstatedir}/www/html
 %dir %{_sysconfdir}/pear
@@ -304,6 +330,35 @@ fi
 
 
 %changelog
+* Mon Aug  4 2014 Remi Collet <remi@fedoraproject.org> 1:1.9.5-2
+- update Archive_Tar to 1.3.12
+
+* Tue Jul 15 2014 Remi Collet <remi@fedoraproject.org> 1:1.9.5-1
+- update to 1.9.5
+
+* Tue Jul  8 2014 Remi Collet <remi@fedoraproject.org> 1:1.9.5-0.1
+- update to 1.9.5dev1
+
+* Sat Jun  7 2014 Remi Collet <remi@fedoraproject.org> 1:1.9.4-28
+- update XML_Util to 1.2.3
+
+* Thu Apr 17 2014 Remi Collet <remi@fedoraproject.org> 1:1.9.4-27
+- revert previous, was a bad solution
+
+* Thu Apr 10 2014 Remi Collet <rcollet@redhat.com> 1:1.9.4-26.1
+- better fix to detect xml.so
+
+* Thu Apr 10 2014 Remi Collet <rcollet@redhat.com> 1:1.9.4-26
+- fix xml.so is shared only with php 5.5+
+
+* Wed Apr  9 2014 Remi Collet <rcollet@redhat.com> 1:1.9.4-25
+- only enable needed extensions for pear/pecl commands
+- fix typo in pear man page
+
+* Tue Feb 11 2014 Remi Collet <rcollet@redhat.com> 1:1.9.4-24
+- Expand path in macros.pear
+- Install macros to /usr/lib/rpm/macros.d where available
+
 * Tue Oct 15 2013 Remi Collet <rcollet@redhat.com> 1:1.9.4-23
 - set pecl test_dir to /usr/share/tests/pecl
 
@@ -326,9 +381,11 @@ fi
 - improve post scriptlet to avoid updating pear.conf
   when not needed
 
+* Wed Mar 20 2013 Remi Collet <remi@fedoraproject.org> 1:1.9.4-16
+- sync with rawhide
+
 * Tue Mar 12 2013 Ralf Corsépius <corsepiu@fedoraproject.org> - 1:1.9.4-16
-- Remove %%config from %%{_sysconfdir}/rpm/macros.*
-  (https://fedorahosted.org/fpc/ticket/259).
+- Remove %%config from /etc/rpm/macros.pear
 
 * Sat Feb  9 2013 Remi Collet <remi@fedoraproject.org> 1:1.9.4-15
 - update Archive_Tar to 1.3.11
@@ -340,11 +397,14 @@ fi
   extenstions going to be build as shared, mainly simplexml)
 - add fix for new unpack format (php 5.5)
 
-* Wed Sep 26 2012 Remi Collet <remi@fedoraproject.org> 1:1.9.4-13
-- move metadata to /var/lib/pear
+* Fri Nov  9 2012 Remi Collet <remi@fedoraproject.org> 1:1.9.4-12
+- provides value for %%{pear_metadir}
 
 * Wed Sep 26 2012 Remi Collet <remi@fedoraproject.org> 1:1.9.4-12
 - drop relocate stuff, no more needed
+
+* Thu Sep  6 2012 Remi Collet <RPMS@famillecollet.com> 1:1.9.4-11.1
+- obsoletes php53* php54* on EL
 
 * Sun Aug 19 2012 Remi Collet <remi@fedoraproject.org> 1:1.9.4-11
 - move data to /usr/share/pear-data
@@ -358,6 +418,9 @@ fi
 - move pkgxml to /var/lib/pear
 - remove XML_RPC
 - refresh installer
+
+* Mon Aug 13 2012 Remi Collet <remi@fedoraproject.org> 1:1.9.4-9
+- remove XML_RPC
 
 * Fri Jul 20 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1:1.9.4-8
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
