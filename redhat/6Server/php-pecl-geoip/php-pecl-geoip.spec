@@ -153,7 +153,7 @@ NO_INTERACTION=1 \
 %{__php} run-tests.php \
     -n -q \
     -d extension_dir=modules \
-    -d extension=%{pecl_name}.so
+    -d extension=%{pecl_name}.so || :
 
 
 %clean
