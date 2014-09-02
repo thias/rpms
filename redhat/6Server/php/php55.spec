@@ -23,8 +23,15 @@
 %global oraclever 12.1
 %endif
 
+# Build for LiteSpeed Web Server (LSAPI)
+%global with_lsws     1
+
 # Regression tests take a long time, you can skip 'em with this
-%{!?runselftest: %{expand: %%global runselftest 1}}
+%if %{php_bootstrap}
+%global runselftest 0
+%else
+%{!?runselftest: %global runselftest 1}
+%endif
 
 # Use the arch-specific mysql_config binary to avoid mismatch with the
 # arch detection heuristic used by bindir/mysql_config.
@@ -42,7 +49,7 @@
 %global with_libpcre  0
 %endif
 
-%if 0%{?fedora} < 17 && 0%{?rhel} < 7
+%if 0%{?fedora} < 17 && 0%{?rhel} < 6
 %global  with_vpx  0
 %else
 %global  with_vpx  1
@@ -118,11 +125,11 @@
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 5.5.11
+Version: 5.5.16
 %if 0%{?snapdate:1}%{?rcver:1}
 Release: 0.1.%{?snapdate}%{?rcver}%{?dist}
 %else
-Release: 1%{?dist}
+Release: 1%{?dist}.1
 %endif
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
@@ -183,12 +190,15 @@ Patch47: php-5.4.9-phpinfo.patch
 Patch91: php-5.3.7-oci8conf.patch
 
 # Upstream fixes (100+)
+Patch100: php-bug67865.patch
 
 # Security fixes (200+)
 
 # Fixes for tests (300+)
 # Revert change for pcre 8.34
 Patch301: php-5.5.10-pcre834.patch
+# see https://bugzilla.redhat.com/971416
+Patch302: php-5.5.14-noNO.patch
 
 # WIP
 
@@ -219,7 +229,9 @@ BuildRequires: systemtap-sdt-devel
 BuildRequires: bison
 %endif
 
-Obsoletes: php53, php53u, php54, php55u
+Obsoletes: php53, php53u, php55u, php55w
+# Avoid obsoleting php54 from RHSCL
+Obsoletes: php54 > 5.4
 %if %{with_zts}
 Obsoletes: php-zts < 5.3.7
 Provides: php-zts = %{version}-%{release}
@@ -261,7 +273,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 Provides: php-cgi = %{version}-%{release}, php-cgi%{?_isa} = %{version}-%{release}
 Provides: php-pcntl, php-pcntl%{?_isa}
 Provides: php-readline, php-readline%{?_isa}
-Obsoletes: php53-cli, php53u-cli, php54-cli, php55u-cli
+Obsoletes: php53-cli, php53u-cli, php54-cli, php54w-cli, php55u-cli, php55w-cli
 
 %description cli
 The php-cli package contains the command-line interface
@@ -295,12 +307,26 @@ Requires(post): systemd-sysv
 Requires(preun): initscripts
 Requires(postun): initscripts
 %endif
-Obsoletes: php53-fpm, php53u-fpm, php54-fpm, php55u-fpm
+Obsoletes: php53-fpm, php53u-fpm, php54-fpm, php54w-fpm, php55u-fpm, php55w-fpm
 
 %description fpm
 PHP-FPM (FastCGI Process Manager) is an alternative PHP FastCGI
 implementation with some additional features useful for sites of
 any size, especially busier sites.
+
+
+%if %{with_lsws}
+%package litespeed
+Summary: LiteSpeed Web Server PHP support
+Group: Development/Languages
+Requires: php-common%{?_isa} = %{version}-%{release}
+Obsoletes: php53-litespeed, php53u-litespeed, php54-litespeed, php54w-litespeed, php55u-litespeed, php55w-litespeed
+
+%description litespeed
+The php-litespeed package provides the %{_bindir}/lsphp command
+used by the LiteSpeed Web Server (LSAPI enabled PHP).
+%endif
+
 
 %package common
 Group: Development/Languages
@@ -356,7 +382,7 @@ Obsoletes: php-pecl-phar < 1.2.4
 Obsoletes: php-pecl-Fileinfo < 1.0.5
 Obsoletes: php-mhash < 5.3.0
 Obsoletes: php53-mhash, php53u-mhash
-Obsoletes: php53-common, php53u-common, php54-common, php55u-common
+Obsoletes: php53-common, php53u-common, php54-common, php54w-common, php55u-common, php55w-common
 
 %description common
 The php-common package contains files used by both the php
@@ -374,7 +400,7 @@ Obsoletes: php-pecl-pdo-devel
 Provides: php-zts-devel = %{version}-%{release}
 Provides: php-zts-devel%{?_isa} = %{version}-%{release}
 %endif
-Obsoletes: php53-devel, php53u-devel, php54-devel, php55u-devel
+Obsoletes: php53-devel, php53u-devel, php54-devel, php54w-devel, php55u-devel, php55w-devel
 %if ! %{php_bootstrap}
 Requires: php-pecl-jsonc-devel%{?_isa}
 %endif
@@ -410,7 +436,7 @@ License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 Obsoletes: mod_php3-imap, stronghold-php-imap
 BuildRequires: krb5-devel, openssl-devel, libc-client-devel
-Obsoletes: php53-imap, php53u-imap, php54-imap, php55u-imap
+Obsoletes: php53-imap, php53u-imap, php54-imap, php54w-imap, php55u-imap, php55w-imap
 
 %description imap
 The php-imap module will add IMAP (Internet Message Access Protocol)
@@ -424,7 +450,7 @@ Group: Development/Languages
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: cyrus-sasl-devel, openldap-devel, openssl-devel
-Obsoletes: php53-ldap, php53u-ldap, php54-ldap, php55u-ldap
+Obsoletes: php53-ldap, php53u-ldap, php54-ldap, php54w-ldap, php55u-ldap, php55w-ldap
 
 %description ldap
 The php-ldap adds Lightweight Directory Access Protocol (LDAP)
@@ -443,7 +469,7 @@ Provides: php-pdo-abi  = %{pdover}%{isasuffix}
 Provides: php(pdo-abi) = %{pdover}%{isasuffix}
 Provides: php-sqlite3, php-sqlite3%{?_isa}
 Provides: php-pdo_sqlite, php-pdo_sqlite%{?_isa}
-Obsoletes: php53-pdo, php53u-pdo, php54-pdo, php55u-pdo
+Obsoletes: php53-pdo, php53u-pdo, php54-pdo, php54w-pdo, php55u-pdo, php55w-pdo
 
 %description pdo
 The php-pdo package contains a dynamic shared object that will add
@@ -464,7 +490,7 @@ Provides: php-mysqli%{?_isa} = %{version}-%{release}
 Provides: php-pdo_mysql, php-pdo_mysql%{?_isa}
 BuildRequires: mysql-devel >= 4.1.0
 Conflicts: php-mysqlnd
-Obsoletes: php53-mysql, php53u-mysql, php54-mysql, php55u-mysql
+Obsoletes: php53-mysql, php53u-mysql, php54-mysql, php54w-mysql, php55u-mysql, php55w-mysql
 
 %description mysql
 The php-mysql package contains a dynamic shared object that will add
@@ -489,7 +515,7 @@ Provides: php-pdo_mysql, php-pdo_mysql%{?_isa}
 %if ! %{with_libmysql}
 Obsoletes: php-mysql < %{version}-%{release}
 %endif
-Obsoletes: php53-mysqlnd, php53u-mysqlnd, php54-mysqlnd, php55u-mysqlnd
+Obsoletes: php53-mysqlnd, php53u-mysqlnd, php54-mysqlnd, php54w-mysqlnd, php55u-mysqlnd, php55w-mysqlnd
 
 %description mysqlnd
 The php-mysqlnd package contains a dynamic shared object that will add
@@ -509,7 +535,7 @@ Requires: php-pdo%{?_isa} = %{version}-%{release}
 Provides: php_database
 Provides: php-pdo_pgsql, php-pdo_pgsql%{?_isa}
 BuildRequires: krb5-devel, openssl-devel, postgresql-devel
-Obsoletes: php53-pgsql, php53u-pgsql, php54-pgsql, php55u-pgsql
+Obsoletes: php53-pgsql, php53u-pgsql, php54-pgsql, php54w-pgsql, php55u-pgsql, php55w-pgsql
 
 %description pgsql
 The php-pgsql package add PostgreSQL database support to PHP.
@@ -530,7 +556,7 @@ Provides: php-shmop, php-shmop%{?_isa}
 Provides: php-sysvsem, php-sysvsem%{?_isa}
 Provides: php-sysvshm, php-sysvshm%{?_isa}
 Provides: php-sysvmsg, php-sysvmsg%{?_isa}
-Obsoletes: php53-process, php53u-process, php54-process, php55u-process
+Obsoletes: php53-process, php53u-process, php54-process, php54w-process, php55u-process, php55w-process
 
 %description process
 The php-process package contains dynamic shared objects which add
@@ -547,7 +573,7 @@ Requires: php-pdo%{?_isa} = %{version}-%{release}
 Provides: php_database
 Provides: php-pdo_odbc, php-pdo_odbc%{?_isa}
 BuildRequires: unixODBC-devel
-Obsoletes: php53-odbc, php53u-odbc, php54-odbc, php55u-odbc
+Obsoletes: php53-odbc, php53u-odbc, php54-odbc, php54w-odbc, php55u-odbc, php55w-odbc
 
 %description odbc
 The php-odbc package contains a dynamic shared object that will add
@@ -565,7 +591,7 @@ Group: Development/Languages
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: libxml2-devel
-Obsoletes: php53-soap, php53u-soap, php54-soap, php55u-soap
+Obsoletes: php53-soap, php53u-soap, php54-soap, php54w-soap, php55u-soap, php55w-soap
 
 %description soap
 The php-soap package contains a dynamic shared object that will add
@@ -581,7 +607,7 @@ Requires: 	php-pdo%{?_isa} = %{version}-%{release}
 Provides: 	php_database
 Provides: 	php-firebird, php-firebird%{?_isa}
 Provides: 	php-pdo_firebird, php-pdo_firebird%{?_isa}
-Obsoletes:  php53-interbase, php53u-interbase, php54-interbase, php55u-interbase
+Obsoletes:  php53-interbase, php53u-interbase, php54-interbase, php54w-interbase, php55u-interbase, php55w-interbase
 
 %description interbase
 The php-interbase package contains a dynamic shared object that will add
@@ -605,16 +631,31 @@ License:        PHP
 BuildRequires:  oracle-instantclient-devel >= %{oraclever}
 Requires:       php-pdo%{?_isa} = %{version}-%{release}
 Provides:       php_database
-Provides:       php-pdo_oci = %{oci8ver}, php-pdo_oci%{?_isa} = %{oci8ver}
-Provides:       php-pecl-oci8 = %{oci8ver}, php-pecl-oci8%{?_isa} = %{oci8ver}
+Provides:       php-pdo_oci, php-pdo_oci%{?_isa}
+Obsoletes:      php-pecl-oci8 <  %{oci8ver}
+Conflicts:      php-pecl-oci8 >= %{oci8ver}
 Provides:       php-pecl(oci8) = %{oci8ver}, php-pecl(oci8)%{?_isa} = %{oci8ver}
-# Should requires libclntsh.so.11.1, but it's not provided by Oracle RPM.
+# Should requires libclntsh.so.12.1, but it's not provided by Oracle RPM.
 AutoReq:        0
-Obsoletes:      php53-oci8, php53u-oci8, php54-oci8, php55u-oci8
+Obsoletes:      php53-oci8, php53u-oci8, php54-oci8, php54w-oci8, php55u-oci8, php55w-oci8
 
 %description oci8
-The php-oci8 package contains a dynamic shared object that will add
-support for accessing OCI8 databases to PHP.
+The php-oci8 packages provides the OCI8 extension version %{oci8ver}
+and the PDO driver to access Oracle Database.
+
+The extension is linked with Oracle client libraries %{oraclever}
+(Oracle Instant Client).  For details, see Oracle's note
+"Oracle Client / Server Interoperability Support" (ID 207303.1).
+
+You must install libclntsh.so.%{oraclever} to use this package, provided
+in the database installation, or in the free Oracle Instant Client
+available from Oracle.
+
+Notice:
+- php-oci8 provides oci8 and pdo_oci extensions from php sources.
+- php-pecl-oci8 only provides oci8 extension.
+
+Documentation is at http://php.net/oci8 and http://php.net/pdo_oci
 %endif
 
 %package snmp
@@ -624,7 +665,7 @@ Group: Development/Languages
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}, net-snmp
 BuildRequires: net-snmp-devel
-Obsoletes: php53-snmp, php53u-snmp, php54-snmp, php55u-snmp
+Obsoletes: php53-snmp, php53u-snmp, php54-snmp, php54w-snmp, php55u-snmp, php55w-snmp
 
 %description snmp
 The php-snmp package contains a dynamic shared object that will add
@@ -646,7 +687,7 @@ Provides: php-xmlreader, php-xmlreader%{?_isa}
 Provides: php-xmlwriter, php-xmlwriter%{?_isa}
 Provides: php-xsl, php-xsl%{?_isa}
 BuildRequires: libxslt-devel >= 1.0.18-1, libxml2-devel >= 2.4.14-1
-Obsoletes: php53-xml, php53u-xml, php54-xml, php55u-xml
+Obsoletes: php53-xml, php53u-xml, php54-xml, php54w-xml, php55u-xml, php55w-xml
 
 %description xml
 The php-xml package contains dynamic shared objects which add support
@@ -660,7 +701,7 @@ Group: Development/Languages
 # libXMLRPC is licensed under BSD
 License: PHP and BSD
 Requires: php-common%{?_isa} = %{version}-%{release}
-Obsoletes: php53-xmlrpc, php53u-xmlrpc, php54-xmlrpc, php55u-xmlrpc
+Obsoletes: php53-xmlrpc, php53u-xmlrpc, php54-xmlrpc, php54w-xmlrpc, php55u-xmlrpc, php55w-xmlrpc
 
 %description xmlrpc
 The php-xmlrpc package contains a dynamic shared object that will add
@@ -675,7 +716,7 @@ Group: Development/Languages
 # ucgendat is licensed under OpenLDAP
 License: PHP and LGPLv2 and BSD and OpenLDAP
 Requires: php-common%{?_isa} = %{version}-%{release}
-Obsoletes: php53-mbstring, php53u-mbstring, php54-mbstring, php55u-mbstring
+Obsoletes: php53-mbstring, php53u-mbstring, php54-mbstring, php54w-mbstring, php55u-mbstring, php55w-mbstring
 
 %description mbstring
 The php-mbstring package contains a dynamic shared object that will add
@@ -707,7 +748,7 @@ BuildRequires: libvpx-devel
 %endif
 %endif
 
-Obsoletes: php53-gd, php53u-gd, php54-gd, php55u-gd
+Obsoletes: php53-gd, php53u-gd, php54-gd, php54w-gd, php55u-gd, php55w-gd
 
 %description gd
 The php-gd package contains a dynamic shared object that will add
@@ -720,7 +761,7 @@ Group: Development/Languages
 # libbcmath is licensed under LGPLv2+
 License: PHP and LGPLv2+
 Requires: php-common%{?_isa} = %{version}-%{release}
-Obsoletes: php53-bcmath, php53u-bcmath, php54-bcmath, php55u-bcmath
+Obsoletes: php53-bcmath, php53u-bcmath, php54-bcmath, php54w-bcmath, php55u-bcmath, php55w-bcmath
 
 %description bcmath
 The php-bcmath package contains a dynamic shared object that will add
@@ -733,7 +774,7 @@ Group: Development/Languages
 License: PHP
 BuildRequires: gmp-devel
 Requires: php-common%{?_isa} = %{version}-%{release}
-Obsoletes: php53-gmp, php53u-gmp, php54-gmp, php55u-gmp
+Obsoletes: php53-gmp, php53u-gmp, php54-gmp, php54w-gmp, php55u-gmp, php55w-gmp
 
 %description gmp
 These functions allow you to work with arbitrary-length integers
@@ -746,7 +787,7 @@ Group: Development/Languages
 License: PHP
 BuildRequires: %{db_devel}, gdbm-devel, tokyocabinet-devel
 Requires: php-common%{?_isa} = %{version}-%{release}
-Obsoletes: php53-dba, php53u-dba, php54-dba, php55u-dba
+Obsoletes: php53-dba, php53u-dba, php54-dba, php54w-dba, php55u-dba, php55w-dba
 
 %description dba
 The php-dba package contains a dynamic shared object that will add
@@ -759,7 +800,7 @@ Group: Development/Languages
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: libmcrypt-devel
-Obsoletes: php53-mcrypt, php53u-mcrypt, php54-mcrypt, php55u-mcrypt
+Obsoletes: php53-mcrypt, php53u-mcrypt, php54-mcrypt, php54w-mcrypt, php55u-mcrypt, php55w-mcrypt
 
 %description mcrypt
 The php-mcrypt package contains a dynamic shared object that will add
@@ -772,7 +813,7 @@ Group: Development/Languages
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: libtidy-devel
-Obsoletes: php53-tidy, php53u-tidy, php54-tidy, php55u-tidy
+Obsoletes: php53-tidy, php53u-tidy, php54-tidy, php54w-tidy, php55u-tidy, php55w-tidy
 
 %description tidy
 The php-tidy package contains a dynamic shared object that will add
@@ -786,7 +827,7 @@ License: PHP
 Requires: php-pdo%{?_isa} = %{version}-%{release}
 BuildRequires: freetds-devel >= 0.91
 Provides: php-pdo_dblib, php-pdo_dblib%{?_isa}
-Obsoletes: php53-mssql, php53u-mssql, php54-mssql, php55u-mssql
+Obsoletes: php53-mssql, php53u-mssql, php54-mssql, php54w-mssql, php55u-mssql, php55w-mssql
 
 %description mssql
 The php-mssql package contains a dynamic shared object that will
@@ -801,7 +842,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 # doing a real -devel package for just the .so symlink is a bit overkill
 Provides: php-embedded-devel = %{version}-%{release}
 Provides: php-embedded-devel%{?_isa} = %{version}-%{release}
-Obsoletes: php53-embedded, php53u-embedded, php54-embedded, php55u-embedded
+Obsoletes: php53-embedded, php53u-embedded, php54-embedded, php54w-embedded, php55u-embedded, php55w-embedded
 
 %description embedded
 The php-embedded package contains a library which can be embedded
@@ -814,7 +855,7 @@ Group: System Environment/Libraries
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: aspell-devel >= 0.50.0
-Obsoletes: php53-pspell, php53u-pspell, php54-pspell, php55u-pspell
+Obsoletes: php53-pspell, php53u-pspell, php54-pspell, php54w-pspell, php55u-pspell, php55w-pspell
 
 %description pspell
 The php-pspell package contains a dynamic shared object that will add
@@ -827,7 +868,7 @@ Group: System Environment/Libraries
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: recode-devel
-Obsoletes: php53-recode, php53u-recode, php54-recode, php55u-recode
+Obsoletes: php53-recode, php53u-recode, php54-recode, php54w-recode, php55u-recode, php55w-recode
 
 %description recode
 The php-recode package contains a dynamic shared object that will add
@@ -841,7 +882,7 @@ License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 # Upstream requires 4.0, we require 50 to ensure use of libicu-last
 BuildRequires: libicu-devel >= 50
-Obsoletes: php53-intl, php53u-intl, php54-intl, php55u-intl
+Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl
 
 %description intl
 The php-intl package contains a dynamic shared object that will add
@@ -854,7 +895,7 @@ Group: System Environment/Libraries
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: enchant-devel >= 1.2.4
-Obsoletes: php53-enchant, php53u-enchant, php54-enchant, php55u-enchant
+Obsoletes: php53-enchant, php53u-enchant, php54-enchant, php54w-enchant, php55u-enchant, php55w-enchant
 
 %description enchant
 The php-enchant package contains a dynamic shared object that will add
@@ -898,6 +939,7 @@ rm -rf ext/json
 %patch91 -p1 -b .remi-oci8
 
 # upstream patches
+%patch100 -p1 -b .bug67865
 
 # security patches
 
@@ -908,6 +950,7 @@ rm -rf ext/json
 %patch301 -p1 -R -b .pcre84
 %endif
 %endif
+%patch302 -p0 -b .971416
 
 # WIP patch
 
@@ -1216,6 +1259,9 @@ without_shared="--without-gd \
 pushd build-apache
 build --with-apxs2=%{_httpd_apxs} \
       --libdir=%{_libdir}/php \
+%if %{with_lsws}
+      --with-litespeed \
+%endif
 %if %{with_libmysql}
       --enable-pdo=shared \
       --with-mysql=shared,%{_prefix} \
@@ -1257,6 +1303,8 @@ EXTENSION_DIR=%{_libdir}/php-zts/modules
 build --includedir=%{_includedir}/php-zts \
       --libdir=%{_libdir}/php-zts \
       --enable-maintainer-zts \
+      --program-prefix=zts- \
+      --disable-cgi \
       --with-config-file-scan-dir=%{_sysconfdir}/php-zts.d \
       --enable-pcntl \
       --enable-opcache \
@@ -1414,11 +1462,6 @@ mv $RPM_BUILD_ROOT%{_libdir}/php-zts/modules/pdo_mysql.so \
 make -C build-zts install-modules \
      INSTALL_ROOT=$RPM_BUILD_ROOT
 %endif
-
-# rename ZTS binary
-mv $RPM_BUILD_ROOT%{_bindir}/php        $RPM_BUILD_ROOT%{_bindir}/zts-php
-mv $RPM_BUILD_ROOT%{_bindir}/phpize     $RPM_BUILD_ROOT%{_bindir}/zts-phpize
-mv $RPM_BUILD_ROOT%{_bindir}/php-config $RPM_BUILD_ROOT%{_bindir}/zts-php-config
 %endif
 
 # Install the version for embedded script language in applications + php_embed.h
@@ -1489,6 +1532,10 @@ install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/php-zts.d
 install -m 755 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php
 install -m 700 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/session
 install -m 700 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/wsdlcache
+
+%if %{with_lsws}
+install -m 755 build-apache/sapi/litespeed/php $RPM_BUILD_ROOT%{_bindir}/lsphp
+%endif
 
 # PHP-FPM stuff
 # Log
@@ -1781,12 +1828,14 @@ fi
 %files cli
 %defattr(-,root,root)
 %{_bindir}/php
+%{_bindir}/zts-php
 %{_bindir}/php-cgi
 %{_bindir}/phar.phar
 %{_bindir}/phar
 # provides phpize here (not in -devel) for pecl command
 %{_bindir}/phpize
 %{_mandir}/man1/php.1*
+%{_mandir}/man1/zts-php.1*
 %{_mandir}/man1/php-cgi.1*
 %{_mandir}/man1/phar.1*
 %{_mandir}/man1/phar.phar.1*
@@ -1822,6 +1871,12 @@ fi
 %dir %{_datadir}/fpm
 %{_datadir}/fpm/status.html
 
+%if %{with_lsws}
+%files litespeed
+%defattr(-,root,root)
+%{_bindir}/lsphp
+%endif
+
 %files devel
 %defattr(-,root,root)
 %{_bindir}/php-config
@@ -1829,13 +1884,13 @@ fi
 %{_libdir}/php/build
 %if %{with_zts}
 %{_bindir}/zts-php-config
-%{_includedir}/php-zts
 %{_bindir}/zts-phpize
-# usefull only to test other module during build
-%{_bindir}/zts-php
+%{_includedir}/php-zts
 %{_libdir}/php-zts/build
 %endif
 %{_mandir}/man1/php-config.1*
+%{_mandir}/man1/zts-php-config.1*
+%{_mandir}/man1/zts-phpize.1*
 %{macrosdir}/macros.php
 
 %files embedded
@@ -1888,6 +1943,53 @@ fi
 
 
 %changelog
+* Fri Aug 29 2014 Remi Collet <remi@fedoraproject.org> 5.5.16-1.1
+- enable libvpx on EL 6 (with libvpx 1.3.0)
+
+* Wed Aug 20 2014 Remi Collet <rcollet@redhat.com> 5.5.16-1
+- Update to 5.5.16
+  http://www.php.net/releases/5_5_16.php
+- fix zts-php-config --php-binary output #1124605
+- revert fix for 67724 because of 67865
+
+* Thu Jul 24 2014 Remi Collet <remi@fedoraproject.org> 5.5.15-1
+- Update to 5.5.15
+  http://www.php.net/releases/5_5_15.php
+
+* Wed Jul 16 2014 Remi Collet <remi@fedoraproject.org> 5.5.14-2
+- add upstream patch for #67605
+
+* Thu Jul 10 2014 Remi Collet <remi@fedoraproject.org> 5.5.15-0.1.RC1
+- Test build of 5.5.15RC1
+- add php-litespeed subpackage (/usr/bin/lsphp)
+
+* Wed Jun 25 2014 Remi Collet <remi@fedoraproject.org> 5.5.14-1
+- Update to 5.5.14
+  http://www.php.net/releases/5_5_14.php
+
+* Tue Jun 17 2014 Remi Collet <rcollet@redhat.com> 5.5.14-0.2.RC1
+- fix test for rhbz #971416
+
+* Tue Jun 17 2014 Remi Collet <rcollet@redhat.com> 5.5.14-0.1.RC1
+- Test build of 5.5.14RC1
+
+* Thu Jun  5 2014 Remi Collet <rcollet@redhat.com> 5.5.13-3
+- fix regression introduce in fix for #67118
+
+* Tue Jun  3 2014 Remi Collet <remi@fedoraproject.org> 5.5.13-2
+- fileinfo: fix insufficient boundary check
+- workaround regression introduce in fix for 67072 in
+  serialize/unzerialize functions
+
+* Wed May 28 2014 Remi Collet <remi@fedoraproject.org> 5.5.13-1
+- Update to 5.5.13
+  http://www.php.net/releases/5_5_13.php
+- sync php.ini with upstream php.ini-production
+
+* Fri May  2 2014 Remi Collet <remi@fedoraproject.org> 5.5.12-1
+- Update to 5.5.12
+  http://www.php.net/releases/5_5_12.php
+
 * Thu Apr  3 2014 Remi Collet <remi@fedoraproject.org> 5.5.11-1
 - Update to 5.5.11
   http://www.php.net/ChangeLog-5.php#5.5.11
