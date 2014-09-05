@@ -7,7 +7,7 @@
 %global oci8ver     2.0.9
 
 # Use for first build of PHP (before pecl/zip and pecl/jsonc)
-%global php_bootstrap   1
+%global php_bootstrap   0
 
 # Adds -z now to the linker flags
 %global _hardened_build 1
@@ -46,7 +46,7 @@
 %global with_libpcre  0
 %endif
 
-%if 0%{?fedora} < 17 && 0%{?rhel} < 7
+%if 0%{?fedora} < 17 && 0%{?rhel} < 6
 %global  with_vpx     0
 %else
 %global  with_vpx     1
@@ -129,7 +129,7 @@ Version: 5.6.0
 %if 0%{?snapdate:1}%{?rcver:1}
 Release: 0.22.%{?snapdate}%{?rcver}%{?dist}
 %else
-Release: 1%{?dist}
+Release: 1%{?dist}.1
 %endif
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
@@ -250,6 +250,8 @@ Requires(pre): httpd-filesystem
 %else
 Requires(pre): httpd
 %endif
+# php engine for Apache httpd webserver
+Provides: php(httpd)
 
 %if 0%{?fedora} < 20 && 0%{?rhel} < 7
 # Don't provides extensions, which are not shared library, as .so
@@ -328,6 +330,8 @@ Requires(pre): httpd-filesystem
 # For php.conf in /etc/httpd/conf.d
 # and version 2.4.10 for proxy support in SetHandler
 Requires: httpd-filesystem >= 2.4.10
+# php engine for Apache httpd webserver
+Provides: php(httpd)
 %endif
 Obsoletes: php53-fpm, php53u-fpm, php54-fpm, php54w-fpm, php55u-fpm, php55w-fpm, php56u-fpm, php56w-fpm
 
@@ -1185,12 +1189,14 @@ build --libdir=%{_libdir}/php \
       --with-mysql=shared,mysqlnd \
       --with-mysqli=shared,mysqlnd \
       --with-mysql-sock=%{mysql_sock} \
+%if %{with_oci8}
 %ifarch x86_64
-      %{?_with_oci8:--with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client64/lib,%{oraclever}} \
+      --with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client64/lib,%{oraclever} \
 %else
-      %{?_with_oci8:--with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever}} \
+      --with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever} \
 %endif
-      %{?_with_oci8:--with-pdo-oci=shared,instantclient,/usr,%{oraclever}} \
+      --with-pdo-oci=shared,instantclient,/usr,%{oraclever} \
+%endif
       --with-interbase=shared,%{_libdir}/firebird \
       --with-pdo-firebird=shared,%{_libdir}/firebird \
       --enable-dom=shared \
@@ -1324,12 +1330,14 @@ build --includedir=%{_includedir}/php-zts \
       --with-mysqli=shared,mysqlnd \
       --with-mysql-sock=%{mysql_sock} \
       --enable-mysqlnd-threading \
+%if %{with_oci8}
 %ifarch x86_64
-      %{?_with_oci8:--with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client64/lib,%{oraclever}} \
+      --with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client64/lib,%{oraclever} \
 %else
-      %{?_with_oci8:--with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever}} \
+      --with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever} \
 %endif
-      %{?_with_oci8:--with-pdo-oci=shared,instantclient,/usr,%{oraclever}} \
+      --with-pdo-oci=shared,instantclient,/usr,%{oraclever} \
+%endif
       --with-interbase=shared,%{_libdir}/firebird \
       --with-pdo-firebird=shared,%{_libdir}/firebird \
       --enable-dom=shared \
@@ -1542,7 +1550,9 @@ for mod in pgsql odbc ldap snmp xmlrpc imap \
 %if %{with_zip}
     zip \
 %endif
-    %{?_with_oci8:oci8} %{?_with_oci8:pdo_oci} \
+%if %{with_oci8}
+    oci8 pdo_oci \
+%endif
     interbase pdo_firebird \
 %if 0%{?fedora} >= 11  || 0%{?rhel} >= 6
     sqlite3 \
@@ -1904,6 +1914,9 @@ fi
 
 
 %changelog
+* Fri Aug 29 2014 Remi Collet <remi@fedoraproject.org> 5.6.0-1.1
+- enable libvpx on EL 6 (with libvpx 1.3.0)
+
 * Thu Aug 28 2014 Remi Collet <remi@fedoraproject.org> 5.6.0-1
 - PHP 5.6.0 is GA
 - fix ZTS man pages, upstream patch for 67878
