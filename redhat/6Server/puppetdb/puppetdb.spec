@@ -1,6 +1,10 @@
 %global realname puppetdb
-%global realversion 1.6.0
-%global rpmversion 1.6.0
+%global realversion 2.2.2
+%global rpmversion 2.2.2
+%global puppetminversion 3.5.1
+%global facterminversion 1.7.0
+
+%define __jar_repack 0
 
 %if 0%{?suse_version} >= 1220
 %global open_jdk          java-1_7_0-openjdk
@@ -10,7 +14,7 @@
 
 # On FOSS releases for platforms with ruby 1.9, puppet uses vendorlibdir instead of sitelibdir
 # On PE, we use sitelibdir
-%if 0%{?fedora} >= 17
+%if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
 %global puppet_libdir     %(ruby -rrbconfig -e "puts RbConfig::CONFIG['vendorlibdir']")
 %else
 %global puppet_libdir     %(ruby -rrbconfig -e "puts RbConfig::CONFIG['sitelibdir']")
@@ -35,7 +39,7 @@
 
 
 Name:          puppetdb
-Version:       1.6.0
+Version:       2.2.2
 Release:       1%{?dist}
 BuildRoot:     %{_tmppath}/%{realname}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -55,12 +59,12 @@ Group:         System/Daemons
 Group:         System Environment/Daemons
 %endif
 
-BuildRequires: facter >= 1.6.8
-BuildRequires: puppet >= 2.7.12
+BuildRequires: facter >= %{facterminversion}
+BuildRequires: puppet >= %{puppetminversion}
 BuildRequires: rubygem-rake
 BuildRequires: ruby
-Requires:      puppet >= 2.7.12
-Requires:      facter >= 1.6.8
+Requires:      puppet >= %{puppetminversion}
+Requires:      facter >= %{facterminversion}
 BuildArch:     noarch
 %if 0%{?suse_version}
 BuildRequires: aaa_base
@@ -75,7 +79,7 @@ BuildRequires: /usr/sbin/useradd
 %if 0%{?_with_systemd}
 # Required for %%post, %%preun, %%postun
 Requires:       systemd
-%if 0%{?fedora} >= 18
+%if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
 BuildRequires:  systemd
 %else
 BuildRequires:  systemd-units
@@ -98,7 +102,8 @@ Group: System/Libraries
 %else
 Group: Development/Libraries
 %endif
-Requires: puppet >= 2.7.12
+Requires: puppet >= %{puppetminversion}
+Requires: rubygem-json
 
 %description terminus
 Connect Puppet to PuppetDB by setting up a terminus for PuppetDB.
@@ -115,6 +120,12 @@ export NO_BRP_CHECK_BYTECODE_VERSION=true
 
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/%{_initddir}
+
+# Explicitly set environment variable LANG,
+# because otherwise it gets set to 'C' and that
+# is wrong, wrong, wrong. There may be a better
+# way to handle this, so this may change.
+export LANG=en_US.UTF-8
 
 rake install PARAMS_FILE= DESTDIR=$RPM_BUILD_ROOT
 rake terminus PARAMS_FILE= DESTDIR=$RPM_BUILD_ROOT
@@ -142,12 +153,24 @@ fi
 #  we want to shut down and disable the service.
 if [ "$1" = "2" ] ; then
 %if 0%{?_with_systemd}
-    if /usr/bin/systemctl status %{name}.service > /dev/null ; then
-# If we need to restart the service after the upgrade
-#  is finished, we will touch a temp file so that
-#  we can detect that state
+    # We test to see if the systemd service file exists because in upgrades from < 1.6.0,
+    # puppetdb may still be using sysv and in that case we need to use the sysv tools.
+    if [ -f %{_unitdir}/%{name}.service ]; then
+      if /usr/bin/systemctl status %{name}.service > /dev/null; then
+        # If we need to restart the service after the upgrade
+        #  is finished, we will touch a temp file so that
+        #  we can detect that state
         touch /usr/share/puppetdb/start_service_after_upgrade
         /usr/bin/systemctl stop %{name}.service >/dev/null 2>&1
+      fi
+    elif [ -f %{_initddir}/%{name} ]; then
+      if /sbin/service %{name} status > /dev/null ; then
+        # If we need to restart the service after the upgrade
+        #  is finished, we will touch a temp file so that
+        #  we can detect that state
+        touch /usr/share/puppetdb/start_service_after_upgrade
+        /sbin/service %{name} stop >/dev/null 2>&1
+      fi
     fi
 %else
     if /sbin/service %{name} status > /dev/null ; then
@@ -166,15 +189,16 @@ useradd -r -g %{name} -d /usr/share/puppetdb -s /sbin/nologin \
      -c "PuppetDB daemon"  %{name}
 
 %post
+%if 0%{?_with_systemd}
+# Always reload the .service files if using systemd, in case they have changed.
+/usr/bin/systemctl daemon-reload
+%else
 # If this is an install (as opposed to an upgrade)...
 if [ "$1" = "1" ]; then
   # Register the puppetDB service
-%if 0%{?_with_systemd}
-  /usr/bin/systemctl daemon-reload
-%else
   /sbin/chkconfig --add %{name}
-%endif
 fi
+%endif
 
 /usr/sbin/puppetdb ssl-setup
 
@@ -222,9 +246,9 @@ if [ "$1" = "1" ] ; then
         rm /usr/share/puppetdb/start_service_after_upgrade
 %if 0%{?_with_systemd}
         /usr/bin/systemctl start %{name}.service >/dev/null 2>&1
-%else      
+%else
         /sbin/service %{name} start >/dev/null 2>&1
-%endif    
+%endif
     fi
 fi
 
@@ -238,15 +262,15 @@ fi
 %dir %{_sysconfdir}/%{realname}/conf.d
 %endif
 %config(noreplace)%{_sysconfdir}/%{realname}/conf.d/config.ini
-%config(noreplace)%{_sysconfdir}/%{realname}/log4j.properties
+%config(noreplace)%{_sysconfdir}/%{realname}/logback.xml
 %config(noreplace)%{_sysconfdir}/%{realname}/conf.d/database.ini
 %config(noreplace)%{_sysconfdir}/%{realname}/conf.d/jetty.ini
 %config(noreplace)%{_sysconfdir}/%{realname}/conf.d/repl.ini
 %config(noreplace)%{_realsysconfdir}/logrotate.d/%{name}
+%config(noreplace)%{_realsysconfdir}/sysconfig/%{name}
 %if 0%{?_with_systemd}
 %{_unitdir}/%{name}.service
 %else
-%config(noreplace)%{_realsysconfdir}/sysconfig/%{name}
 %{_initddir}/%{name}
 %endif
 %{_sbindir}/puppetdb-ssl-setup
@@ -256,11 +280,12 @@ fi
 %{_sbindir}/puppetdb-anonymize
 %{_sbindir}/puppetdb
 %dir %{_libexecdir}/%{name}
-%{_libexecdir}/%{name}/puppetdb-ssl-setup
-%{_libexecdir}/%{name}/puppetdb-foreground
-%{_libexecdir}/%{name}/puppetdb-import
-%{_libexecdir}/%{name}/puppetdb-export
-%{_libexecdir}/%{name}/puppetdb-anonymize
+%{_libexecdir}/%{realname}/puppetdb-ssl-setup
+%{_libexecdir}/%{realname}/puppetdb-foreground
+%{_libexecdir}/%{realname}/puppetdb-import
+%{_libexecdir}/%{realname}/puppetdb-export
+%{_libexecdir}/%{realname}/puppetdb-anonymize
+%{_libexecdir}/%{realname}/%{name}.env
 %{_datadir}/%{realname}
 %{_sharedstatedir}/%{realname}
 %{_datadir}/%{realname}/state
@@ -289,7 +314,8 @@ fi
 %{puppet_libdir}/puppet/util/puppetdb/blacklist.rb
 
 %changelog
-* Wed Jan 29 2014 jenkins <jenkins@rpm-builder-6.delivery.puppetlabs.net> - 1.6.0-1- Autobuild from Rake task
+* Tue Oct 21 2014 jenkins <jenkins@powell> - 2.2.2-1
+- Autobuild from Rake task
 
 * Mon Apr 02 2012 Michael Stahnke <stahnma@puppetlabs.com> - 0.1.0-1
 - Initial Packaging
