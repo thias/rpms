@@ -3,7 +3,7 @@
 
 # Fedora 17 ships with ruby 1.9, RHEL 7 with ruby 2.0, which use vendorlibdir instead
 # of sitelibdir. Adjust our target if installing on f17 or rhel7.
-%if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
+%if 0%{?fedora} >= 17 || 0%{?rhel} >= 7 || 0%{?amzn} >= 1
 %global puppet_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["vendorlibdir"]')
 %else
 %global puppet_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["sitelibdir"]')
@@ -16,10 +16,12 @@
 %endif
 
 # VERSION is subbed out during rake srpm process
-%global realversion 3.4.3
-%global rpmversion 3.4.3
+%global realversion 3.7.3
+%global rpmversion 3.7.3
 
 %global confdir ext/redhat
+%global pending_upgrade_path %{_localstatedir}/lib/rpm-state/puppet
+%global pending_upgrade_file %{pending_upgrade_path}/upgrade_pending
 
 Name:           puppet
 Version:        %{rpmversion}
@@ -34,28 +36,29 @@ Group:          System Environment/Base
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires:  facter < 1:2.0
+BuildRequires:  facter >= 1:1.7.0
 # Puppet 3.x drops ruby 1.8.5 support and adds ruby 1.9 support
 BuildRequires:  ruby >= 1.8.7
+BuildRequires:  hiera >= 1.0.0
 BuildArch:      noarch
 Requires:       ruby >= 1.8
 Requires:       ruby-shadow
+Requires:       rubygem-json
 
 # Pull in ruby selinux bindings where available
 %if 0%{?fedora} || 0%{?rhel} >= 6
 %{!?_without_selinux:Requires: ruby(selinux), libselinux-utils}
 %else
-%if 0%{?rhel} && 0%{?rhel} == 5
+%if ( 0%{?rhel} && 0%{?rhel} == 5 ) || 0%{?amzn} >= 1
 %{!?_without_selinux:Requires: libselinux-ruby, libselinux-utils}
 %endif
 %endif
 
-Requires:       facter >= 1.6.11
+Requires:       facter >= 1:1.7.0
 # Puppet 3.x drops ruby 1.8.5 support and adds ruby 1.9 support
 # Ruby 1.8.7 available for el5 at: yum.puppetlabs.com/el/5/devel/$ARCH
 Requires:       ruby >= 1.8.7
 Requires:       hiera >= 1.0.0
-Requires:       ruby-rgen >= 0.6.5
 Obsoletes:      hiera-puppet < 1.0.0
 Provides:       hiera-puppet >= 1.0.0
 %{!?_without_augeas:Requires: ruby-augeas}
@@ -111,9 +114,13 @@ find examples/ -type f | xargs --no-run-if-empty chmod a-x
 rm -rf %{buildroot}
 ruby install.rb --destdir=%{buildroot} --quick --no-rdoc --sitelibdir=%{puppet_libdir}
 
+install -d -m0755 %{buildroot}%{_sysconfdir}/puppet/environments/example_env/manifests
+install -d -m0755 %{buildroot}%{_sysconfdir}/puppet/environments/example_env/modules
 install -d -m0755 %{buildroot}%{_sysconfdir}/puppet/manifests
 install -d -m0755 %{buildroot}%{_datadir}/%{name}/modules
 install -d -m0755 %{buildroot}%{_localstatedir}/lib/puppet
+install -d -m0755 %{buildroot}%{_localstatedir}/lib/puppet/state
+install -d -m0755 %{buildroot}%{_localstatedir}/lib/puppet/reports
 install -d -m0755 %{buildroot}%{_localstatedir}/run/puppet
 
 # As per redhat bz #495096
@@ -137,6 +144,7 @@ install -Dp -m0755 %{confdir}/queue.init %{buildroot}%{_initrddir}/puppetqueue
 install -Dp -m0644 %{confdir}/fileserver.conf %{buildroot}%{_sysconfdir}/puppet/fileserver.conf
 install -Dp -m0644 %{confdir}/puppet.conf %{buildroot}%{_sysconfdir}/puppet/puppet.conf
 install -Dp -m0644 %{confdir}/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/puppet
+install -Dp -m0644 ext/README.environment %{buildroot}%{_sysconfdir}/puppet/environments/example_env/README.environment
 
 # Install the ext/ directory to %%{_datadir}/%%{name}
 install -d %{buildroot}%{_datadir}/%{name}
@@ -253,6 +261,8 @@ cp -pr ext/puppet-nm-dispatcher \
 %defattr(-, puppet, puppet, 0750)
 %{_localstatedir}/log/puppet
 %{_localstatedir}/lib/puppet
+%{_localstatedir}/lib/puppet/state
+%{_localstatedir}/lib/puppet/reports
 # Return the default attributes to 0755 to
 # prevent incorrect permission assignment on EL6
 %defattr(-, root, root, 0755)
@@ -269,6 +279,11 @@ cp -pr ext/puppet-nm-dispatcher \
 %endif
 %config(noreplace) %{_sysconfdir}/puppet/fileserver.conf
 %dir %{_sysconfdir}/puppet/manifests
+%dir %{_sysconfdir}/puppet/environments
+%dir %{_sysconfdir}/puppet/environments/example_env
+%dir %{_sysconfdir}/puppet/environments/example_env/manifests
+%dir %{_sysconfdir}/puppet/environments/example_env/modules
+%{_sysconfdir}/puppet/environments/example_env/README.environment
 %{_mandir}/man8/puppet-ca.8.gz
 %{_mandir}/man8/puppet-master.8.gz
 
@@ -358,6 +373,23 @@ if [ "$1" -eq 0 ] ; then
     /bin/systemctl stop puppet.service > /dev/null 2>&1 || :
     /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 fi
+
+if [ "$1" == "1" ]; then
+    /bin/systemctl is-enabled puppetagent.service > /dev/null 2>&1
+    if [ "$?" == "0" ]; then
+        /bin/systemctl --no-reload disable puppetagent.service > /dev/null 2>&1 ||:
+        /bin/systemctl stop puppetagent.service > /dev/null 2>&1 ||:
+        /bin/systemctl daemon-reload >/dev/null 2>&1 ||:
+        if [ ! -d %{pending_upgrade_path} ]; then
+            mkdir -p %{pending_upgrade_path}
+        fi
+
+        if [ ! -e %{pending_upgrade_file} ]; then
+            touch %{pending_upgrade_file}
+        fi
+    fi
+fi
+
 %else
 if [ "$1" = 0 ] ; then
     /sbin/service puppet stop > /dev/null 2>&1
@@ -383,6 +415,12 @@ fi
 %postun
 %if 0%{?_with_systemd}
 if [ $1 -ge 1 ] ; then
+    if [ -e %{pending_upgrade_file} ]; then
+        /bin/systemctl --no-reload enable puppet.service > /dev/null 2>&1 ||:
+        /bin/systemctl start puppet.service > /dev/null 2>&1 ||:
+        /bin/systemctl daemon-reload >/dev/null 2>&1 ||:
+        rm %{pending_upgrade_file}
+    fi
     # Package upgrade, not uninstall
     /bin/systemctl try-restart puppetagent.service >/dev/null 2>&1 || :
 fi
@@ -408,8 +446,8 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-* Tue Feb 18 2014 Puppet Labs Release <info@puppetlabs.com> -  3.4.3-1
-- Build for 3.4.3
+* Mon Nov 03 2014 Puppet Labs Release <info@puppetlabs.com> -  3.7.3-1
+- Build for 3.7.3
 
 * Wed Oct 2 2013 Jason Antman <jason@jasonantman.com>
 - Move systemd service and unit file names back to "puppet" from erroneous "puppetagent"
