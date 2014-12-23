@@ -120,16 +120,15 @@
 %global db_devel  libdb-devel
 %endif
 
-#global snapdate      201308300430
 #global rcver         RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 5.5.16
+Version: 5.5.19
 %if 0%{?snapdate:1}%{?rcver:1}
 Release: 0.1.%{?snapdate}%{?rcver}%{?dist}
 %else
-Release: 1%{?dist}.1
+Release: 2%{?dist}
 %endif
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
@@ -174,7 +173,7 @@ Patch21: php-5.4.7-odbctimer.patch
 
 # Functional changes
 Patch40: php-5.4.0-dlopen.patch
-Patch42: php-5.3.1-systzdata-v10.patch
+Patch42: php-5.5.19-systzdata-v11.patch
 # See http://bugs.php.net/53436
 Patch43: php-5.4.0-phpize.patch
 # Use system libzip instead of bundled one
@@ -190,7 +189,9 @@ Patch47: php-5.4.9-phpinfo.patch
 Patch91: php-5.3.7-oci8conf.patch
 
 # Upstream fixes (100+)
-Patch100: php-bug67865.patch
+Patch101: php-bug68423.patch
+Patch102: php-bug68421.patch
+Patch103: php-bug68420.patch
 
 # Security fixes (200+)
 
@@ -736,6 +737,9 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: t1lib-devel
 %if %{with_libgd}
 BuildRequires: gd-devel >= 2.1.0
+%if 0%{?fedora} <= 19 && 0%{?rhel} <= 7
+Requires: gd-last%{?_isa} >= 2.1.0-3
+%endif
 %else
 # Required to build the bundled GD library
 BuildRequires: libjpeg-devel
@@ -939,7 +943,9 @@ rm -rf ext/json
 %patch91 -p1 -b .remi-oci8
 
 # upstream patches
-%patch100 -p1 -b .bug67865
+%patch101 -p1 -b .bug68423
+%patch102 -p1 -b .bug68421
+%patch103 -p1 -b .bug68420
 
 # security patches
 
@@ -1943,6 +1949,43 @@ fi
 
 
 %changelog
+* Sun Nov 16 2014 Remi Collet <remi@fedoraproject.org> 5.5.19-2
+- FPM: add upstream patch for https://bugs.php.net/68421
+  access.format=R doesn't log ipv6 address
+- FPM: add upstream patch for https://bugs.php.net/68420
+  listen=9000 listens to ipv6 localhost instead of all addresses
+- FPM: add upstream patch for https://bugs.php.net/68423
+  will no longer load all pools
+
+* Thu Nov 13 2014 Remi Collet <remi@fedoraproject.org> 5.5.19-1
+- Update to 5.5.19
+  http://www.php.net/releases/5_5_19.php
+
+* Sun Nov  2 2014 Remi Collet <remi@fedoraproject.org> 5.5.19-0.1.RC1
+- update to 5.5.19RC1
+- new version of systzdata patch, fix case sensitivity
+- disable opcache.fast_shutdown in default config
+
+* Thu Oct 16 2014 Remi Collet <remi@fedoraproject.org> 5.5.18-1
+- Update to 5.5.18
+  http://www.php.net/releases/5_5_18.php
+
+* Wed Sep 24 2014 Remi Collet <remi@fedoraproject.org> 5.5.17-3
+- rebuild (fedora, x86_64)
+
+* Sat Sep 20 2014 Remi Collet <remi@fedoraproject.org> 5.5.17-2
+- openssl: fix regression introduce in changes for upstream
+  bug #65137 and #41631, revert to 5.5.16 behavior
+
+* Wed Sep 17 2014 Remi Collet <remi@fedoraproject.org> 5.5.17-1
+- Update to 5.5.17
+  http://www.php.net/releases/5_5_17.php
+- fpm: fix script_name with mod_proxy_fcgi / proxypass
+  add upstream patch for https://bugs.php.net/65641
+
+* Wed Sep  3 2014 Remi Collet <remi@fedoraproject.org> 5.5.16-1.2
+- ensure gd-last 2.1.0-3, with libvpx support, is used
+
 * Fri Aug 29 2014 Remi Collet <remi@fedoraproject.org> 5.5.16-1.1
 - enable libvpx on EL 6 (with libvpx 1.3.0)
 
