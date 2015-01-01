@@ -16,26 +16,31 @@
 %{!?__php:       %global __php            %{_bindir}/php}
 
 %global ext_name     xcache
-#global svnrev       1264
+#global svnrev       1496
+#global prever       rc1
 %global with_zts     0%{?__ztsphp:1}
 
-# TODO : consider splitting pages in another subpackage
-#        to avoid httpd dependency
+%if "%{php_version}" < "5.6"
+%global ini_name  %{ext_name}.ini
+%else
+%global ini_name  40-%{ext_name}.ini
+%endif
 
 Summary:       Fast, stable PHP opcode cacher
 Name:          %{?scl_prefix}php-xcache
-Version:       3.1.0
-Release:       2%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
+Epoch:         1
+Version:       3.2.0
+Release:       1%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
 License:       BSD
 Group:         Development/Languages
 URL:           http://xcache.lighttpd.net/
 
 %if 0%{?svnrev}
-# svn co -r 1264 svn://svn.lighttpd.net/xcache/trunk xcache-3.1.0
-# tar czf xcache-svn1264.tgz xcache-3.1.0
-Source0:       xcache-svn1264.tgz
+# svn export -r 1496 svn://svn.lighttpd.net/xcache/branches/3.2 xcache-3.2
+# tar czf xcache-svn1496.tgz xcache-4.0.0
+Source0:       xcache-svn%{svnrev}.tgz
 %else
-Source0:       http://xcache.lighttpd.net/pub/Releases/%{version}/%{ext_name}-%{version}.tar.gz
+Source0:       http://xcache.lighttpd.net/pub/Releases/%{version}%{?prever:-%{prever}}/%{ext_name}-%{version}%{?prever:-%{prever}}.tar.gz
 %endif
 Source1:       xcache-httpd.conf
 
@@ -49,20 +54,25 @@ BuildRequires: %{?scl_prefix}php-devel
 
 Requires:      %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:      %{?scl_prefix}php(api) = %{php_core_api}
+%{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
 
-%if 0%{!?scl:1}
+%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
 # Other third party repo stuff
-%if "%{php_version}" > "5.4"
-Obsoletes: php53-xcache
-Obsoletes: php53u-xcache
-Obsoletes: php54-xcache
-%endif
+Obsoletes: php53-xcache  <= %{epoch}:%{version}
+Obsoletes: php53u-xcache <= %{epoch}:%{version}
+Obsoletes: php54-xcache  <= %{epoch}:%{version}
+Obsoletes: php54w-xcache <= %{epoch}:%{version}
 %if "%{php_version}" > "5.5"
-Obsoletes: php55-xcache
+Obsoletes: php55u-xcache <= %{epoch}:%{version}
+Obsoletes: php55w-xcache <= %{epoch}:%{version}
+%endif
+%if "%{php_version}" > "5.6"
+Obsoletes: php56u-xcache <= %{epoch}:%{version}
+Obsoletes: php56w-xcache <= %{epoch}:%{version}
 %endif
 %endif
 
-%if 0%{?fedora} < 20
+%if 0%{?fedora} < 20 && 0%{?rhel} < 7
 # Filter private shared object
 %{?filter_provides_in: %filter_provides_in %{_libdir}/.*\.so$}
 %{?filter_setup}
@@ -79,12 +89,14 @@ ThreadSafe is also perfectly supported.
 NOTICE: opcode cacher is disable to allow use with php-opcache only for user
 data cache. You need to edit configuration file (xcache.ini) to enable it.
 
+Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')%{?scl: as Software Collection}.
+
 
 %package -n %{?scl_prefix}xcache-admin
 Summary:       XCache Administration
 Group:         Development/Languages
 Requires:      %{?scl_prefix}mod_php
-Requires:      %{name} = %{version}-%{release}
+Requires:      %{name} = %{epoch}:%{version}-%{release}
 %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
 BuildArch:     noarch
 %endif
@@ -107,7 +119,7 @@ This requires to configure, in XCache configuration file (xcache.ini):
 %setup -q -c 
 
 # rename source folder
-mv %{ext_name}-%{version} nts
+mv xcache-%{version}%{?prever:-%{prever}} nts
 
 %if 0%{?scl:1}
 sed -e 's:%{_root_datadir}:%{_datadir}:' \
@@ -123,10 +135,13 @@ cd nts
 %endif
 %patch1 -p1
 
+# Fix version
+sed -e 's/3.2.1/%{version}/' -i xcache.h
+
 # Sanity check, really often broken
 extver=$(sed -n '/define XCACHE_VERSION/{s/.* "//;s/".*$//;p}' xcache.h)
-if test "x${extver}" != "x%{version}%{?svnrev:-dev}"; then
-   : Error: Upstream extension version is ${extver}, expecting %{version}%{?svnrev:-dev}.
+if test "x${extver}" != "x%{version}%{?svnrev:-dev}%{?prever:-%{prever}}"; then
+   : Error: Upstream extension version is ${extver}, expecting %{version}%{?svnrev:-dev}%{?prever:-%{prever}}.
    exit 1
 fi
 cd ..
@@ -168,12 +183,12 @@ make %{?_smp_mflags}
 rm -rf %{buildroot}
 # Install the NTS stuff
 make -C nts install INSTALL_ROOT=%{buildroot}
-install -D -m 644 nts/%{ext_name}.ini %{buildroot}%{php_inidir}/%{ext_name}.ini
+install -D -m 644 nts/%{ext_name}.ini %{buildroot}%{php_inidir}/%{ini_name}
 
 %if %{with_zts}
 # Install the ZTS stuff
 make -C zts install INSTALL_ROOT=%{buildroot}
-install -D -m 644 zts/%{ext_name}.ini %{buildroot}%{php_ztsinidir}/%{ext_name}.ini
+install -D -m 644 zts/%{ext_name}.ini %{buildroot}%{php_ztsinidir}/%{ini_name}
 %endif
 
 # Install the admin stuff
@@ -189,7 +204,7 @@ mv %{buildroot}%{_datadir}/xcache/coverager/config.example.php \
    %{buildroot}%{_sysconfdir}/xcache/coverager
 
 install -D -m 644 -p xcache-httpd.conf \
-        %{buildroot}%{_root_sysconfdir}/httpd/conf.d/xcache.conf
+        %{buildroot}%{_root_sysconfdir}/httpd/conf.d/%{?scl_prefix}xcache.conf
 
 
 %check
@@ -205,7 +220,7 @@ cd nts
 TEST_PHP_EXECUTABLE=%{__php} \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
-%{__php} run-tests.php -n -c xcache-test.ini tests
+%{__php} -n run-tests.php -n -c xcache-test.ini tests
 
 %if %{with_zts}
 cd ../zts
@@ -217,7 +232,7 @@ cd ../zts
 TEST_PHP_EXECUTABLE=%{__ztsphp} \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
-%{__ztsphp} run-tests.php -n -c xcache-test.ini tests
+%{__ztsphp} -n run-tests.php -n -c xcache-test.ini tests
 %endif
 
 
@@ -228,23 +243,36 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,-)
 %doc nts/{AUTHORS,ChangeLog,COPYING,README,THANKS}
-%config(noreplace) %{php_inidir}/%{ext_name}.ini
+%config(noreplace) %{php_inidir}/%{ini_name}
 %{php_extdir}/%{ext_name}.so
 
 %if %{with_zts}
-%config(noreplace) %{php_ztsinidir}/%{ext_name}.ini
+%config(noreplace) %{php_ztsinidir}/%{ini_name}
 %{php_ztsextdir}/%{ext_name}.so
 %endif
 
 %files -n %{?scl_prefix}xcache-admin
 %defattr(-,root,root,-)
-%config(noreplace) %{_root_sysconfdir}/httpd/conf.d/xcache.conf
+%config(noreplace) %{_root_sysconfdir}/httpd/conf.d/%{?scl_prefix}xcache.conf
 %{_datadir}/xcache
 # No real configuration files, only sample files
 %{_sysconfdir}/xcache
 
 
 %changelog
+* Thu Sep 18 2014 Remi Collet <remi@fedoraproject.org> - 1:3.2.0-1
+- Update to 3.2.0
+
+* Tue Sep  9 2014 Remi Collet <remi@fedoraproject.org> - 1:3.2.0-0.1.rc1
+- Update to 3.2.0-rc1
+
+* Mon Aug 25 2014 Remi Collet <rcollet@redhat.com> - 4.0.0-0.2.svn1496
+- improve SCL build
+
+* Sat Jun  7 2014 Remi Collet <remi@fedoraproject.org> - 4.0.0-0.1.svn1496
+- Update to 4.0.0-dev for PHP 5.6
+- add numerical prefix to configuration file
+
 * Thu Jan  9 2014 Remi Collet <remi@fedoraproject.org> - 3.1.0-2
 - adapt for SCL
 - drop conflicts with other opcode cache
