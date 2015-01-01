@@ -19,7 +19,7 @@
 %define optimize_arches i686
 
 Summary: The OpenSSL toolkit
-Name: openssl
+Name: openssl098
 Version: 0.9.8e
 Release: 27%{?dist}.1
 # The tarball is based on the openssl-fips-1.2.0-test.tar.gz tarball
@@ -131,7 +131,7 @@ package provides Perl scripts for converting certificates and keys
 from other formats to the formats used by the OpenSSL toolkit.
 
 %prep
-%setup -q -n %{name}-fips-%{version}
+%setup -q -n openssl-fips-%{version}
 
 %{SOURCE1} > /dev/null
 %patch0 -p1 -b .redhat
@@ -400,31 +400,31 @@ rm -rf $RPM_BUILD_ROOT/%{_bindir}/openssl_fips_fingerprint
 %doc doc/openssl_button.html doc/openssl_button.gif
 %doc doc/ssleay.txt
 %doc README.FIPS
-%dir %{_sysconfdir}/pki/tls
-%dir %{_sysconfdir}/pki/tls/certs
-%{_sysconfdir}/pki/tls/certs/make-dummy-cert
-%{_sysconfdir}/pki/tls/certs/Makefile
-%{_sysconfdir}/pki/tls/cert.pem
-%dir %{_sysconfdir}/pki/tls/misc
-%{_sysconfdir}/pki/tls/misc/CA
-%dir %{_sysconfdir}/pki/CA
-%dir %{_sysconfdir}/pki/CA/private
-%{_sysconfdir}/pki/tls/misc/c_*
-%{_sysconfdir}/pki/tls/private
+%exclude %dir %{_sysconfdir}/pki/tls
+%exclude %dir %{_sysconfdir}/pki/tls/certs
+%exclude %{_sysconfdir}/pki/tls/certs/make-dummy-cert
+%exclude %{_sysconfdir}/pki/tls/certs/Makefile
+%exclude %{_sysconfdir}/pki/tls/cert.pem
+%exclude %dir %{_sysconfdir}/pki/tls/misc
+%exclude %{_sysconfdir}/pki/tls/misc/CA
+%exclude %dir %{_sysconfdir}/pki/CA
+%exclude %dir %{_sysconfdir}/pki/CA/private
+%exclude %{_sysconfdir}/pki/tls/misc/c_*
+%exclude %{_sysconfdir}/pki/tls/private
 
-%config(noreplace) %{_sysconfdir}/pki/tls/openssl.cnf
-%config(noreplace) %{_sysconfdir}/pki/tls/certs/ca-bundle.crt
+%exclude %config(noreplace) %{_sysconfdir}/pki/tls/openssl.cnf
+%exclude %config(noreplace) %{_sysconfdir}/pki/tls/certs/ca-bundle.crt
 
-%attr(0755,root,root) %{_bindir}/openssl
+%exclude %attr(0755,root,root) %{_bindir}/openssl
 %attr(0755,root,root) /%{_lib}/*.so.%{version}
 %attr(0755,root,root) /%{_lib}/*.so.%{soversion}
 %attr(0644,root,root) /%{_lib}/.libcrypto.so.*.hmac
 %attr(0644,root,root) /%{_lib}/.libssl.so.*.hmac
-%dir %{_libdir}/openssl
-%attr(0755,root,root) %{_libdir}/openssl/engines
-%attr(0644,root,root) %{_mandir}/man1*/[ABD-Zabcd-z]*
-%attr(0644,root,root) %{_mandir}/man5*/*
-%attr(0644,root,root) %{_mandir}/man7*/*
+%exclude %dir %{_libdir}/openssl
+%exclude %attr(0755,root,root) %{_libdir}/openssl/engines
+%exclude %attr(0644,root,root) %{_mandir}/man1*/[ABD-Zabcd-z]*
+%exclude %attr(0644,root,root) %{_mandir}/man5*/*
+%exclude %attr(0644,root,root) %{_mandir}/man7*/*
 
 %ifnarch %{optimize_arches}
 %files devel
@@ -435,12 +435,12 @@ rm -rf $RPM_BUILD_ROOT/%{_bindir}/openssl_fips_fingerprint
 %attr(0644,root,root) %{_mandir}/man3*/*
 %attr(0644,root,root) %{_libdir}/pkgconfig/*.pc
 
-%files perl
-%defattr(-,root,root)
-%attr(0755,root,root) %{_bindir}/c_rehash
-%attr(0644,root,root) %{_mandir}/man1*/*.pl*
-%dir %{_sysconfdir}/pki/tls/misc
-%{_sysconfdir}/pki/tls/misc/*.pl
+#%files perl
+#%defattr(-,root,root)
+%exclude %attr(0755,root,root) %{_bindir}/c_rehash
+%exclude %attr(0644,root,root) %{_mandir}/man1*/*.pl*
+%exclude %dir %{_sysconfdir}/pki/tls/misc
+%exclude %{_sysconfdir}/pki/tls/misc/*.pl
 %endif
 
 %post -p /sbin/ldconfig
@@ -448,6 +448,11 @@ rm -rf $RPM_BUILD_ROOT/%{_bindir}/openssl_fips_fingerprint
 %postun -p /sbin/ldconfig
 
 %changelog
+* Thu Feb 13 2014 Matthias Saou <matthias@saou.eu> 0.9.8e-27.1
+- Fork as openssl098 to be installed with openssl 1.0.1.
+- Exclude everything except libs from the main package.
+- Disable perl sub-package.
+
 * Tue Jan 28 2014 Tomas Mraz <tmraz@redhat.com> 0.9.8e-27.1
 - replace expired GlobalSign Root CA certificate in ca-bundle.crt
 
