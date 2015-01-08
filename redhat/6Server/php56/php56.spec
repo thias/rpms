@@ -99,6 +99,12 @@
 %else
 %global with_httpd2410 0
 %endif
+# nginx 1.6 with nginx-filesystem
+%if 0%{?fedora} >= 21
+%global with_nginx     1
+%else
+%global with_nginx     0
+%endif
 
 %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
 %global with_dtrace 1
@@ -121,15 +127,15 @@
 %endif
 
 #global snapdate      201405061030
-#global rcver         RC4
+#global rcver         RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 5.6.0
+Version: 5.6.4
 %if 0%{?snapdate:1}%{?rcver:1}
-Release: 0.22.%{?snapdate}%{?rcver}%{?dist}
+Release: 0.1.%{?snapdate}%{?rcver}%{?dist}
 %else
-Release: 1%{?dist}.1
+Release: 2%{?dist}
 %endif
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
@@ -158,16 +164,18 @@ Source9: php.modconf
 Source10: php.ztsmodconf
 Source11: strip.sh
 Source12: php.conf2
+Source13: nginx-fpm.conf
+Source14: nginx-php.conf
 # Configuration files for some extensions
 Source50: opcache.ini
 Source51: opcache-default.blacklist
 Source99: php-fpm.init
 
 # Build fixes
-Patch5: php-5.2.0-includedir.patch
+Patch5: php-5.6.3-includedir.patch
 Patch6: php-5.2.4-embed.patch
 Patch7: php-5.3.0-recode.patch
-Patch8: php-5.4.7-libdb.patch
+Patch8: php-5.6.3-libdb.patch
 
 # Fixes for extension modules
 # https://bugs.php.net/63171 no odbc call during timeout
@@ -175,29 +183,28 @@ Patch21: php-5.4.7-odbctimer.patch
 
 # Functional changes
 Patch40: php-5.4.0-dlopen.patch
-Patch42: php-5.3.1-systzdata-v11.patch
+Patch42: php-5.6.3-systzdata-v11.patch
 # See http://bugs.php.net/53436
 Patch43: php-5.4.0-phpize.patch
 # Use -lldap_r for OpenLDAP
-Patch45: php-5.4.8-ldap_r.patch
+Patch45: php-5.6.3-ldap_r.patch
 # Make php_config.h constant across builds
-Patch46: php-5.4.9-fixheader.patch
+Patch46: php-5.6.3-fixheader.patch
 # drop "Configure command" from phpinfo output
-Patch47: php-5.4.9-phpinfo.patch
+Patch47: php-5.6.3-phpinfo.patch
 
 # RC Patch
-Patch91: php-5.3.7-oci8conf.patch
+Patch91: php-5.6.3-oci8conf.patch
 
 # Upstream fixes (100+)
-Patch100: php-bug67878.patch
 
 # Security fixes (200+)
 
 # Fixes for tests (300+)
+# Factory is droped from system tzdata
+Patch300: php-5.6.3-datetests.patch
 # Revert changes for pcre < 8.34
 Patch301: php-5.6.0-oldpcre.patch
-# see https://bugzilla.redhat.com/971416
-Patch302: php-5.6.0-noNO.patch
 
 # WIP
 
@@ -208,6 +215,10 @@ BuildRequires: httpd-devel >= 2.0.46-1, pam-devel
 %if %{with_httpd2410}
 # to ensure we are using httpd with filesystem feature (see #1081453)
 BuildRequires: httpd-filesystem
+%endif
+%if %{with_nginx}
+# to ensure we are using nginx with filesystem feature (see #1142298)
+BuildRequires: nginx-filesystem
 %endif
 BuildRequires: libstdc++-devel, openssl-devel
 %if 0%{?fedora} >= 11 || 0%{?rhel} >= 6
@@ -232,7 +243,9 @@ BuildRequires: systemtap-sdt-devel
 BuildRequires: bison
 %endif
 
-Obsoletes: php53, php53u, php54, php54w, php55u, php55w, php56u, php56w
+Obsoletes: php53, php53u, php54w, php55u, php55w, php56u, php56w
+# Avoid obsoleting php54 from RHSCL
+Obsoletes: php54 > 5.4
 %if %{with_zts}
 Obsoletes: php-zts < 5.3.7
 Provides: php-zts = %{version}-%{release}
@@ -332,6 +345,10 @@ Requires(pre): httpd-filesystem
 Requires: httpd-filesystem >= 2.4.10
 # php engine for Apache httpd webserver
 Provides: php(httpd)
+%endif
+%if %{with_nginx}
+# for /etc/nginx ownership
+Requires: nginx-filesystem
 %endif
 Obsoletes: php53-fpm, php53u-fpm, php54-fpm, php54w-fpm, php55u-fpm, php55w-fpm, php56u-fpm, php56w-fpm
 
@@ -699,7 +716,7 @@ Group: Development/Languages
 # All files licensed under PHP version 3.01, except
 # libXMLRPC is licensed under BSD
 License: PHP and BSD
-Requires: php-common%{?_isa} = %{version}-%{release}
+Requires: php-xml%{?_isa} = %{version}-%{release}
 Obsoletes: php53-xmlrpc, php53u-xmlrpc, php54-xmlrpc, php54w-xmlrpc, php55u-xmlrpc, php55w-xmlrpc, php56u-xmlrpc, php56w-xmlrpc
 
 %description xmlrpc
@@ -735,6 +752,9 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: t1lib-devel
 %if %{with_libgd}
 BuildRequires: gd-devel >= 2.1.0
+%if 0%{?fedora} <= 19 && 0%{?rhel} <= 7
+Requires: gd-last%{?_isa} >= 2.1.0-3
+%endif
 %else
 # Required to build the bundled GD library
 BuildRequires: libjpeg-devel
@@ -825,11 +845,12 @@ License: PHP
 Requires: php-pdo%{?_isa} = %{version}-%{release}
 BuildRequires: freetds-devel >= 0.91
 Provides: php-pdo_dblib, php-pdo_dblib%{?_isa}
+Provides: php-sybase_ct, php-sybase_ct%{?_isa}
 Obsoletes: php53-mssql, php53u-mssql, php54-mssql, php54w-mssql, php55u-mssql, php55w-mssql, php56u-mssql, php56w-mssql
 
 %description mssql
 The php-mssql package contains a dynamic shared object that will
-add MSSQL database support to PHP.  It uses the TDS (Tabular
+add MSSQL and Sybase database support to PHP.  It uses the TDS (Tabular
 DataStream) protocol through the freetds library, hence any
 database server which supports TDS can be accessed.
 
@@ -934,18 +955,17 @@ rm -rf ext/json
 %patch91 -p1 -b .remi-oci8
 
 # upstream patches
-%patch100 -p1 -b .b67878
 
 # security patches
 
 # Fixes for tests
+%patch300 -p1 -b .datetests
 %if %{with_libpcre}
 %if 0%{?fedora} < 21
 # Only apply when system libpcre < 8.34
 %patch301 -p1 -b .pcre834
 %endif
 %endif
-%patch302 -p0 -b .971416
 
 # WIP patch
 
@@ -1127,6 +1147,7 @@ ln -sf ../configure
     --without-gdbm \
     --with-jpeg-dir=%{_prefix} \
     --with-openssl \
+    --with-system-ciphers \
 %if %{with_libpcre}
     --with-pcre-regex=%{_prefix} \
 %endif
@@ -1233,6 +1254,7 @@ build --libdir=%{_libdir}/php \
       --with-mcrypt=shared,%{_prefix} \
       --with-tidy=shared,%{_prefix} \
       --with-mssql=shared,%{_prefix} \
+      --with-sybase-ct=shared,%{_prefix} \
       --enable-sysvmsg=shared --enable-sysvshm=shared --enable-sysvsem=shared \
       --enable-shmop=shared \
       --enable-posix=shared \
@@ -1374,6 +1396,7 @@ build --includedir=%{_includedir}/php-zts \
       --with-mcrypt=shared,%{_prefix} \
       --with-tidy=shared,%{_prefix} \
       --with-mssql=shared,%{_prefix} \
+      --with-sybase-ct=shared,%{_prefix} \
       --enable-sysvmsg=shared --enable-sysvshm=shared --enable-sysvsem=shared \
       --enable-shmop=shared \
       --enable-posix=shared \
@@ -1536,6 +1559,11 @@ sed -i -e 's:/run:/var/run:' $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/php-fpm
 install -m 755 -d $RPM_BUILD_ROOT%{_initrddir}
 install -m 755 %{SOURCE99} $RPM_BUILD_ROOT%{_initrddir}/php-fpm
 %endif
+%if %{with_nginx}
+# Nginx configuration
+install -D -m 644 %{SOURCE13} $RPM_BUILD_ROOT%{_sysconfdir}/nginx/conf.d/php-fpm.conf
+install -D -m 644 %{SOURCE14} $RPM_BUILD_ROOT%{_sysconfdir}/nginx/default.d/php.conf
+%endif
 
 # Fix the link
 (cd $RPM_BUILD_ROOT%{_bindir}; ln -sfn phar.phar phar)
@@ -1558,7 +1586,7 @@ for mod in pgsql odbc ldap snmp xmlrpc imap \
     sqlite3 \
 %endif
     enchant phar fileinfo intl \
-    mcrypt tidy pdo_dblib mssql pspell curl wddx \
+    mcrypt tidy pdo_dblib mssql sybase_ct pspell curl wddx \
     posix shmop sysvshm sysvsem sysvmsg recode xml \
     ; do
     case $mod in
@@ -1610,6 +1638,7 @@ cat files.mysql \
 
 # Split out the PDO modules
 cat files.pdo_dblib >> files.mssql
+cat files.sybase_ct >> files.mssql
 cat files.pdo_pgsql >> files.pgsql
 cat files.pdo_odbc >> files.odbc
 %if %{with_oci8}
@@ -1827,6 +1856,10 @@ fi
 %config(noreplace) %{_sysconfdir}/php-fpm.d/www.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/php-fpm
 %config(noreplace) %{_sysconfdir}/sysconfig/php-fpm
+%if %{with_nginx}
+%config(noreplace) %{_sysconfdir}/nginx/conf.d/php-fpm.conf
+%config(noreplace) %{_sysconfdir}/nginx/default.d/php.conf
+%endif
 %if %{with_systemd}
 %{_prefix}/lib/tmpfiles.d/php-fpm.conf
 %{_unitdir}/php-fpm.service
@@ -1914,6 +1947,71 @@ fi
 
 
 %changelog
+* Wed Dec 17 2014 Remi Collet <remi@fedoraproject.org> 5.6.4-2
+- Update to 5.6.4
+  http://www.php.net/releases/5_6_4.php
+- add sybase_ct extension (in mssql sub-package)
+- xmlrpc requires xml
+
+* Wed Dec 10 2014 Remi Collet <remi@fedoraproject.org> 5.6.4-1
+- Update to 5.6.4
+  http://www.php.net/releases/5_6_4.php
+
+* Thu Nov 27 2014 Remi Collet <rcollet@redhat.com> 5.6.4-0.1.RC1
+- php 5.6.4RC1
+
+* Sun Nov 16 2014 Remi Collet <remi@fedoraproject.org> 5.6.3-3
+- FPM: add upstream patch for https://bugs.php.net/68421
+  access.format=R doesn't log ipv6 address
+- FPM: add upstream patch for https://bugs.php.net/68420
+  listen=9000 listens to ipv6 localhost instead of all addresses
+- FPM: add upstream patch for https://bugs.php.net/68423
+  will no longer load all pools
+
+* Thu Nov 13 2014 Remi Collet <remi@fedoraproject.org> 5.6.3-1
+- Update to PHP 5.6.3
+  http://php.net/releases/5_6_3.php
+- GMP: add upstream patch for https://bugs.php.net/68419
+  Fix build with libgmp < 4.2
+
+* Thu Oct 30 2014 Remi Collet <rcollet@redhat.com> 5.6.3-0.4.RC1
+- php 5.6.3RC1 (refreshed, phpdbg changes reverted)
+
+* Thu Oct 30 2014 Remi Collet <rcollet@redhat.com> 5.6.3-0.3.RC1
+- new version of systzdata patch, fix case sensitivity
+- ignore Factory in date tests
+
+* Wed Oct 29 2014 Remi Collet <rcollet@redhat.com> 5.6.3-0.2.RC1
+- php 5.6.3RC1 (refreshed)
+- enable phpdbg_webhelper new extension (in php-dbg)
+
+* Tue Oct 28 2014 Remi Collet <rcollet@redhat.com> 5.6.3-0.1.RC1
+- php 5.6.3RC1
+- disable opcache.fast_shutdown in default config
+- disable phpdbg_webhelper new extension for now
+
+* Thu Oct 16 2014 Remi Collet <remi@fedoraproject.org> 5.6.1-1
+- Update to PHP 5.6.2
+  http://php.net/releases/5_6_2.php
+
+* Fri Oct  3 2014 Remi Collet <remi@fedoraproject.org> 5.6.1-1
+- Update to PHP 5.6.1
+  http://php.net/releases/5_6_1.php
+
+* Fri Sep 26 2014 Remi Collet <rcollet@redhat.com> 5.6.1-0
+- test build for upcoming 5.6.1
+- use default system cipher list by Fedora policy
+  http://fedoraproject.org/wiki/Changes/CryptoPolicy
+
+* Wed Sep 24 2014 Remi Collet <rcollet@redhat.com> 5.6.1-0.2.RC1
+- provides nginx configuration (see #1142298)
+
+* Fri Sep 12 2014 Remi Collet <rcollet@redhat.com> 5.6.1-0.1.RC1
+- php 5.6.1RC1
+
+* Wed Sep  3 2014 Remi Collet <remi@fedoraproject.org> 5.6.0-1.2
+- ensure gd-last 2.1.0-3, with libvpx support, is used
+
 * Fri Aug 29 2014 Remi Collet <remi@fedoraproject.org> 5.6.0-1.1
 - enable libvpx on EL 6 (with libvpx 1.3.0)
 
