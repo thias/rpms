@@ -1,0 +1,12 @@
+[Unit]
+Description=A persistent key-value database
+After=syslog.target network.target
+
+[Service]
+ExecStart=/usr/sbin/redis-server /etc/redis.conf --daemonize no
+User=redis
+Group=redis
+
+[Install]
+WantedBy=multi-user.target
+
