@@ -1,0 +1,12 @@
+diff -Naupr MaxMind-DB-Reader-php-cbd695a5309c15249ef5944997cfb71f2a8a7963.orig/ext/php_maxminddb.h MaxMind-DB-Reader-php-cbd695a5309c15249ef5944997cfb71f2a8a7963/ext/php_maxminddb.h
+--- MaxMind-DB-Reader-php-cbd695a5309c15249ef5944997cfb71f2a8a7963.orig/ext/php_maxminddb.h	2014-09-22 19:33:22.000000000 +0200
++++ MaxMind-DB-Reader-php-cbd695a5309c15249ef5944997cfb71f2a8a7963/ext/php_maxminddb.h	2015-01-12 22:41:04.821234877 +0100
+@@ -15,7 +15,7 @@
+ 
+ #ifndef PHP_MAXMINDDB_H
+ #define PHP_MAXMINDDB_H 1
+-#define PHP_MAXMINDDB_VERSION "0.2.0"
++#define PHP_MAXMINDDB_VERSION "1.0.0"
+ #define PHP_MAXMINDDB_EXTNAME "maxminddb"
+ 
+ extern zend_module_entry maxminddb_module_entry;

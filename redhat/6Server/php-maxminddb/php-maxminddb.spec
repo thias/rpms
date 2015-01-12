@@ -17,10 +17,11 @@
 Name:           php-%{ext_name}
 Summary:        API for reading MaxMind DB files
 Version:        1.0.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 
 URL:            http://www.maxmind.com/
 Source0:        https://github.com/%{gh_owner}/%{gh_project}/archive/%{gh_commit}/%{gh_project}-%{version}.tar.gz
+Patch0:         php-maxminddb-version.patch
 License:        BSD
 Group:          Development/Libraries
 
@@ -42,6 +43,7 @@ file format that stores data indexed by IP address subnets (IPv4 or IPv6).
 
 %prep
 %setup -q -n %{gh_project}-%{gh_commit}
+%patch0 -p1
 
 
 %build
@@ -81,6 +83,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Jan 12 2015 Matthias Saou <matthias@saou.eu> 1.0.0-2
+- Fix phpinfo() reported version from 0.2.0 to 1.0.0.
+
 * Tue Dec 30 2014 Matthias Saou <matthias@saou.eu> 1.0.0-1
 - Initial RPM release.
 
