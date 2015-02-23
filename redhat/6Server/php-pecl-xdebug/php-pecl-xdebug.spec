@@ -1,6 +1,6 @@
 # spec file for php-pecl-xdebug
 #
-# Copyright (c) 2010-2014 Remi Collet
+# Copyright (c) 2010-2015 Remi Collet
 # Copyright (c) 2006-2009 Christopher Stone
 #
 # License: MIT
@@ -29,17 +29,13 @@
 
 Name:           %{?scl_prefix}php-pecl-xdebug
 Summary:        PECL package for debugging PHP scripts
-Version:        2.2.6
-Release:        3%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
+Version:        2.3.0
+Release:        1%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
 %if 0%{?gitver:1}
 Source0:        https://github.com/%{pecl_name}/%{pecl_name}/archive/%{commit}/%{pecl_name}-%{version}-%{gitver}.tar.gz
 %else
 Source0:        http://pecl.php.net/get/%{pecl_name}-%{version}%{?prever}.tgz
 %endif
-
-# http://bugs.xdebug.org/view.php?id=1087
-# https://www.couchbase.com/issues/browse/PCBC-294
-Patch0:         %{pecl_name}-upstream.patch
 
 # The Xdebug License, version 1.01
 # (Based on "The PHP License", version 3.0)
@@ -48,13 +44,11 @@ Group:          Development/Languages
 URL:            http://xdebug.org/
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  %{?scl_prefix}php-pear
-BuildRequires:  %{?scl_prefix}php-devel
+BuildRequires:  %{?scl_prefix}php-pear  > 1.9.1
+BuildRequires:  %{?scl_prefix}php-devel > 5.4
 BuildRequires:  libedit-devel
 BuildRequires:  libtool
 
-Requires(post): %{__pecl}
-Requires(postun): %{__pecl}
 Requires:       %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:       %{?scl_prefix}php(api) = %{php_core_api}
 %{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
@@ -119,8 +113,6 @@ mv %{pecl_name}-%{version}%{?prever} NTS
 %endif
 
 cd NTS
-%patch0 -p1 -b .upstream
-
 # Check extension version
 ver=$(sed -n '/XDEBUG_VERSION/{s/.* "//;s/".*$//;p}' php_xdebug.h)
 if test "$ver" != "%{version}%{?prever}"; then
@@ -228,12 +220,20 @@ done
 %endif
 
 
-%post
-%{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+# when pear installed alone, after us
+%triggerin -- %{?scl_prefix}php-pear
+if [ -x %{__pecl} ] ; then
+    %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+fi
 
+# posttrans as pear can be installed after us
+%posttrans
+if [ -x %{__pecl} ] ; then
+    %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+fi
 
 %postun
-if [ $1 -eq 0 ] ; then
+if [ $1 -eq 0 -a -x %{__pecl} ] ; then
     %{pecl_uninstall} %{pecl_name} >/dev/null || :
 fi
 
@@ -259,6 +259,20 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Feb 23 2015 Remi Collet <remi@fedoraproject.org> - 2.3.0-1
+- Update to 2.3.0
+- raise minimum php version to 5.4
+
+* Fri Jan 23 2015 Remi Collet <remi@fedoraproject.org> - 2.2.7-2
+- fix %%postun scriplet
+
+* Thu Jan 22 2015 Remi Collet <remi@fedoraproject.org> - 2.2.7-1
+- Update to 2.2.7
+- drop runtime dependency on pear, new scriptlets
+
+* Wed Dec 24 2014 Remi Collet <remi@fedoraproject.org> - 2.2.6-3.1
+- Fedora 21 SCL mass rebuild
+
 * Wed Dec  3 2014 Remi Collet <remi@fedoraproject.org> - 2.2.6-3
 - more upstream patch
 
