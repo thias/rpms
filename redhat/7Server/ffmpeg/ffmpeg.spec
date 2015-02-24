@@ -7,6 +7,9 @@
 %if 0%{?rhel}
 %global _without_frei0r   1
 %global _without_opencv   1
+%endif
+
+%if 0%{?rhel} && 0%{?rhel} < 7
 %global _without_vpx      1
 %endif
 
