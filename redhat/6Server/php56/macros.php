@@ -1,19 +1,15 @@
 #
 # Interface versions exposed by PHP:
 # 
-%php_core_api @PHP_APIVER@
-%php_zend_api @PHP_ZENDVER@
-%php_pdo_api  @PHP_PDOVER@
-%php_version  @PHP_VERSION@
+%@SCL@php_core_api @PHP_APIVER@
+%@SCL@php_zend_api @PHP_ZENDVER@
+%@SCL@php_pdo_api  @PHP_PDOVER@
+%@SCL@php_version  @PHP_VERSION@
 
-%php_extdir    %{_libdir}/php/modules
-%php_ztsextdir %{_libdir}/php-zts/modules
+%@SCL@php_extdir   @LIBDIR@/php/modules
 
-%php_inidir    %{_sysconfdir}/php.d
-%php_ztsinidir %{_sysconfdir}/php-zts.d
+%@SCL@php_inidir   @ETCDIR@/php.d
 
-%php_incldir    %{_includedir}/php
-%php_ztsincldir %{_includedir}/php-zts/php
+%@SCL@php_incldir  @INCDIR@/php
 
-%__php         %{_bindir}/php
-%__ztsphp      %{_bindir}/zts-php
+%@SCL@__php        @BINDIR@/php
