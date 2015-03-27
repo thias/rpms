@@ -1,6 +1,6 @@
 %global realname puppetserver
-%global realversion 0.4.0
-%global rpmversion 0.4.0
+%global realversion 1.0.2
+%global rpmversion 1.0.2
 
 %global open_jdk          java-1.7.0-openjdk
 
@@ -24,7 +24,7 @@
 %define __jar_repack     0
 
 Name:             puppetserver
-Version:          0.4.0
+Version:          1.0.2
 Release:          1%{?dist}
 BuildRoot:        %{_tmppath}/%{realname}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -54,11 +54,13 @@ Requires:         %{open_jdk}
 
 Requires:         puppet >= 3.7.3
 
+Requires:         puppet < 4.0.0
+
 Requires:         java-1.7.0-openjdk
 
 
 %description
-Release artifacts for puppet-server (puppet-server 0.4.0,trapperkeeper-webserver-jetty9 0.9.0)
+Release artifacts for puppet-server (puppet-server 1.0.2,trapperkeeper-webserver-jetty9 0.9.0)
 
 %prep
 %setup -q -n %{name}-%{realversion}
@@ -80,11 +82,18 @@ install -m 0755 ext/redhat/init %{buildroot}%{_initrddir}/puppetserver
 install -d -m 0755 %{buildroot}%{_sysconfdir}/sysconfig
 install -m 0755 ext/default %{buildroot}%{_sysconfdir}/sysconfig/puppetserver
 
+install -d -m 0755 %{buildroot}%{_sysconfdir}/logrotate.d
+%if 0%{?fedora} >= 16 || 0%{?rhel} >= 7 || 0%{?sles_version} >= 12
+cp -pr ext/puppetserver.logrotate.conf %{buildroot}%{_sysconfdir}/logrotate.d/puppetserver
+%else
+cp -pr ext/puppetserver.logrotate-legacy.conf %{buildroot}%{_sysconfdir}/logrotate.d/puppetserver
+%endif
+
+install -d -m 700 %{buildroot}%{_localstatedir}/log/puppetserver
+
 echo "os-settings: {"                         > %{buildroot}%{_sysconfdir}/%{realname}/conf.d/os-settings.conf
 echo "    ruby-load-path: [%{puppet_libdir}]" >> %{buildroot}%{_sysconfdir}/%{realname}/conf.d/os-settings.conf
 echo "}"                                      >> %{buildroot}%{_sysconfdir}/%{realname}/conf.d/os-settings.conf
-
-install -d -m 700 %{buildroot}%{_localstatedir}/log/puppetserver
 
 
 %clean
@@ -103,12 +112,22 @@ mkdir -p /etc/puppet/manifests
 
 %post
 %if %{_with_systemd}
+# Reload the systemd units if this is an upgrade
+if [ "$1" = "2" ]; then
+    systemctl daemon-reload >/dev/null 2>&1 || :
+    systemctl try-restart %{name}.service
+fi
 %systemd_post puppetserver.service
 %else
 # If this is an install (as opposed to an upgrade)...
 if [ "$1" = "1" ]; then
-  # Register the puppetserver service
-  /sbin/chkconfig --add %{name}
+    # Register the puppetserver service
+    /sbin/chkconfig --add %{name}
+# If this is an upgrade, restart if we are already running
+elif [ "$1" = "2" ]; then
+    if /sbin/service %{name} status > /dev/null 2>&1; then
+        /sbin/service %{name} restart || :
+    fi
 fi
 %endif
 
@@ -150,6 +169,7 @@ fi
 %endif
 %config(noreplace) %{_sysconfdir}/%{name}
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
+%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
 %{_bindir}/puppetserver
 %ghost %attr(0755, root, root) %{_rundir}/%{name}
 
@@ -157,6 +177,6 @@ fi
 
 
 %changelog
-* Thu Nov 06 2014 Puppet Labs Release <info@puppetlabs.com> -  0.4.0-1
-- Build for 0.4.0
+* Wed Jan 14 2015 Puppet Labs Release <info@puppetlabs.com> -  1.0.2-1
+- Build for 1.0.2
 
