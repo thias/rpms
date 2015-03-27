@@ -1,6 +1,6 @@
 %global realname puppetdb
-%global realversion 2.2.2
-%global rpmversion 2.2.2
+%global realversion 2.3.0
+%global rpmversion 2.3.0
 %global puppetminversion 3.5.1
 %global facterminversion 1.7.0
 
@@ -19,6 +19,7 @@
 %else
 %global puppet_libdir     %(ruby -rrbconfig -e "puts RbConfig::CONFIG['sitelibdir']")
 %endif
+%global puppet_4_libdir   /opt/puppetlabs/puppet/lib/ruby/vendor_ruby
 
 # Fedora 17 and later and EL > 7 use systemd
 %if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
@@ -39,7 +40,7 @@
 
 
 Name:          puppetdb
-Version:       2.2.2
+Version:       2.3.0
 Release:       1%{?dist}
 BuildRoot:     %{_tmppath}/%{realname}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -312,9 +313,26 @@ fi
 %{puppet_libdir}/puppet/util/puppetdb/command_names.rb
 %{puppet_libdir}/puppet/util/puppetdb/config.rb
 %{puppet_libdir}/puppet/util/puppetdb/blacklist.rb
+%{puppet_4_libdir}/puppet/application/storeconfigs.rb
+%{puppet_4_libdir}/puppet/face/node/deactivate.rb
+%{puppet_4_libdir}/puppet/face/node/status.rb
+%{puppet_4_libdir}/puppet/face/storeconfigs.rb
+%{puppet_4_libdir}/puppet/indirector/catalog/puppetdb.rb
+%{puppet_4_libdir}/puppet/indirector/facts/puppetdb.rb
+%{puppet_4_libdir}/puppet/indirector/facts/puppetdb_apply.rb
+%{puppet_4_libdir}/puppet/indirector/node/puppetdb.rb
+%{puppet_4_libdir}/puppet/indirector/resource/puppetdb.rb
+%{puppet_4_libdir}/puppet/reports/puppetdb.rb
+%{puppet_4_libdir}/puppet/util/puppetdb.rb
+%{puppet_4_libdir}/puppet/util/puppetdb/char_encoding.rb
+%{puppet_4_libdir}/puppet/util/puppetdb/command.rb
+%{puppet_4_libdir}/puppet/util/puppetdb/command_names.rb
+%{puppet_4_libdir}/puppet/util/puppetdb/config.rb
+%{puppet_4_libdir}/puppet/util/puppetdb/blacklist.rb
+
 
 %changelog
-* Tue Oct 21 2014 jenkins <jenkins@powell> - 2.2.2-1
+* Thu Mar 19 2015 jenkins <jenkins@grand> - 2.3.0-1
 - Autobuild from Rake task
 
 * Mon Apr 02 2012 Michael Stahnke <stahnma@puppetlabs.com> - 0.1.0-1
