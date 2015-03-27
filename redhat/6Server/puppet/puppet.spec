@@ -16,8 +16,8 @@
 %endif
 
 # VERSION is subbed out during rake srpm process
-%global realversion 3.7.3
-%global rpmversion 3.7.3
+%global realversion 3.7.5
+%global rpmversion 3.7.5
 
 %global confdir ext/redhat
 %global pending_upgrade_path %{_localstatedir}/lib/rpm-state/puppet
@@ -446,8 +446,8 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-* Mon Nov 03 2014 Puppet Labs Release <info@puppetlabs.com> -  3.7.3-1
-- Build for 3.7.3
+* Wed Mar 25 2015 Puppet Labs Release <info@puppetlabs.com> -  3.7.5-1
+- Build for 3.7.5
 
 * Wed Oct 2 2013 Jason Antman <jason@jasonantman.com>
 - Move systemd service and unit file names back to "puppet" from erroneous "puppetagent"
