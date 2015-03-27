@@ -1,6 +1,6 @@
-# Fedora 17 ships with ruby 1.9, which uses vendorlibdir instead
+# Fedora 17 ships with ruby 1.9, RHEL 7 with ruby 2.0, which use vendorlibdir instead
 # of sitelibdir
-%if 0%{?fedora} >= 17
+%if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
 %global hiera_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["vendorlibdir"]')
 %else
 %global hiera_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["sitelibdir"]')
@@ -13,8 +13,8 @@
 %define ruby            %{_bindir}/ruby
 
 # VERSION is subbed out during rake srpm process
-%global realversion 1.3.1
-%global rpmversion 1.3.1
+%global realversion 1.3.4
+%global rpmversion 1.3.4
 
 Name:           hiera
 Version:        %{rpmversion}
@@ -66,8 +66,8 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Tue Jan 21 2014 Puppet Labs Release <info@puppetlabs.com> -  1.3.1-1
-- Build for 1.3.1
+* Fri Jun 06 2014 Puppet Labs Release <info@puppetlabs.com> -  1.3.4-1
+- Build for 1.3.4
 
 * Mon May 14 2012 Matthaus Litteken <matthaus@puppetlabs.com> - 1.0.0-0.1rc2
 - 1.0.0rc2 release
