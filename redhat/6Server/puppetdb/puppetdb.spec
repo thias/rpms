@@ -1,6 +1,6 @@
 %global realname puppetdb
-%global realversion 2.3.0
-%global rpmversion 2.3.0
+%global realversion 2.3.2
+%global rpmversion 2.3.2
 %global puppetminversion 3.5.1
 %global facterminversion 1.7.0
 
@@ -40,7 +40,7 @@
 
 
 Name:          puppetdb
-Version:       2.3.0
+Version:       2.3.2
 Release:       1%{?dist}
 BuildRoot:     %{_tmppath}/%{realname}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -65,7 +65,6 @@ BuildRequires: puppet >= %{puppetminversion}
 BuildRequires: rubygem-rake
 BuildRequires: ruby
 Requires:      puppet >= %{puppetminversion}
-Requires:      facter >= %{facterminversion}
 BuildArch:     noarch
 %if 0%{?suse_version}
 BuildRequires: aaa_base
@@ -332,7 +331,7 @@ fi
 
 
 %changelog
-* Thu Mar 19 2015 jenkins <jenkins@grand> - 2.3.0-1
+* Wed Apr 01 2015 jenkins <jenkins@loch> - 2.3.2-1
 - Autobuild from Rake task
 
 * Mon Apr 02 2012 Michael Stahnke <stahnma@puppetlabs.com> - 0.1.0-1
