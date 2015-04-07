@@ -1,13 +1,13 @@
 %global realname puppetserver
-%global realversion 1.0.2
-%global rpmversion 1.0.2
+%global realversion 1.0.8
+%global rpmversion 1.0.8
 
 %global open_jdk          java-1.7.0-openjdk
 
 %if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
-%global puppet_libdir     %(ruby -rrbconfig -e "puts Config::CONFIG['vendorlibdir']")
+%global rubylibdir        %(ruby -rrbconfig -e "puts Config::CONFIG['vendorlibdir']")
 %else
-%global puppet_libdir     %(ruby -rrbconfig -e "puts Config::CONFIG['sitelibdir']")
+%global rubylibdir        %(ruby -rrbconfig -e "puts Config::CONFIG['sitelibdir']")
 %endif
 
 %if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
@@ -24,7 +24,7 @@
 %define __jar_repack     0
 
 Name:             puppetserver
-Version:          1.0.2
+Version:          1.0.8
 Release:          1%{?dist}
 BuildRoot:        %{_tmppath}/%{realname}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -51,6 +51,9 @@ Requires:         chkconfig
 %endif
 
 Requires:         %{open_jdk}
+# net-tools is required for netstat usage in service unit file
+# See: https://tickets.puppetlabs.com/browse/SERVER-338
+Requires:         net-tools
 
 Requires:         puppet >= 3.7.3
 
@@ -60,7 +63,7 @@ Requires:         java-1.7.0-openjdk
 
 
 %description
-Release artifacts for puppet-server (puppet-server 1.0.2,trapperkeeper-webserver-jetty9 0.9.0)
+Puppet Server (puppetserver 1.0.8,trapperkeeper-webserver-jetty9 1.3.0)
 
 %prep
 %setup -q -n %{name}-%{realversion}
@@ -71,35 +74,27 @@ Release artifacts for puppet-server (puppet-server 1.0.2,trapperkeeper-webserver
 
 rm -rf $RPM_BUILD_ROOT
 
-env DESTDIR=%{buildroot} prefix=%{_prefix} confdir=%{_sysconfdir} bindir=%{_bindir} rundir=%{_rundir}/puppetserver make -e install-puppetserver
+env DESTDIR=%{buildroot} prefix=%{_prefix} confdir=%{_sysconfdir} bindir=%{_bindir} rundir=%{_rundir}/puppetserver localstatedir=%{_localstatedir} rubylibdir=%{rubylibdir} bash install.sh install_redhat
 %if %{_with_systemd}
-install -d -m0755 %{buildroot}%{_unitdir}
-install -m 0644 ext/redhat/puppetserver.service %{buildroot}%{_unitdir}/puppetserver.service
+env DESTDIR=%{buildroot} prefix=%{_prefix} confdir=%{_sysconfdir} bindir=%{_bindir} rundir=%{_rundir}/puppetserver defaultsdir=%{_sysconfdir}/sysconfig unitdir=%{_unitdir} bash install.sh systemd_redhat
 %else
-install -d -m 0755 %{buildroot}%{_initrddir}
-install -m 0755 ext/redhat/init %{buildroot}%{_initrddir}/puppetserver
+env DESTDIR=%{buildroot} prefix=%{_prefix} confdir=%{_sysconfdir} bindir=%{_bindir} rundir=%{_rundir}/puppetserver defaultsdir=%{_sysconfdir}/sysconfig initdir=%{_initrddir} bash install.sh sysv_init_redhat
 %endif
-install -d -m 0755 %{buildroot}%{_sysconfdir}/sysconfig
-install -m 0755 ext/default %{buildroot}%{_sysconfdir}/sysconfig/puppetserver
 
-install -d -m 0755 %{buildroot}%{_sysconfdir}/logrotate.d
 %if 0%{?fedora} >= 16 || 0%{?rhel} >= 7 || 0%{?sles_version} >= 12
-cp -pr ext/puppetserver.logrotate.conf %{buildroot}%{_sysconfdir}/logrotate.d/puppetserver
+env DESTDIR=%{buildroot} confdir=%{_sysconfdir} bash install.sh logrotate
 %else
-cp -pr ext/puppetserver.logrotate-legacy.conf %{buildroot}%{_sysconfdir}/logrotate.d/puppetserver
+env DESTDIR=%{buildroot} confdir=%{_sysconfdir} bash install.sh logrotate_legacy
 %endif
-
-install -d -m 700 %{buildroot}%{_localstatedir}/log/puppetserver
-
-echo "os-settings: {"                         > %{buildroot}%{_sysconfdir}/%{realname}/conf.d/os-settings.conf
-echo "    ruby-load-path: [%{puppet_libdir}]" >> %{buildroot}%{_sysconfdir}/%{realname}/conf.d/os-settings.conf
-echo "}"                                      >> %{buildroot}%{_sysconfdir}/%{realname}/conf.d/os-settings.conf
 
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %pre
+# Note: changes to this section of the spec may require synchronisation with the
+# install.sh source based installation methodology.
+#
 # Add puppet group
 getent group puppet > /dev/null || \
   groupadd -r puppet || :
@@ -130,6 +125,7 @@ elif [ "$1" = "2" ]; then
     fi
 fi
 %endif
+%{_datadir}/%{realname}/scripts/install.sh postinst_redhat
 
 %preun
 %if %{_with_systemd}
@@ -177,6 +173,5 @@ fi
 
 
 %changelog
-* Wed Jan 14 2015 Puppet Labs Release <info@puppetlabs.com> -  1.0.2-1
-- Build for 1.0.2
-
+* Sat Mar 28 2015 Puppet Labs Release <info@puppetlabs.com> -  1.0.8-1
+- Build for 1.0.8
