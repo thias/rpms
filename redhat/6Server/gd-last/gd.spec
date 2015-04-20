@@ -1,4 +1,4 @@
-#global prever    rc2
+#global prever    dev
 #global commit    725ba9de4005144d137d2a7a70f760068fc3d306
 #global short     %(c=%{commit}; echo ${c:0:7})
 
@@ -11,9 +11,13 @@
 %endif
 
 Summary:       A graphics library for quick creation of PNG or JPEG images
+%if 0%{?fedora} >= 20
+Name:          gd
+%else
 Name:          gd-last
-Version:       2.1.0
-Release:       3%{?prever}%{?short}%{?dist}
+%endif
+Version:       2.1.1
+Release:       2%{?prever}%{?short}%{?dist}
 Group:         System Environment/Libraries
 License:       MIT
 URL:           http://libgd.bitbucket.org/
@@ -26,9 +30,10 @@ Source1:       https://bitbucket.org/libgd/gd-libgd/downloads/libgd-%{version}-r
 %else
 Source0:       https://bitbucket.org/libgd/gd-libgd/downloads/libgd-%{version}%{?prever:-%{prever}}.tar.xz
 %endif
+# Missing in official archive, need for autoreconf
+Source2:       getver.pl
 
 Patch1:        gd-2.1.0-multilib.patch
-Patch2:        gd-CVE-2014-2497.patch
 
 BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: freetype-devel
@@ -45,6 +50,7 @@ BuildRequires: libXpm-devel
 BuildRequires: zlib-devel
 BuildRequires: pkgconfig
 BuildRequires: libtool
+BuildRequires: perl
 
 
 %description
@@ -60,8 +66,10 @@ browsers. Note that gd is not a paint program.
 Requires:       %{name}%{?_isa} = %{version}-%{release}
 Summary:        Utility programs that use libgd
 Group:          Applications/Multimedia
+%if "%{name}" == "gd-last"
 Conflicts:      gd-progs < %{version}
 Provides:       gd-progs = %{version}-%{release}
+%endif
 
 %description progs
 The gd-progs package includes utility programs supplied with gd, a
@@ -84,8 +92,10 @@ Requires: libX11-devel%{?_isa}
 Requires: libXpm-devel%{?_isa}
 Requires: zlib-devel%{?_isa}
 
+%if "%{name}" == "gd-last"
 Conflicts: gd-devel < %{version}
 Provides:  gd-devel = %{version}-%{release}
+%endif
 
 
 %description devel
@@ -95,16 +105,14 @@ files for gd, a graphics library for creating PNG and JPEG graphics.
 %prep
 %setup -q -n libgd-%{version}%{?prever:-%{prever}}
 %patch1 -p1 -b .mlib
-%patch2 -p1 -b .cve-20142-497
-
-# https://bitbucket.org/libgd/gd-libgd/issue/77
-sed -e '/GD_VERSION_STRING/s/-alpha//' \
-    -e '/GD_EXTRA_VERSION/s/alpha//' \
-    -i src/gd.h
-grep VERSION src/gd.h
 
 # Workaround for https://bugzilla.redhat.com/978415
 touch src/vpx_config.h
+
+# Workaround for missing file
+cp %{SOURCE2} config/getver.pl
+
+: $(perl config/getver.pl)
 
 # RHEL-5 auto* are too old
 %if 0%{?rhel} == 5
@@ -115,7 +123,8 @@ tar --extract --file - --keep-newer-files --strip-components 1
 %else
 : regenerate autotool stuff
 if [ -f configure ]; then
-   autoreconf -fi
+   libtoolize --copy --force
+   autoreconf -vif
 else
    ./bootstrap.sh
 fi
@@ -151,7 +160,11 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/libgd.a
 export XFAIL_TESTS="gdimagestringft/gdimagestringft_bbox"
 %endif
 
+: Upstream test suite
 make check
+
+: Check content of pkgconfig
+grep %{version} $RPM_BUILD_ROOT%{_libdir}/pkgconfig/gdlib.pc
 
 
 %post -p /sbin/ldconfig
@@ -161,7 +174,8 @@ make check
 
 %files
 %defattr(-,root,root,-)
-%doc COPYING
+%{!?_licensedir:%global license %%doc}
+%license COPYING
 %{_libdir}/*.so.*
 
 %files progs
@@ -179,6 +193,15 @@ make check
 
 
 %changelog
+* Mon Mar 23 2015 Remi Collet <remi@fedoraproject.org> - 2.1.1-2
+- fix version in gdlib.pc
+
+* Wed Jan 14 2015 Remi Collet <remi@fedoraproject.org> - 2.1.1-1
+- update to 2.1.1 final
+
+* Thu Dec 25 2014 Remi Collet <remi@fedoraproject.org> - 2.1.1-0.1
+- test build of 2.1.1-dev
+
 * Fri Aug 29 2014 Remi Collet <remi@fedoraproject.org> - 2.1.0-3
 - enable libvpx on EL 6 (with libvpx 1.3.0)
 - add patch for CVE-2014-2497
