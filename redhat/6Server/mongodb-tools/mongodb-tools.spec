@@ -30,6 +30,10 @@ install -p -m 0755 bin/* %{buildroot}%{_bindir}/
 %files
 %doc README THIRD-PARTY-NOTICES GNU-AGPL-3.0
 %{_bindir}/*
+%exclude %{_bindir}/mongo
+%exclude %{_bindir}/mongod
+%exclude %{_bindir}/mongoperf
+%exclude %{_bindir}/mongos
 
 
 %changelog
