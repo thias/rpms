@@ -1,35 +1,65 @@
-%global VER        6.8.7
-%global Patchlevel 4
+# remirepo spec file for ImageMagick-last
+# renamed for parallel installation, from:
+#
+# Fedora spec file for ImageMagick
+#
+# License: MIT
+# http://opensource.org/licenses/MIT
+#
+# Please preserve changelog entries
+#
+%global VER        6.9.1
+%global Patchlevel 7
 %global incsuffixe -6
 %global libsuffixe -6.Q16
 
 %if 0%{?rhel} >= 6 || 0%{?fedora} >= 5
-%global withdjvu 1
+%global with_djvu 1
 %else
-%global withdjvu 0
+%global with_djvu 0
 %endif
 
-%if 0%{?rhel} >= 6 || 0%{?fedora} >= 14
-%global withlcms2 1
-%else
-%global withlcms2 0
-%endif
+%global with_lcms2 1
 
 %if 0%{?fedora} >= 14 || 0%{?rhel} >= 6
-%global withwebp 1
+%global with_webp 1
 %else
-%global withwebp 0
+%global with_webp 0
 %endif
 
+%if 0%{?fedora} >= 16 || 0%{?rhel} >= 7
+%global with_jbig 1
+%else
+%global with_jbig 0
+%endif
 
-Name:           ImageMagick-last
+%if 0%{?fedora} >= 21
+%global with_jp2 1
+%else
+%global with_jp2 0
+%endif
+
+%if 0%{?fedora} < 15 && 0%{?rhel} < 7
+%global with_gslib 0
+%else
+%global with_gslib 1
+%endif
+
+%global with_gvc   1
+
+%global libname ImageMagick
+%if 0%{?fedora} > 20
+Name:           %{libname}
+%else
+Name:           %{libname}-last
+%endif
 Version:        %{VER}.%{Patchlevel}
 Release:        1%{?dist}
 Summary:        An X application for displaying and manipulating images
 Group:          Applications/Multimedia
 License:        ImageMagick
 Url:            http://www.imagemagick.org/
-Source0:        ftp://ftp.ImageMagick.org/pub/ImageMagick/ImageMagick-%{VER}-%{Patchlevel}.tar.bz2
+Source0:        ftp://ftp.ImageMagick.org/pub/ImageMagick/ImageMagick-%{VER}-%{Patchlevel}.tar.xz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  bzip2-devel, freetype-devel, libjpeg-devel, libpng-devel
@@ -40,7 +70,7 @@ BuildRequires:  perl-devel
 BuildRequires:  perl
 %endif
 BuildRequires:  ghostscript-devel
-%if %{withdjvu}
+%if %{with_djvu}
 BuildRequires:  djvulibre-devel
 %endif
 BuildRequires:  libwmf-devel, jasper-devel, libtool-ltdl-devel
@@ -48,21 +78,32 @@ BuildRequires:  libX11-devel, libXext-devel, libXt-devel
 BuildRequires:  libxml2-devel, librsvg2-devel
 BuildRequires:  fftw-devel
 BuildRequires:  OpenEXR-devel
-%if %{withlcms2}
+%if %{with_lcms2}
 BuildRequires:  lcms2-devel
 %else
 BuildRequires:  lcms-devel
 %endif
-%if %{withwebp}
+%if %{with_webp}
 BuildRequires:  libwebp-devel
+%endif
+%if %{with_jbig}
+BuildRequires:  jbigkit-devel
+%endif
+%if %{with_jp2}
+BuildRequires:  openjpeg2-devel >= 2.1.0
+%endif
+%if %{with_gvc}
+BuildRequires:  graphviz-devel >= 2.9.0
 %endif
 
 Requires:       %{name}-libs%{?_isa} = %{version}-%{release}
 
 Obsoletes:      ImageMagick2-tools
+%if "%{name}" != "%{libname}"
 # This could be improved in the future
 # https://bugzilla.redhat.com/849065
-Conflicts:      ImageMagick
+Conflicts:      %{libname}
+%endif
 
 # Filter private shared
 %{?filter_provides_in: %filter_provides_in %{_libdir}/ImageMagick-%{VER}/modules-Q16/.*\.so$}
@@ -81,9 +122,10 @@ ImageMagick-last includes the command line programs for creating animated or
 transparent .gifs, creating composite images, creating thumbnail images,
 and more.
 
-ImageMagick-latest conflicts with ImageMagick official RPM and so can not
+%if "%{name}" != "%{libname}"
+ImageMagick-last conflicts with ImageMagick official RPM and so can not
 be installed together.
-
+%endif
 
 
 %package devel
@@ -97,17 +139,26 @@ Requires: freetype-devel%{?_isa}
 Requires: libtiff-devel%{?_isa}
 Requires: libjpeg-devel%{?_isa}
 Requires: OpenEXR-devel%{?_isa}
-%if %{withlcms2}
+%if %{with_lcms2}
 Requires: lcms2-devel%{?_isa}
 %else
 Requires: lcms-devel%{?_isa}
 %endif
-%if %{withwebp}
+%if %{with_webp}
 Requires: libwebp-devel%{?_isa}
+%endif
+%if %{with_jbig}
+Requires: jbigkit-devel%{?_isa}
+%endif
+%if %{with_jp2}
+Requires: openjpeg2-devel%{?_isa}
 %endif
 Requires: jasper-devel%{?_isa}
 Requires: pkgconfig
-Provides: ImageMagick-devel = %{version}-%{release}
+%if "%{name}" != "%{libname}"
+Provides: %{libname}-devel         = %{version}-%{release}
+Provides: %{libname}-devel%{?_isa} = %{version}-%{release}
+%endif
 
 %description devel
 ImageMagick-last-devel contains the library links and header files you'll
@@ -133,7 +184,7 @@ for applications requiring this libraries.
 
 
 
-%if %{withdjvu}
+%if %{with_djvu}
 %package djvu
 Summary: DjVu plugin for ImageMagick
 Group: Applications/Multimedia
@@ -153,7 +204,7 @@ Group: Documentation
 ImageMagick documentation, this package contains usage (for the
 commandline tools) and API (for the libraries) documentation in html format.
 
-    %{_datadir}/doc/ImageMagick%{?incsuffixe}/www/
+    %{_datadir}/%{name}/doc/ImageMagick%{?incsuffixe}/www/
 
 Note this documentation can also be found on the ImageMagick website:
 http://www.imagemagick.org/
@@ -206,11 +257,12 @@ however.
 
 %prep
 %setup -q -n ImageMagick-%{VER}-%{Patchlevel}
+
 sed -i 's/libltdl.la/libltdl.so/g' configure
 iconv -f ISO-8859-1 -t UTF-8 README.txt > README.txt.tmp
 touch -r README.txt README.txt.tmp
 mv README.txt.tmp README.txt
-# for %doc
+# for %%doc
 mkdir Magick++/examples
 cp -p Magick++/demo/*.cpp Magick++/demo/*.miff Magick++/examples
 
@@ -218,14 +270,19 @@ cp -p Magick++/demo/*.cpp Magick++/demo/*.miff Magick++/examples
 %build
 %configure --enable-shared \
            --disable-static \
+           --disable-silent-rules \
            --with-modules \
            --with-perl \
            --with-x \
            --with-threads \
            --with-magick_plus_plus \
+%if %{with_gslib}
            --with-gslib \
+%else
+           --with-gslib=no \
+%endif
            --with-wmf \
-%if %{withlcms2}
+%if %{with_lcms2}
            --with-lcms2 \
 %else
            --with-lcms \
@@ -233,14 +290,27 @@ cp -p Magick++/demo/*.cpp Magick++/demo/*.miff Magick++/examples
            --with-openexr \
            --with-rsvg \
            --with-xml \
-%if %{withwebp}
+%if %{with_webp}
            --with-webp \
+%endif
+%if %{with_jbig}
+           --with-jbig \
+%endif
+%if %{with_jp2}
+           --with-openjp2 \
+%endif
+%if %{with_gvc}
+           --with-gvc \
 %endif
            --with-perl-options="INSTALLDIRS=vendor %{?perl_prefix} CC='%__cc -L$PWD/magick/.libs' LDDLFLAGS='-shared -L$PWD/magick/.libs'" \
            --without-dps \
            --without-included-ltdl --with-ltdl-include=%{_includedir} \
-           --with-ltdl-lib=%{_libdir} \
-           --sysconfdir=%{_sysconfdir}/%{name}
+%if "%{name}" != "%{libname}"
+           --datadir=%{_datadir}/%{name} \
+           --sysconfdir=%{_sysconfdir}/%{name} \
+%endif
+           --without-gcc-arch \
+           --with-ltdl-lib=%{_libdir}
 
 # Disable rpath
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
@@ -298,20 +368,26 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{_bindir}/[a-z]*
 %{_mandir}/man[145]/[a-z]*
-%{_mandir}/man1/ImageMagick.*
+%{_mandir}/man1/%{libname}.*
 
 %files libs
 %defattr(-,root,root,-)
 %doc ChangeLog
 %doc README.txt LICENSE NOTICE AUTHORS.txt NEWS.txt
-%{_libdir}/libMagickCore%{?libsuffixe}.so.1*
-%{_libdir}/libMagickWand%{?libsuffixe}.so.1*
+%{_libdir}/libMagickCore%{?libsuffixe}.so.2*
+%{_libdir}/libMagickWand%{?libsuffixe}.so.2*
 %{_libdir}/ImageMagick-%{VER}
-%{_datadir}/ImageMagick%{?incsuffixe}
-%if %{withdjvu}
+%if "%{name}" != "%{libname}"
+%dir %{_datadir}/%{name}
+%{_datadir}/%{name}/%{libname}%{?incsuffixe}
+%{_sysconfdir}/%{name}
+%else
+%{_datadir}/%{name}%{?incsuffixe}
+%{_sysconfdir}/%{name}%{?incsuffixe}
+%endif
+%if %{with_djvu}
 %exclude %{_libdir}/ImageMagick-%{VER}/modules-Q16/coders/djvu.*
 %endif
-%{_sysconfdir}/%{name}
 
 
 %files devel
@@ -338,7 +414,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/Wand-config.*
 %{_mandir}/man1/MagickWand-config.*
 
-%if %{withdjvu}
+%if %{with_djvu}
 %files djvu
 %defattr(-,root,root,-)
 %{_libdir}/ImageMagick-%{VER}/modules-Q16/coders/djvu.*
@@ -346,13 +422,17 @@ rm -rf $RPM_BUILD_ROOT
 
 %files doc
 %defattr(-,root,root,-)
-%doc %{_datadir}/doc/ImageMagick%{?incsuffixe}
+%if "%{name}" != "%{libname}"
+%doc %{_datadir}/%{name}/doc/%{libname}%{?incsuffixe}
+%else
+%doc %{_datadir}/doc/%{name}%{?incsuffixe}
+%endif
 
 %files c++
 %defattr(-,root,root,-)
 %doc Magick++/AUTHORS Magick++/ChangeLog Magick++/NEWS Magick++/README
 %doc www/Magick++/COPYING
-%{_libdir}/libMagick++%{?libsuffixe}.so.3*
+%{_libdir}/libMagick++%{?libsuffixe}.so.6*
 
 %files c++-devel
 %defattr(-,root,root,-)
@@ -374,6 +454,70 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Jul  6 2015 Remi Collet <remi@remirepo.net> - 6.9.1.7-1
+- update to 6.9.1-7
+- build with gvc support (graphviz)
+
+* Mon Jun 22 2015 Remi Collet <remi@remirepo.net> - 6.9.1.6-1
+- update to 6.9.1-6
+
+* Mon Jun 15 2015 Remi Collet <remi@remirepo.net> - 6.9.1.5-1
+- update to 6.9.1-5
+
+* Tue Jun  2 2015 Remi Collet <remi@remirepo.net> - 6.9.1.4-1
+- update to 6.9.1-4
+
+* Thu May 28 2015 Remi Collet <remi@remirepo.net> - 6.9.1.3-2
+- honors default build options (--without-gcc-arch)
+- make build verbose
+
+* Mon May 25 2015 Remi Collet <remi@remirepo.net> - 6.9.1.3-1
+- update to 6.9.1-3
+
+* Mon May  4 2015 Remi Collet <RPMS@FamilleCollet.com> - 6.9.1.2-1.2
+- rebuild with libcms2 in EL-5
+
+* Thu Apr 23 2015 Remi Collet <RPMS@FamilleCollet.com> - 6.9.1.2-1.1
+- rebuild for new libwebp in EPEL-6
+
+* Tue Apr 21 2015 Remi Collet <RPMS@FamilleCollet.com> - 6.9.1.2-1
+- update to 6.9.1-2
+- add jbig support (fedora and EL-7)
+- add jp2 support (fedora 21+)
+
+* Wed Apr  8 2015 Remi Collet <RPMS@FamilleCollet.com> - 6.9.1.1-1
+- update to 6.9.1-1
+
+* Fri Jan 23 2015 Remi Collet <RPMS@FamilleCollet.com> - 6.9.0.4-1
+- update to 6.9.0-4
+
+* Fri Jan  2 2015 Remi Collet <RPMS@FamilleCollet.com> - 6.9.0.2-1
+- update to 6.9.0-2
+
+* Wed Nov  5 2014 Remi Collet <RPMS@FamilleCollet.com> - 6.8.9.10-1
+- update to 6.8.9-10
+
+* Fri Sep 19 2014 Remi Collet <RPMS@FamilleCollet.com> - 6.8.9.7-4
+- don't use libgs with old ghostscript
+
+* Wed Sep 17 2014 Remi Collet <RPMS@FamilleCollet.com> - 6.8.9.7-3
+- revert change in coder/pdf.c which cause a regression
+  with old ghostcript 8.70
+
+* Wed Aug 27 2014 Remi Collet <RPMS@FamilleCollet.com> - 6.8.9.7-2
+- revert change in coder/ps.c which cause a regression
+  with old ghostcript 8.70
+
+* Mon Aug 25 2014 Remi Collet <RPMS@FamilleCollet.com> - 6.8.9.7-1
+- update to 6.8.9-7
+- soname change: libMagick++-6.Q16.so.5
+
+* Mon Apr 14 2014 Remi Collet <RPMS@FamilleCollet.com> - 6.8.9.0-2
+- use /usr/share/ImageMagick-last to avoid conflict (f20)
+
+* Mon Apr 14 2014 Remi Collet <RPMS@FamilleCollet.com> - 6.8.9.0-1
+- update to 6.8.9-0
+
 * Sat Nov 02 2013 Remi Collet <RPMS@FamilleCollet.com> - 6.8.7.4-2
 - update to 6.8.7-4
 - enable webp support in EL
