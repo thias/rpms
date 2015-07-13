@@ -7,8 +7,8 @@
 %endif
 
 # VERSION is subbed out during rake srpm process
-%global realversion 2.4.3
-%global rpmversion 2.4.3
+%global realversion 2.4.4
+%global rpmversion 2.4.4
 
 Summary:        Ruby module for collecting simple facts about a host operating system
 Name:           facter
@@ -73,8 +73,8 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Thu Apr 02 2015 Puppet Labs Release <info@puppetlabs.com> -  1:2.4.3-1
-- Build for 2.4.3
+* Tue May 19 2015 Puppet Labs Release <info@puppetlabs.com> -  1:2.4.4-1
+- Build for 2.4.4
 
 * Mon Apr 01 2013 Matthaus Owens <matthaus@puppetlabs.com> - 1:1.7.0-0.1rc1
 - Add dependency on virt-what to facter for better virutalization detection
