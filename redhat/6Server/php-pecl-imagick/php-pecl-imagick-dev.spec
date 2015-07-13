@@ -37,16 +37,12 @@ BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: %{?scl_prefix}php-devel
 BuildRequires: %{?scl_prefix}php-pear
 BuildRequires: pcre-devel
-%if "%{?vendor}" == "Remi Collet"
 %if 0%{?fedora} > 20
 BuildRequires: ImageMagick-devel >= 6.8.8
 Requires:      ImageMagick-libs%{?_isa}  >= %{imbuildver}
 %else
 BuildRequires: ImageMagick-last-devel >= 6.8.9
 Requires:      ImageMagick-last-libs%{?_isa}  >= %{imbuildver}
-%endif
-%else
-BuildRequires: ImageMagick-devel >= 6.2.4
 %endif
 
 Requires:      %{?scl_prefix}php(zend-abi) = %{php_zend_api}
