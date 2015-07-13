@@ -1,21 +1,25 @@
-%global with_java 1
 %global _hardened_build 1
 
-Name:		libwebp
-Version:	0.3.1
-Release:	2%{?dist}
-Group:		Development/Libraries
-URL:		http://webmproject.org/
-Summary:	Library and tools for the WebP graphics format
+Name:          libwebp
+Version:       0.4.3
+Release:       3%{?dist}
+Group:         Development/Libraries
+URL:           http://webmproject.org/
+Summary:       Library and tools for the WebP graphics format
 # Additional IPR is licensed as well. See PATENTS file for details
-License:	BSD
-Source0:	http://webp.googlecode.com/files/%{name}-%{version}.tar.gz
-Source1:	libwebp_jni_example.java	
+License:       BSD
+Source0:       http://downloads.webmproject.org/releases/webp/%{name}-%{version}.tar.gz
+Source1:       libwebp_jni_example.java
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:	libjpeg-devel libpng-devel libtool swig 
-BuildRequires:  giflib-devel
-BuildRequires:  libtiff-devel
+BuildRequires: libjpeg-devel
+BuildRequires: libpng-devel
+BuildRequires: giflib-devel
+BuildRequires: libtiff-devel
+BuildRequires: java-devel
+BuildRequires: jpackage-utils
+BuildRequires: swig
+BuildRequires: autoconf automake libtool
+BuildRequires: freeglut-devel
 
 %description
 WebP is an image format that does lossy compression of digital
@@ -25,9 +29,8 @@ developers can use WebP to compress, archive and distribute digital
 images more efficiently.
 
 %package tools
-Group:		Development/Tools
-Summary:	The WebP command line tools
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Group:         Development/Tools
+Summary:       The WebP command line tools
 
 %description tools
 WebP is an image format that does lossy compression of digital
@@ -37,9 +40,9 @@ developers can use WebP to compress, archive and distribute digital
 images more efficiently.
 
 %package devel
-Group:		Development/Libraries
-Summary:	Development files for libwebp, a library for the WebP format
-Requires:	%{name}%{?_isa} = %{version}-%{release}
+Group:         Development/Libraries
+Summary:       Development files for libwebp, a library for the WebP format
+Requires:      %{name}%{?_isa} = %{version}-%{release}
 
 %description devel
 WebP is an image format that does lossy compression of digital
@@ -48,15 +51,13 @@ container based on RIFF. Webmasters, web developers and browser
 developers can use WebP to compress, archive and distribute digital
 images more efficiently.
 
-%if %{with_java}
+%ifnarch ppc64
 %package java
-Group:		Development/Libraries
-Summary:	Java bindings for libwebp, a library for the WebP format
-Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	java
-Requires:	jpackage-utils
-BuildRequires:	java-devel
-BuildRequires:	jpackage-utils
+Group:         Development/Libraries
+Summary:       Java bindings for libwebp, a library for the WebP format
+Requires:      %{name}%{?_isa} = %{version}-%{release}
+Requires:      java
+Requires:      jpackage-utils
 
 %description java
 Java bindings for libwebp.
@@ -66,27 +67,32 @@ Java bindings for libwebp.
 %setup -q
 
 %build
-./autogen.sh
-%configure --disable-static --enable-libwebpmux --enable-libwebpdemux
+autoreconf -vif
+%ifarch aarch64
+export CFLAGS="%{optflags} -frename-registers"
+%endif
+%configure --disable-static --enable-libwebpmux \
+           --enable-libwebpdemux --enable-libwebpdecoder
+
 make %{?_smp_mflags}
 
-%if %{with_java}
+%ifnarch ppc64
 # swig generated Java bindings
 cp %{SOURCE1} .
 cd swig
 rm -rf libwebp.jar libwebp_java_wrap.c
 mkdir -p java/com/google/webp
 swig -ignoremissing -I../src -java \
-	-package com.google.webp  \
-	-outdir java/com/google/webp \
-	-o libwebp_java_wrap.c libwebp.i
+    -package com.google.webp  \
+    -outdir java/com/google/webp \
+    -o libwebp_java_wrap.c libwebp.swig
 
-gcc %{optflags} -shared -fPIC \
-	-I/usr/lib/jvm/java/include \
-	-I/usr/lib/jvm/java/include/linux \
-	-I../src \
-	-L../src/.libs -lwebp libwebp_java_wrap.c \
-	-o libwebp_jni.so
+gcc %{optflags} -fPIC -shared \
+    -I/usr/lib/jvm/java/include \
+    -I/usr/lib/jvm/java/include/linux \
+    -I../src \
+    -L../src/.libs -lwebp libwebp_java_wrap.c \
+    -o libwebp_jni.so
 
 cd java
 javac com/google/webp/libwebp.java
@@ -97,7 +103,7 @@ jar cvf ../libwebp.jar com/google/webp/*.class
 %make_install
 find "%{buildroot}/%{_libdir}" -type f -name "*.la" -delete
 
-%if %{with_java}
+%ifnarch ppc64
 # swig generated Java bindings
 mkdir -p %{buildroot}/%{_libdir}/%{name}-java
 cp swig/*.jar swig/*.so %{buildroot}/%{_libdir}/%{name}-java/
@@ -108,34 +114,66 @@ cp swig/*.jar swig/*.so %{buildroot}/%{_libdir}/%{name}-java/
 %postun -n %{name} -p /sbin/ldconfig
 
 %files tools
-%defattr(-,root,root,-)
 %{_bindir}/cwebp
 %{_bindir}/dwebp
 %{_bindir}/gif2webp
 %{_bindir}/webpmux
+%{_bindir}/vwebp
 %{_mandir}/man*/*
 
-%files
-%defattr(-,root,root,-)
-%doc README PATENTS COPYING NEWS AUTHORS
-%{_libdir}/%{name}*.so.*
+%files -n %{name}
+%doc README PATENTS NEWS AUTHORS
+%doc COPYING
+%{_libdir}/%{name}.so.5*
+%{_libdir}/%{name}decoder.so.1*
+%{_libdir}/%{name}demux.so.1*
+%{_libdir}/%{name}mux.so.1*
 
 %files devel
-%defattr(-,root,root,-)
 %{_libdir}/%{name}*.so
 %{_includedir}/*
 %{_libdir}/pkgconfig/*
 
-%if %{with_java}
+%ifnarch ppc64
 %files java
-%defattr(-,root,root,-)
 %doc libwebp_jni_example.java
 %{_libdir}/%{name}-java/
 %endif
 
 %changelog
-* Sat Nov  2 2013 Remi Collet <rpms@famillecollet.com> - 0.3.1-2
-- backport for EL in remi repo
+* Thu Apr 02 2015 Sandro Mani <manisandro@gmail.com> - 0.4.3-3
+- Requires: java-headless -> Requires: java
+
+* Fri Mar 27 2015 Sandro Mani <manisandro@gmail.com> - 0.4.3-2
+- Add BuildRequires: freeglut-devel to build vwebp
+
+* Thu Mar 12 2015 Sandro Mani <manisandro@gmail.com> - 0.4.3-1
+- upstream release 0.4.3
+
+* Fri Oct 17 2014 Sandro Mani <manisandro@gmail.com> - 0.4.2-1
+- upstream release 0.4.2
+
+* Sun Aug 17 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.4.1-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_22_Mass_Rebuild
+
+* Wed Aug 13 2014 Peter Robinson <pbrobinson@fedoraproject.org> 0.4.1-2
+- Use frename-registers cflag to fix FTBFS on aarch64
+
+* Tue Aug 05 2014 Sandro Mani <manisandro@gmail.com> - 0.4.1-1
+- upstream release 0.4.1
+
+* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.4.0-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
+* Tue Apr 08 2014 Jaromir Capik <jcapik@redhat.com> - 0.4.0-3
+- Fixing endian checks (#962091)
+- Fixing FTPBS caused by rpath presence
+
+* Fri Mar 28 2014 Michael Simacek <msimacek@redhat.com> - 0.4.0-2
+- Use Requires: java-headless rebuild (#1067528)
+
+* Thu Jan 02 2014 Sandro Mani <manisandro@gmail.com> - 0.4.0-1
+- upstream release 0.4.0
 
 * Wed Oct 02 2013 Sandro Mani <manisandro@gmail.com> - 0.3.1-2
 - enable webpdemux
