@@ -1,0 +1,10 @@
+diff -Naupr memkeys-5a860d031dfa26b342cc37f32f8ea00892423318.orig/configure.ac memkeys-5a860d031dfa26b342cc37f32f8ea00892423318/configure.ac
+--- memkeys-5a860d031dfa26b342cc37f32f8ea00892423318.orig/configure.ac	2014-12-10 00:34:12.000000000 +0100
++++ memkeys-5a860d031dfa26b342cc37f32f8ea00892423318/configure.ac	2015-09-14 11:53:02.329706803 +0200
+@@ -1,5 +1,5 @@
+ # Initialize autoconf
+-AC_PREREQ([2.68])
++AC_PREREQ([2.63])
+ AC_INIT([memkeys], [0.1], [bmatheny@mobocracy.net])
+ AC_CONFIG_SRCDIR([src/main.cpp])
+ AC_CONFIG_AUX_DIR([config])
