@@ -1,6 +1,6 @@
 %global realname puppetserver
-%global realversion 1.0.8
-%global rpmversion 1.0.8
+%global realversion 1.1.1
+%global rpmversion 1.1.1
 
 %global open_jdk          java-1.7.0-openjdk
 
@@ -24,7 +24,7 @@
 %define __jar_repack     0
 
 Name:             puppetserver
-Version:          1.0.8
+Version:          1.1.1
 Release:          1%{?dist}
 BuildRoot:        %{_tmppath}/%{realname}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -63,7 +63,7 @@ Requires:         java-1.7.0-openjdk
 
 
 %description
-Puppet Server (puppetserver 1.0.8,trapperkeeper-webserver-jetty9 1.3.0)
+Puppet Server (puppetserver 1.1.1,trapperkeeper-webserver-jetty9 1.3.1)
 
 %prep
 %setup -q -n %{name}-%{realversion}
@@ -74,17 +74,17 @@ Puppet Server (puppetserver 1.0.8,trapperkeeper-webserver-jetty9 1.3.0)
 
 rm -rf $RPM_BUILD_ROOT
 
-env DESTDIR=%{buildroot} prefix=%{_prefix} confdir=%{_sysconfdir} bindir=%{_bindir} rundir=%{_rundir}/puppetserver localstatedir=%{_localstatedir} rubylibdir=%{rubylibdir} bash install.sh install_redhat
+env EZ_VERBOSE=1 DESTDIR=%{buildroot} prefix=%{_prefix} confdir=%{_sysconfdir} bindir=%{_bindir} rundir=%{_rundir}/puppetserver localstatedir=%{_localstatedir} rubylibdir=%{rubylibdir} bash install.sh install_redhat
 %if %{_with_systemd}
-env DESTDIR=%{buildroot} prefix=%{_prefix} confdir=%{_sysconfdir} bindir=%{_bindir} rundir=%{_rundir}/puppetserver defaultsdir=%{_sysconfdir}/sysconfig unitdir=%{_unitdir} bash install.sh systemd_redhat
+env EZ_VERBOSE=1 DESTDIR=%{buildroot} prefix=%{_prefix} confdir=%{_sysconfdir} bindir=%{_bindir} rundir=%{_rundir}/puppetserver defaultsdir=%{_sysconfdir}/sysconfig unitdir=%{_unitdir} bash install.sh systemd_redhat
 %else
-env DESTDIR=%{buildroot} prefix=%{_prefix} confdir=%{_sysconfdir} bindir=%{_bindir} rundir=%{_rundir}/puppetserver defaultsdir=%{_sysconfdir}/sysconfig initdir=%{_initrddir} bash install.sh sysv_init_redhat
+env EZ_VERBOSE=1 DESTDIR=%{buildroot} prefix=%{_prefix} confdir=%{_sysconfdir} bindir=%{_bindir} rundir=%{_rundir}/puppetserver defaultsdir=%{_sysconfdir}/sysconfig initdir=%{_initrddir} bash install.sh sysv_init_redhat
 %endif
 
 %if 0%{?fedora} >= 16 || 0%{?rhel} >= 7 || 0%{?sles_version} >= 12
-env DESTDIR=%{buildroot} confdir=%{_sysconfdir} bash install.sh logrotate
+env EZ_VERBOSE=1 DESTDIR=%{buildroot} confdir=%{_sysconfdir} bash install.sh logrotate
 %else
-env DESTDIR=%{buildroot} confdir=%{_sysconfdir} bash install.sh logrotate_legacy
+env EZ_VERBOSE=1 DESTDIR=%{buildroot} confdir=%{_sysconfdir} bash install.sh logrotate_legacy
 %endif
 
 
@@ -173,5 +173,5 @@ fi
 
 
 %changelog
-* Sat Mar 28 2015 Puppet Labs Release <info@puppetlabs.com> -  1.0.8-1
-- Build for 1.0.8
+* Thu Jun 11 2015 Puppet Labs Release <info@puppetlabs.com> -  1.1.1-1
+- Build for 1.1.1
