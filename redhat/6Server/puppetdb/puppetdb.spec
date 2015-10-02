@@ -1,6 +1,6 @@
 %global realname puppetdb
-%global realversion 2.3.2
-%global rpmversion 2.3.2
+%global realversion 2.3.7
+%global rpmversion 2.3.7
 %global puppetminversion 3.5.1
 %global facterminversion 1.7.0
 
@@ -40,7 +40,7 @@
 
 
 Name:          puppetdb
-Version:       2.3.2
+Version:       2.3.7
 Release:       1%{?dist}
 BuildRoot:     %{_tmppath}/%{realname}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -103,7 +103,6 @@ Group: System/Libraries
 Group: Development/Libraries
 %endif
 Requires: puppet >= %{puppetminversion}
-Requires: rubygem-json
 
 %description terminus
 Connect Puppet to PuppetDB by setting up a terminus for PuppetDB.
@@ -331,7 +330,7 @@ fi
 
 
 %changelog
-* Wed Apr 01 2015 jenkins <jenkins@loch> - 2.3.2-1
+* Wed Aug 12 2015 jenkins <jenkins@loch> - 2.3.7-1
 - Autobuild from Rake task
 
 * Mon Apr 02 2012 Michael Stahnke <stahnma@puppetlabs.com> - 0.1.0-1
