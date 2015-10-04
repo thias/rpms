@@ -3,14 +3,14 @@
 %else
 %global with_systemd 0
 %endif
-%if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
-%global with_dtrace 1
-%else
+#if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
+#global with_dtrace 1
+#else
 %global with_dtrace 0
-%endif
+#endif
 
 Name: mysql
-Version: 5.5.37
+Version: 5.5.45
 Release: 1%{?dist}
 
 Summary: MySQL client programs and shared libraries
@@ -57,7 +57,6 @@ Source999: filter-requires-mysql.sh
 Patch1: mysql-errno.patch
 Patch2: mysql-strmov.patch
 Patch3: mysql-install-test.patch
-Patch4: mysql-expired-certs.patch
 Patch5: mysql-stack-guard.patch
 Patch6: mysql-chain-certs.patch
 Patch7: mysql-versioning.patch
@@ -71,10 +70,7 @@ Patch17: mysql-plugin-test.patch
 Patch18: mysql-cipherspec.patch
 Patch19: mysql-file-contents.patch
 Patch20: mysql-string-overflow.patch
-Patch21: mysql-dh1024.patch
 Patch22: mysql-innodbwarn.patch
-# http://bugs.mysql.com/68999
-Patch23: mysql-openssl.patch
 Patch24: mysql-ssltest.patch
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -262,7 +258,6 @@ rm -f Docs/mysql.info
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
-%patch4 -p1
 %patch5 -p1
 %patch6 -p1
 %patch7 -p1
@@ -276,9 +271,7 @@ rm -f Docs/mysql.info
 %patch18 -p1
 %patch19 -p1
 %patch20 -p1
-%patch21 -p1
 %patch22 -p1
-%patch23 -p1
 %patch24 -p1
 
 # workaround for upstream bug #56342
@@ -344,6 +337,8 @@ cmake . -DBUILD_CONFIG=mysql_release \
 	-DENABLED_LOCAL_INFILE=ON \
 %if %{with_dtrace}
 	-DENABLE_DTRACE=ON \
+%else
+	-DENABLE_DTRACE=OFF \
 %endif
 	-DWITH_EMBEDDED_SERVER=ON \
 	-DWITH_READLINE=ON \
@@ -450,7 +445,7 @@ touch $RPM_BUILD_ROOT/var/log/mysqld.log
 mkdir -p $RPM_BUILD_ROOT/var/run/mysqld
 install -m 0755 -d $RPM_BUILD_ROOT/var/lib/mysql
 
-mkdir -p $RPM_BUILD_ROOT/etc
+mkdir -p $RPM_BUILD_ROOT/etc/my.cnf.d
 install -m 0644 %{SOURCE3} $RPM_BUILD_ROOT/etc/my.cnf
 %if %{with_systemd}
 sed -i -e '/user=mysql/d' $RPM_BUILD_ROOT/etc/my.cnf
@@ -552,9 +547,9 @@ rm -rf $RPM_BUILD_ROOT
 %pre libs
 echo -e "\nWARNING : This MySQL RPM is not an official Fedora / Red Hat build and it"
 echo -e "overrides the official one. Don't file bugs on Fedora Project nor Red Hat."
-echo -e "Use dedicated forums http://forums.famillecollet.com/\n"
+echo -e "Use dedicated forum at http://forum.remirepo.net/\n"
 
-%if %{?fedora}%{!?fedora:99} <= 16
+%if %{?fedora}%{!?fedora:99} <= 18
 echo -e "WARNING : Fedora %{fedora} is now EOL :"
 echo -e "You should consider upgrading to a supported release.\n"
 %endif
@@ -685,6 +680,7 @@ fi
 %doc README COPYING README.mysql-license
 # although the default my.cnf contains only server settings, we put it in the
 # libs package because it can be used for client settings too.
+%dir /etc/my.cnf.d
 %config(noreplace) /etc/my.cnf
 %dir %{_libdir}/mysql
 %{_libdir}/mysql/libmysqlclient.so.18*
@@ -842,6 +838,40 @@ fi
 %{_mandir}/man1/mysql_client_test.1*
 
 %changelog
+* Fri Jul 24 2015 Remi Collet <RPMS@FamilleCollet.com> - 5.5.45-1
+- update to MySQL 5.5.45 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-45.html
+
+* Fri May 29 2015 Remi Collet <RPMS@FamilleCollet.com> - 5.5.44-1
+- update to MySQL 5.5.44 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-44.html
+
+* Mon Apr 13 2015 Remi Collet <RPMS@FamilleCollet.com> - 5.5.43-1
+- update to MySQL 5.5.43 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-43.html
+
+* Tue Feb 10 2015 Remi Collet <RPMS@FamilleCollet.com> - 5.5.42-1
+- update to MySQL 5.5.42 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-42.html
+
+* Sat Nov 29 2014 Remi Collet <RPMS@FamilleCollet.com> - 5.5.41-1
+- update to MySQL 5.5.41 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-41.html
+
+* Wed Sep 24 2014 Remi Collet <RPMS@FamilleCollet.com> - 5.5.40-1
+- update to MySQL 5.5.40 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-40.html
+- add /etc/my.cnf.d for split configuration files
+
+* Sat Aug  2 2014 Remi Collet <RPMS@FamilleCollet.com> - 5.5.39-1
+- update to MySQL 5.5.39 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-39.html
+- disable dtrace
+
+* Mon Jun  2 2014 Remi Collet <RPMS@FamilleCollet.com> - 5.5.38-1
+- update to MySQL 5.5.38 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-38.html
+
 * Mon Mar 31 2014 Remi Collet <RPMS@FamilleCollet.com> - 5.5.37-1
 - update to MySQL 5.5.37 Community Server GA
   http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-37.html
