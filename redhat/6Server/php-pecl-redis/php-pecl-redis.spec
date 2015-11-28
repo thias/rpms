@@ -1,6 +1,6 @@
 # spec file for php-pecl-redis
 #
-# Copyright (c) 2012-2014 Remi Collet
+# Copyright (c) 2012-2015 Remi Collet
 # License: CC-BY-SA
 # http://creativecommons.org/licenses/by-sa/3.0/
 #
@@ -24,17 +24,14 @@
 
 Summary:       Extension for communicating with the Redis key-value store
 Name:          %{?scl_prefix}php-pecl-redis
-Version:       2.2.5
-Release:       4%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
+Version:       2.2.7
+Release:       1%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
 License:       PHP
 Group:         Development/Languages
 URL:           http://pecl.php.net/package/redis
 Source0:       http://pecl.php.net/get/%{pecl_name}-%{version}.tgz
 # https://github.com/nicolasff/phpredis/issues/332 - missing tests
-Source1:       https://github.com/nicolasff/phpredis/archive/%{version}.tar.gz
-
-# https://github.com/nicolasff/phpredis/pull/447
-Patch0:        %{pecl_name}-php56.patch
+Source1:       https://github.com/phpredis/phpredis/archive/%{version}.tar.gz
 
 BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: %{?scl_prefix}php-devel
@@ -48,6 +45,8 @@ Requires:      %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:      %{?scl_prefix}php(api) = %{php_core_api}
 # php-pecl-igbinary missing php-pecl(igbinary)%{?_isa}
 Requires:      %{?scl_prefix}php-pecl-igbinary%{?_isa}
+%{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
+
 Obsoletes:     %{?scl_prefix}php-redis < %{version}
 Provides:      %{?scl_prefix}php-redis = %{version}-%{release}
 Provides:      %{?scl_prefix}php-redis%{?_isa} = %{version}-%{release}
@@ -56,17 +55,17 @@ Provides:      %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
 
 %if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
 # Other third party repo stuff
-Obsoletes:     php53-pecl-%{pecl_name}
-Obsoletes:     php53u-pecl-%{pecl_name}
-Obsoletes:     php54-pecl-%{pecl_name}
-Obsoletes:     php54w-pecl-%{pecl_name}
+Obsoletes:     php53-pecl-%{pecl_name}  <= %{version}
+Obsoletes:     php53u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php54-pecl-%{pecl_name}  <= %{version}
+Obsoletes:     php54w-pecl-%{pecl_name} <= %{version}
 %if "%{php_version}" > "5.5"
-Obsoletes:     php55u-pecl-%{pecl_name}
-Obsoletes:     php55w-pecl-%{pecl_name}
+Obsoletes:     php55u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php55w-pecl-%{pecl_name} <= %{version}
 %endif
 %if "%{php_version}" > "5.6"
-Obsoletes:     php56u-pecl-%{pecl_name}
-Obsoletes:     php56w-pecl-%{pecl_name}
+Obsoletes:     php56u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php56w-pecl-%{pecl_name} <= %{version}
 %endif
 %endif
 
@@ -85,17 +84,18 @@ This Redis client implements most of the latest Redis API.
 As method only only works when also implemented on the server side,
 some doesn't work with an old redis server version.
 
+Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')%{?scl: as Software Collection}.
+
 
 %prep
 %setup -q -c -a 1
 
 # rename source folder
-mv %{pecl_name}-%{version} nts
+mv %{pecl_name}-%{version} NTS
 # tests folder from github archive
-mv phpredis-%{version}/tests nts/tests
+mv phpredis-%{version}/tests NTS/tests
 
-cd nts
-%patch0 -p1 -b .php56
+cd NTS
 
 # Sanity check, really often broken
 extver=$(sed -n '/#define PHP_REDIS_VERSION/{s/.* "//;s/".*$//;p}' php_redis.h)
@@ -107,7 +107,7 @@ cd ..
 
 %if %{with_zts}
 # duplicate for ZTS build
-cp -pr nts zts
+cp -pr NTS ZTS
 %endif
 
 # Drop in the bit of configuration
@@ -128,7 +128,7 @@ EOF
 
 
 %build
-cd nts
+cd NTS
 %{_bindir}/phpize
 %configure \
     --enable-redis \
@@ -138,7 +138,7 @@ cd nts
 make %{?_smp_mflags}
 
 %if %{with_zts}
-cd ../zts
+cd ../ZTS
 %{_bindir}/zts-phpize
 %configure \
     --enable-redis \
@@ -153,20 +153,20 @@ make %{?_smp_mflags}
 rm -rf %{buildroot}
 
 # Install the NTS stuff
-make -C nts install INSTALL_ROOT=%{buildroot}
+make -C NTS install INSTALL_ROOT=%{buildroot}
 install -D -m 644 %{ini_name} %{buildroot}%{php_inidir}/%{ini_name}
 
 %if %{with_zts}
 # Install the ZTS stuff
-make -C zts install INSTALL_ROOT=%{buildroot}
+make -C ZTS install INSTALL_ROOT=%{buildroot}
 install -D -m 644 %{ini_name} %{buildroot}%{php_ztsinidir}/%{ini_name}
 %endif
 
 # Install the package XML file
 install -D -m 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
 
-# Test & Documentation
-cd nts
+# Documentation
+cd NTS
 for i in $(grep 'role="doc"' ../package.xml | sed -e 's/^.*name="//;s/".*$//')
 do install -Dpm 644 $i %{buildroot}%{pecl_docdir}/%{pecl_name}/$i
 done
@@ -187,7 +187,7 @@ done
 %endif
 
 %if %{with_tests}
-cd nts/tests
+cd NTS/tests
 
 # this test requires redis >= 2.6.9
 # https://github.com/nicolasff/phpredis/pull/333
@@ -213,7 +213,7 @@ port=6382
 %endif
 sed -e "s/6379/$port/" -i redis.conf
 sed -e "s/6379/$port/" -i TestRedis.php
-%{_sbindir}/redis-server ./redis.conf
+%{_bindir}/redis-server ./redis.conf
 
 # Run the test Suite
 ret=0
@@ -224,7 +224,7 @@ ret=0
 
 # Cleanup
 if [ -f run/redis.pid ]; then
-   kill $(cat run/redis.pid)
+   %{_bindir}/redis-cli -p $port shutdown
 fi
 
 exit $ret
@@ -234,12 +234,20 @@ exit $ret
 %endif
 
 
-%post
-%{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+# when pear installed alone, after us
+%triggerin -- %{?scl_prefix}php-pear
+if [ -x %{__pecl} ] ; then
+    %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+fi
 
+# posttrans as pear can be installed after us
+%posttrans
+if [ -x %{__pecl} ] ; then
+    %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+fi
 
 %postun
-if [ $1 -eq 0 ] ; then
+if [ $1 -eq 0 -a -x %{__pecl} ] ; then
     %{pecl_uninstall} %{pecl_name} >/dev/null || :
 fi
 
@@ -250,6 +258,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
+%{?_licensedir:%license NTS/COPYING}
 %doc %{pecl_docdir}/%{pecl_name}
 %{pecl_xmldir}/%{name}.xml
 
@@ -263,6 +272,17 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Mar 03 2015 Remi Collet <remi@fedoraproject.org> - 2.2.7-1
+- Update to 2.2.7 (stable)
+- drop runtime dependency on pear, new scriptlets
+
+* Wed Dec 24 2014 Remi Collet <remi@fedoraproject.org> - 2.2.5-5.1
+- Fedora 21 SCL mass rebuild
+
+* Fri Oct  3 2014 Remi Collet <rcollet@redhat.com> - 2.2.5-5
+- fix segfault with igbinary serializer
+  https://github.com/nicolasff/phpredis/issues/341
+
 * Mon Aug 25 2014 Remi Collet <rcollet@redhat.com> - 2.2.5-4
 - improve SCL build
 
