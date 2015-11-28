@@ -1,11 +1,22 @@
-# spec file for php-pecl-msgpack
+# remirepo spec file for php-pecl-msgpack
+# with SCL compatibility, from:
 #
-# Copyright (c) 2012-2014 Remi Collet
+# Fedora spec file for php-pecl-msgpack
+#
+# Copyright (c) 2012-2015 Remi Collet
 # License: CC-BY-SA
-# http://creativecommons.org/licenses/by-sa/3.0/
+# http://creativecommons.org/licenses/by-sa/4.0/
 #
 # Please, preserve the changelog entries
 #
+%if 0%{?scl:1}
+%if "%{scl}" == "rh-php56"
+%global sub_prefix more-php56-
+%else
+%global sub_prefix %{scl_prefix}
+%endif
+%endif
+
 %{?scl:          %scl_package         php-pecl-msgpack}
 %{!?php_inidir:  %global php_inidir   %{_sysconfdir}/php.d}
 %{!?__pecl:      %global __pecl       %{_bindir}/pecl}
@@ -19,47 +30,56 @@
 %global ini_name  40-%{pecl_name}.ini
 %endif
 
+%if 0
+%global        with_msgpack 1
+%else
+%global        with_msgpack 0
+%endif
+
 Summary:       API for communicating with MessagePack serialization
-Name:          %{?scl_prefix}php-pecl-msgpack
-Version:       0.5.5
-Release:       7%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
+Name:          %{?sub_prefix}php-pecl-msgpack
+Version:       0.5.7
+Release:       1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 License:       BSD
 Group:         Development/Languages
 URL:           http://pecl.php.net/package/msgpack
 Source:        http://pecl.php.net/get/%{pecl_name}-%{version}.tgz
 
-# https://github.com/msgpack/msgpack-php/issues/16
-Patch0:        %{pecl_name}.patch
-
 BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: %{?scl_prefix}php-devel
 BuildRequires: %{?scl_prefix}php-pear
-%if 0%{?fedora} > 15 || 0%{?rhel} > 6
+%if %{with_msgpack}
 BuildRequires: msgpack-devel
 %endif
 # https://github.com/msgpack/msgpack-php/issues/25
 ExcludeArch: ppc64
 
-Requires(post): %{__pecl}
-Requires(postun): %{__pecl}
 Requires:      %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:      %{?scl_prefix}php(api) = %{php_core_api}
+%{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
 
 Provides:      %{?scl_prefix}php-%{pecl_name} = %{version}
 Provides:      %{?scl_prefix}php-%{pecl_name}%{?_isa} = %{version}
 Provides:      %{?scl_prefix}php-pecl(%{pecl_name}) = %{version}
 Provides:      %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
 
-%if "%{?vendor}" == "Remi Collet"
+%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
 # Other third party repo stuff
-Obsoletes:     php53-pecl-%{pecl_name}
-Obsoletes:     php53u-pecl-%{pecl_name}
-Obsoletes:     php54-pecl-%{pecl_name}
+Obsoletes:     php53-pecl-%{pecl_name}  <= %{version}
+Obsoletes:     php53u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php54-pecl-%{pecl_name}  <= %{version}
+Obsoletes:     php54w-pecl-%{pecl_name} <= %{version}
 %if "%{php_version}" > "5.5"
-Obsoletes:     php55u-pecl-%{pecl_name}
+Obsoletes:     php55u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php55w-pecl-%{pecl_name} <= %{version}
 %endif
 %if "%{php_version}" > "5.6"
-Obsoletes:     php56u-pecl-%{pecl_name}
+Obsoletes:     php56u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php56w-pecl-%{pecl_name} <= %{version}
+%endif
+%if "%{php_version}" > "7.0"
+Obsoletes:     php70u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php70w-pecl-%{pecl_name} <= %{version}
 %endif
 %endif
 
@@ -85,6 +105,8 @@ a perfect replacement.
 
 This extension is still EXPERIMENTAL.
 
+Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')%{?scl: as Software Collection (%{scl})}.
+
 
 %package devel
 Summary:       MessagePack developer files (header)
@@ -101,9 +123,8 @@ These are the files needed to compile programs using MessagePack serializer.
 
 mv %{pecl_name}-%{version} NTS
 cd NTS
-%patch0 -p1 -b .build
 
-%if 0%{?fedora} > 15 || 0%{?rhel} > 6
+%if %{with_msgpack}
 # use system library
 rm -rf msgpack
 %endif
@@ -112,7 +133,7 @@ rm -rf msgpack
 [ -f EXPERIMENTAL ] || exit 1
 
 # Sanity check, really often broken
-extver=$(sed -n '/#define MSGPACK_EXTENSION_VERSION/{s/.* "//;s/".*$//;p}' php_msgpack.h)
+extver=$(sed -n '/#define PHP_MSGPACK_VERSION/{s/.* "//;s/".*$//;p}' php_msgpack.h)
 if test "x${extver}" != "x%{version}"; then
    : Error: Upstream extension version is ${extver}, expecting %{version}.
    exit 1
@@ -134,6 +155,7 @@ extension = %{pecl_name}.so
 ;msgpack.error_display = On
 ;msgpack.illegal_key_insert = Off
 ;msgpack.php_only = On
+;msgpack.use_str8_serialization = On
 EOF
 
 
@@ -177,31 +199,52 @@ done
 
 
 %check
-cd NTS
+# Known by upstream as failed test (travis result)
+rm */tests/{018,030,040,040b,040c,040d}.phpt
 
+cd NTS
+: Minimal load test for NTS extension
+%{__php} --no-php-ini \
+    --define extension=%{buildroot}%{php_extdir}/%{pecl_name}.so \
+    --modules | grep %{pecl_name}
+
+: Upstream test suite  for NTS extension
 TEST_PHP_EXECUTABLE=%{__php} \
 TEST_PHP_ARGS="-n -d extension_dir=$PWD/modules -d extension=%{pecl_name}.so" \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
-%{__php} -n run-tests.php
+%{__php} -n run-tests.php --show-diff
 
 %if %{with_zts}
 cd ../ZTS
+: Minimal load test for ZTS extension
+%{__ztsphp} --no-php-ini \
+    --define extension=%{buildroot}%{php_ztsextdir}/%{pecl_name}.so \
+    --modules | grep %{pecl_name}
 
+: Upstream test suite  for ZTS extension
 TEST_PHP_EXECUTABLE=%{__ztsphp} \
 TEST_PHP_ARGS="-n -d extension_dir=$PWD/modules -d extension=%{pecl_name}.so" \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
-%{__ztsphp} -n run-tests.php
+%{__ztsphp} -n run-tests.php --show-diff
 %endif
 
 
-%post
-%{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+# when pear installed alone, after us
+%triggerin -- %{?scl_prefix}php-pear
+if [ -x %{__pecl} ] ; then
+    %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+fi
 
+# posttrans as pear can be installed after us
+%posttrans
+if [ -x %{__pecl} ] ; then
+    %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+fi
 
 %postun
-if [ $1 -eq 0 ] ; then
+if [ $1 -eq 0 -a -x %{__pecl} ] ; then
     %{pecl_uninstall} %{pecl_name} >/dev/null || :
 fi
 
@@ -211,7 +254,7 @@ rm -rf %{buildroot}
 
 
 %files
-%defattr(-, root, root, 0755)
+%defattr(-,root,root,-)
 %doc %{pecl_docdir}/%{pecl_name}
 %{pecl_xmldir}/%{name}.xml
 
@@ -225,7 +268,7 @@ rm -rf %{buildroot}
 
 
 %files devel
-%defattr(-, root, root, 0755)
+%defattr(-,root,root,-)
 %doc %{pecl_testdir}/%{pecl_name}
 %{php_incldir}/ext/%{pecl_name}
 
@@ -235,6 +278,22 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Aug 30 2015 Remi Collet <remi@fedoraproject.org> - 0.5.7-1
+- Update to 0.5.7 (beta)
+
+* Sat Jun 20 2015 Remi Collet <remi@fedoraproject.org> - 0.5.6-2
+- allow build against rh-php56 (as more-php56)
+
+* Mon Apr 27 2015 Remi Collet <remi@fedoraproject.org> - 0.5.6-1
+- Update to 0.5.6
+- drop runtime dependency on pear, new scriptlets
+
+* Wed Dec 24 2014 Remi Collet <remi@fedoraproject.org> - 0.5.5-8.1
+- Fedora 21 SCL mass rebuild
+
+* Sun Aug 24 2014 Remi Collet <remi@fedoraproject.org> - 0.5.5-8
+- improve SCL stuff
+
 * Wed Apr  9 2014 Remi Collet <remi@fedoraproject.org> - 0.5.5-7
 - add numerical prefix to extension configuration file
 
