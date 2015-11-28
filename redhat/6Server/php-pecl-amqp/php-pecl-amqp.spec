@@ -1,11 +1,21 @@
-# spec file for php-pecl-amqp
+# remirepo spec file for php-pecl-amqp
+# with SCL compatibility, from:
 #
-# Copyright (c) 2012-2014 Remi Collet
+# Fedora spec file for php-pecl-amqp
+#
+# Copyright (c) 2012-2015 Remi Collet
 # License: CC-BY-SA
-# http://creativecommons.org/licenses/by-sa/3.0/
+# http://creativecommons.org/licenses/by-sa/4.0/
 #
 # Please, preserve the changelog entries
 #
+%if 0%{?scl:1}
+%if "%{scl}" == "rh-php56"
+%global sub_prefix more-php56-
+%else
+%global sub_prefix %{scl_prefix}
+%endif
+%endif
 
 %{?scl:          %scl_package        php-pecl-amqp}
 %{!?php_inidir:  %global php_inidir  %{_sysconfdir}/php.d}
@@ -13,18 +23,19 @@
 %{!?__php:       %global __php       %{_bindir}/php}
 
 %global with_zts    0%{?__ztsphp:1}
-%global with_tests  %{?_with_tests:1}%{!?_with_tests:0}
+%global with_tests  0%{?_with_tests:1}
 %global pecl_name   amqp
 %if "%{php_version}" < "5.6"
 %global ini_name    %{pecl_name}.ini
 %else
 %global ini_name    40-%{pecl_name}.ini
 %endif
+#global prever      beta4
 
 Summary:       Communicate with any AMQP compliant server
-Name:          %{?scl_prefix}php-pecl-amqp
-Version:       1.4.0
-Release:       2%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
+Name:          %{?sub_prefix}php-pecl-amqp
+Version:       1.6.1
+Release:       1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 License:       PHP
 Group:         Development/Languages
 URL:           http://pecl.php.net/package/amqp
@@ -33,15 +44,19 @@ Source0:       http://pecl.php.net/get/%{pecl_name}-%{version}%{?prever}.tgz
 BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: %{?scl_prefix}php-devel > 5.2.0
 BuildRequires: %{?scl_prefix}php-pear
-BuildRequires: librabbitmq-devel >= 0.4.1
+%if "%{?vendor}" == "Remi Collet"
+# Upstream requires 0.5.2, set 0.7.0 to ensure "last" is used.
+BuildRequires: librabbitmq-devel >= 0.7.0
+%else
+BuildRequires: librabbitmq-devel >= 0.5.2
+%endif
 %if %{with_tests}
 BuildRequires: rabbitmq-server
 %endif
 
 Requires:         %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:         %{?scl_prefix}php(api) = %{php_core_api}
-Requires(post):   %{__pecl}
-Requires(postun): %{__pecl}
+%{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
 
 Provides:         %{?scl_prefix}php-%{pecl_name} = %{version}
 Provides:         %{?scl_prefix}php-%{pecl_name}%{?_isa} = %{version}
@@ -50,17 +65,21 @@ Provides:         %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
 
 %if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
 # Other third party repo stuff
-Obsoletes:     php53-pecl-%{pecl_name}
-Obsoletes:     php53w-pecl-%{pecl_name}
-Obsoletes:     php54-pecl-%{pecl_name}
-Obsoletes:     php54w-pecl-%{pecl_name}
+Obsoletes:     php53-pecl-%{pecl_name}  <= %{version}
+Obsoletes:     php53u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php54-pecl-%{pecl_name}  <= %{version}
+Obsoletes:     php54w-pecl-%{pecl_name} <= %{version}
 %if "%{php_version}" > "5.5"
-Obsoletes:     php55u-pecl-%{pecl_name}
-Obsoletes:     php55w-pecl-%{pecl_name}
+Obsoletes:     php55u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php55w-pecl-%{pecl_name} <= %{version}
 %endif
 %if "%{php_version}" > "5.6"
-Obsoletes:     php56u-pecl-%{pecl_name}
-Obsoletes:     php56w-pecl-%{pecl_name}
+Obsoletes:     php56u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php56w-pecl-%{pecl_name} <= %{version}
+%endif
+%if "%{php_version}" > "7.0"
+Obsoletes:     php70u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php70w-pecl-%{pecl_name} <= %{version}
 %endif
 %endif
 
@@ -77,12 +96,18 @@ such as RabbitMQ, OpenAMQP and Qpid, giving you the ability to create and
 delete exchanges and queues, as well as publish to any exchange and consume
 from any queue.
 
+Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')%{?scl: as Software Collection (%{scl} by %{?scl_vendor}%{!?scl_vendor:rh})}.
+
 
 %prep
 %setup -q -c
-mv %{pecl_name}-%{version}%{?prever} NTS
 
+# Don't install/register tests
+sed -e 's/role="test"/role="src"/' -i package.xml
+
+mv %{pecl_name}-%{version}%{?prever} NTS
 cd NTS
+
 # Upstream often forget to change this
 extver=$(sed -n '/#define PHP_AMQP_VERSION/{s/.* "//;s/".*$//;p}' php_amqp.h)
 if test "x${extver}" != "x%{version}%{?prever}"; then
@@ -95,12 +120,10 @@ cat > %{ini_name} << 'EOF'
 ; Enable %{pecl_name} extension module
 extension = %{pecl_name}.so
 
-; http://www.php.net/manual/en/amqp.configuration.php
-
 ; Whether calls to AMQPQueue::get() and AMQPQueue::consume()
 ; should require that the client explicitly acknowledge messages. 
 ; Setting this value to 1 will pass in the AMQP_AUTOACK flag to
-: the above method calls if the flags field is omitted. 
+; the above method calls if the flags field is omitted.
 ;amqp.auto_ack = 0
 
 ; The host to which to connect.
@@ -124,10 +147,14 @@ extension = %{pecl_name}.so
 ;amqp.vhost = /
 
 ; Timeout
-;amqp.timeout=
-;amqp.read_timeout=0
-;amqp.write_timeout=0
-;amqp.connect_timeout=0
+;amqp.timeout =
+;amqp.read_timeout = 0
+;amqp.write_timeout = 0
+;amqp.connect_timeout = 0
+
+;amqp.channel_max = 256
+;amqp.frame_max = 131072
+;amqp.heartbeat = 0
 EOF
 
 %if %{with_zts}
@@ -164,11 +191,8 @@ make -C ZTS install INSTALL_ROOT=%{buildroot}
 install -Dpm 644 %{ini_name} %{buildroot}%{php_ztsinidir}/%{ini_name}
 %endif
 
-# Test & Documentation
+# Documentation
 cd NTS
-for i in $(grep 'role="test"' ../package.xml | sed -e 's/^.*name="//;s/".*$//')
-do install -Dpm 644 $i %{buildroot}%{pecl_testdir}/%{pecl_name}/$i
-done
 for i in $(grep 'role="doc"' ../package.xml | sed -e 's/^.*name="//;s/".*$//')
 do install -Dpm 644 $i %{buildroot}%{pecl_docdir}/%{pecl_name}/$i
 done
@@ -203,7 +227,7 @@ TEST_PHP_EXECUTABLE=%{__php} \
 TEST_PHP_ARGS="-n -d extension=$PWD/modules/%{pecl_name}.so" \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
-%{__php} -n run-tests.php || ret=1
+%{__php} -n run-tests.php --show-diff || ret=1
 popd
 
 %if %{with_zts}
@@ -213,7 +237,7 @@ TEST_PHP_EXECUTABLE=%{__ztsphp} \
 TEST_PHP_ARGS="-n -d extension=$PWD/modules/%{pecl_name}.so" \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
-%{__ztsphp} -n run-tests.php || ret=1
+%{__ztsphp} -n run-tests.php --show-diff || ret=1
 popd
 %endif
 
@@ -231,12 +255,20 @@ exit $ret
 rm -rf %{buildroot}
 
 
-%post
-%{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+# when pear installed alone, after us
+%triggerin -- %{?scl_prefix}php-pear
+if [ -x %{__pecl} ] ; then
+    %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+fi
 
+# posttrans as pear can be installed after us
+%posttrans
+if [ -x %{__pecl} ] ; then
+    %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+fi
 
 %postun
-if [ $1 -eq 0 ] ; then
+if [ $1 -eq 0 -a -x %{__pecl} ] ; then
     %{pecl_uninstall} %{pecl_name} >/dev/null || :
 fi
 
@@ -244,10 +276,10 @@ fi
 %files
 %defattr(-,root,root,-)
 %doc %{pecl_docdir}/%{pecl_name}
-%doc %{pecl_testdir}/%{pecl_name}
+%{pecl_xmldir}/%{name}.xml
+
 %config(noreplace) %{php_inidir}/%{ini_name}
 %{php_extdir}/%{pecl_name}.so
-%{pecl_xmldir}/%{name}.xml
 
 %if %{with_zts}
 %config(noreplace) %{php_ztsinidir}/%{ini_name}
@@ -256,6 +288,31 @@ fi
 
 
 %changelog
+* Wed Nov 25 2015 Remi Collet <remi@fedoraproject.org> - 1.6.1-1
+- update to 1.6.1 (stable)
+
+* Tue Nov  3 2015 Remi Collet <remi@fedoraproject.org> - 1.6.0-2
+- update to 1.6.0 (stable)
+- fix typo in config file
+
+* Fri Sep 18 2015 Remi Collet <remi@fedoraproject.org> - 1.6.0-0.4.beta4
+- open https://github.com/pdezwart/php-amqp/pull/178 - librabbitmq 0.5
+- open https://github.com/pdezwart/php-amqp/pull/179 --with-libdir
+
+* Fri Sep 18 2015 Remi Collet <remi@fedoraproject.org> - 1.6.0-0.3.beta4
+- update to 1.6.0beta4
+
+* Fri Jun 19 2015 Remi Collet <remi@fedoraproject.org> - 1.6.0-0.2.beta3
+- allow build against rh-php56 (as more-php56)
+
+* Mon Apr 20 2015 Remi Collet <remi@fedoraproject.org> - 1.6.0-0.1.beta3
+- update to 1.6.0beta3
+- drop runtime dependency on pear, new scriptlets
+- don't install/register tests
+
+* Wed Dec 24 2014 Remi Collet <remi@fedoraproject.org> - 1.4.0-1.1
+- Fedora 21 SCL mass rebuild
+
 * Mon Aug 25 2014 Remi Collet <rcollet@redhat.com> - 1.4.0-1
 - improve SCL build
 
