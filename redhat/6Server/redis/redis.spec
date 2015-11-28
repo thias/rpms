@@ -1,3 +1,12 @@
+# remirepo spec file for redis, from:
+#
+# Fedora spec file for redis
+#
+# License: MIT
+# http://opensource.org/licenses/MIT
+#
+# Please preserve changelog entries
+#
 %global _hardened_build 1
 
 %if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
@@ -16,8 +25,8 @@
 %global with_tests   %{?_with_tests:1}%{!?_with_tests:0}
 
 Name:             redis
-Version:          3.0.0
-Release:          2%{?dist}
+Version:          3.0.2
+Release:          1%{?dist}
 Summary:          A persistent key-value database
 
 Group:            Applications/Databases
@@ -249,6 +258,15 @@ fi
 
 
 %changelog
+* Tue Jun  9 2015 Remi Collet <remi@fedoraproject.org> - 3.0.2-1
+- Redis 3.0.2 - Release date: 4 Jun 2015
+- Upgrade urgency: HIGH for Redis because of a security issue.
+                   LOW for Sentinel.
+
+* Wed May  6 2015 Remi Collet <remi@fedoraproject.org> - 3.0.1-1
+- Redis 3.0.1 - Release date: 5 May 2015
+- Upgrade urgency: LOW for Redis and Cluster, MODERATE for Sentinel.
+
 * Tue Apr 14 2015 Remi Collet <remi@fedoraproject.org> - 3.0.0-2
 - rebuild with new redis-shutdown from rawhide
 - improved description from rawhide
