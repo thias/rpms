@@ -14,7 +14,7 @@
 %global pdover      20080721
 # Extension version
 %global opcachever  7.0.6-dev
-%global oci8ver     2.0.9
+%global oci8ver     2.0.10
 
 # Use for first build of PHP (before pecl/zip and pecl/jsonc)
 %global php_bootstrap   0
@@ -142,12 +142,9 @@
 %global db_devel  libdb-devel
 %endif
 
-#global snapdate      201405061030
-#global rcver         RC1
-
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 5.6.14
+Version: 5.6.16
 %if 0%{?snapdate:1}%{?rcver:1}
 Release: 0.1.%{?snapdate}%{?rcver}%{?dist}
 %else
@@ -189,7 +186,7 @@ Source99: php-fpm.init
 
 # Build fixes
 Patch5: php-5.6.3-includedir.patch
-Patch6: php-5.2.4-embed.patch
+Patch6: php-5.6.3-embed.patch
 Patch7: php-5.3.0-recode.patch
 Patch8: php-5.6.3-libdb.patch
 
@@ -1987,10 +1984,19 @@ fi
 
 
 %changelog
+* Thu Nov 26 2015 Remi Collet <remi@fedoraproject.org> 5.6.16-1
+- Update to 5.6.16
+  http://www.php.net/releases/5_6_16.php
+
+* Thu Oct 29 2015 Remi Collet <remi@fedoraproject.org> 5.6.15-1
+- Update to 5.6.15
+  http://www.php.net/releases/5_6_15.php
+- php-config: reports all built sapis
+
 * Wed Sep 30 2015 Remi Collet <remi@fedoraproject.org> 5.6.14-1
 - Update to 5.6.14
   http://www.php.net/releases/5_6_14.php
-- phpfpm: enable http authorization headers
+- php-fpm: enable http authorization headers
 
 * Thu Sep  3 2015 Remi Collet <remi@fedoraproject.org> 5.6.13-1
 - Update to 5.6.13
