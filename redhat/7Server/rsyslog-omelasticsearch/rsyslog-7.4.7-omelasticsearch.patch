@@ -1,0 +1,25 @@
+diff -Naupr rsyslog-7.4.7.orig/plugins/omelasticsearch/omelasticsearch.c rsyslog-7.4.7/plugins/omelasticsearch/omelasticsearch.c
+--- rsyslog-7.4.7.orig/plugins/omelasticsearch/omelasticsearch.c	2015-12-17 17:47:03.673622613 +0100
++++ rsyslog-7.4.7/plugins/omelasticsearch/omelasticsearch.c	2015-12-17 17:47:18.624463237 +0100
+@@ -550,7 +550,7 @@ static inline rsRetVal
+ checkResult(instanceData *pData, uchar *reqmsg)
+ {
+ 	cJSON *root;
+-	cJSON *ok;
++	cJSON *status;
+ 	DEFiRet;
+ 
+ 	root = cJSON_Parse(pData->reply);
+@@ -562,8 +562,10 @@ checkResult(instanceData *pData, uchar *
+ 	if(pData->bulkmode) {
+ 		iRet = checkResultBulkmode(pData, root);
+ 	} else {
+-		ok = cJSON_GetObjectItem(root, "ok");
+-		if(ok == NULL || ok->type != cJSON_True) {
++		status = cJSON_GetObjectItem(root, "status");
++		/* as far as we know, no "status" means all went well */
++		if(status != NULL &&
++			(status->type == cJSON_Number || status->valueint >= 0 || status->valueint <= 299)) {
+ 			iRet = RS_RET_DATAFAIL;
+ 		}
+ 	}
