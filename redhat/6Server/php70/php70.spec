@@ -81,23 +81,11 @@
 
 %global macrosdir %(d=%{_rpmconfigdir}/macros.d; [ -d $d ] || d=%{_sysconfdir}/rpm; echo $d)
 
-# systemd to manage the service
-%if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
+# systemd to manage the service, with notify mode, with additional service config
+%if 0%{?fedora} >= 19 || 0%{?rhel} >= 7
 %global with_systemd 1
 %else
 %global with_systemd 0
-%endif
-# systemd with notify mode
-%if 0%{?fedora} >= 16 || 0%{?rhel} >= 7
-%global with_systemdfull 1
-%else
-%global with_systemdfull 0
-%endif
-# systemd with additional service config
-%if 0%{?fedora} >= 19 || 0%{?rhel} >= 7
-%global with_systemdmax 1
-%else
-%global with_systemdmax 0
 %endif
 # httpd 2.4.10 with httpd-filesystem and sethandler support
 %if 0%{?fedora} >= 21
@@ -132,13 +120,13 @@
 %global db_devel  libdb-devel
 %endif
 
-#global rcver         RC8
+#global rcver         RC1
 %global rpmrel        1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 7.0.0
-Release: %{rpmrel}%{?dist}
+Version: 7.0.1
+Release: %{?rcver:0.}%{rpmrel}%{?rcver:.%{rcver}}%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -171,6 +159,7 @@ Patch5: php-7.0.0-includedir.patch
 Patch6: php-5.6.3-embed.patch
 Patch7: php-5.3.0-recode.patch
 Patch8: php-7.0.0-libdb.patch
+Patch9: php-5.5.30-curl.patch
 
 # Fixes for extension modules
 # https://bugs.php.net/63171 no odbc call during timeout
@@ -231,9 +220,9 @@ BuildRequires: libtool-ltdl-devel
 %if %{with_dtrace}
 BuildRequires: systemtap-sdt-devel
 %endif
-BuildRequires: bison
+#BuildRequires: bison
 
-Obsoletes: php53, php53u, php54w, php55u, php55w, php56u, php56w, php70u, php70w
+Obsoletes: php53, php53u, php54w, php55u, php55w, php56u, php56w, php70u, php70w, mod_php70u
 # Avoid obsoleting php54 from RHSCL
 Obsoletes: php54 > 5.4
 %if %{with_zts}
@@ -294,7 +283,7 @@ executing PHP scripts, /usr/bin/php, and the CGI interface.
 Group: Development/Languages
 Summary: The interactive PHP debugger
 Requires: php-common%{?_isa} = %{version}-%{release}
-Obsoletes: php56u-dbg, php56w-dbg
+Obsoletes: php56u-dbg, php56w-dbg, php70u-dbg, php70w-phpdbg
 
 %description dbg
 The php-dbg package contains the interactive PHP debugger.
@@ -310,10 +299,8 @@ License: PHP and Zend and BSD
 BuildRequires: libacl-devel
 Requires: php-common%{?_isa} = %{version}-%{release}
 Requires(pre): /usr/sbin/useradd
-%if %{with_systemdfull}
-BuildRequires: systemd-devel
-%endif
 %if %{with_systemd}
+BuildRequires: systemd-devel
 BuildRequires: systemd-units
 Requires: systemd-units
 Requires(post): systemd-units
@@ -400,7 +387,7 @@ Provides: php-tokenizer, php-tokenizer%{?_isa}
 Provides: php-zlib, php-zlib%{?_isa}
 # For user experience, those extensions were part of php-common
 Requires:  php-json%{?_isa}
-#Requires:  php-zip%{?_isa}
+#Requires:  php-zip%%{?_isa}
 
 Obsoletes: php-pecl-phar < 1.2.4
 Obsoletes: php-pecl-Fileinfo < 1.0.5
@@ -420,6 +407,8 @@ Requires: php-cli%{?_isa} = %{version}-%{release}, autoconf, automake
 Requires: pcre-devel%{?_isa}
 %endif
 Obsoletes: php-pecl-pdo-devel
+Obsoletes: php-pecl-json-devel  < %{jsonver}
+Obsoletes: php-pecl-jsonc-devel < %{jsonver}
 %if %{with_zts}
 Provides: php-zts-devel = %{version}-%{release}
 Provides: php-zts-devel%{?_isa} = %{version}-%{release}
@@ -824,7 +813,7 @@ Requires: php-pdo%{?_isa} = %{version}-%{release}
 BuildRequires: freetds-devel >= 0.91
 Provides: php-pdo_dblib, php-pdo_dblib%{?_isa}
 Obsoletes: php-mssql < %{version}-%{release}
-Obsoletes: php53-mssql, php53u-mssql, php54-mssql, php54w-mssql, php55u-mssql, php55w-mssql, php56u-mssql, php56w-mssql, php70u-pdo-dblib, php70w-pdo-dblib
+Obsoletes: php53-mssql, php53u-mssql, php54-mssql, php54w-mssql, php55u-mssql, php55w-mssql, php56u-mssql, php56w-mssql, php70u-pdo-dblib, php70w-pdo_dblib
 
 %description pdo-dblib
 The php-pdo-dblib package contains a dynamic shared object
@@ -951,6 +940,9 @@ httpd -V  | grep -q 'threaded:.*yes' && exit 1
 %patch6 -p1 -b .embed
 %patch7 -p1 -b .recode
 %patch8 -p1 -b .libdb
+%if 0%{?rhel}
+%patch9 -p1 -b .curltls
+%endif
 
 %patch21 -p1 -b .odbctimer
 
@@ -1335,7 +1327,7 @@ popd
 # Build php-fpm
 pushd build-fpm
 build --enable-fpm \
-%if %{with_systemdfull}
+%if %{with_systemd}
       --with-fpm-systemd \
 %endif
       --with-fpm-acl \
@@ -1584,18 +1576,10 @@ install -m 755 -d $RPM_BUILD_ROOT/run/php-fpm
 install -m 755 -d $RPM_BUILD_ROOT%{_prefix}/lib/tmpfiles.d
 install -m 644 php-fpm.tmpfiles $RPM_BUILD_ROOT%{_prefix}/lib/tmpfiles.d/php-fpm.conf
 # install systemd unit files and scripts for handling server startup
-%if %{with_systemdmax}
 # this folder requires systemd >= 204
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/php-fpm.service.d
-%endif
 install -m 755 -d $RPM_BUILD_ROOT%{_unitdir}
 install -m 644 %{SOURCE6} $RPM_BUILD_ROOT%{_unitdir}/
-%if ! %{with_systemdfull}
-# PrivateTmp and Notif mode only work on fedora >= 16
-sed -e '/^PrivateTmp/s/true/false/' \
-    -e '/^Type/s/notify/simple/' \
-    -i ${RPM_BUILD_ROOT}%{_unitdir}/php-fpm.service
-%endif
 %else
 sed  -ne '1,2p' -i $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/php-fpm
 install -m 755 -d $RPM_BUILD_ROOT%{_localstatedir}/run/php-fpm
@@ -1766,50 +1750,33 @@ exit 0
 %endif
 
 %post fpm
-%if 0%{?systemd_post:1}
+%if %{with_systemd}
 %systemd_post php-fpm.service
 %else
 if [ $1 = 1 ]; then
     # Initial installation
-%if 0%{?fedora} >= 15
-    /bin/systemctl daemon-reload >/dev/null 2>&1 || :
-%else
     /sbin/chkconfig --add php-fpm
-%endif
 fi
 %endif
 
 %preun fpm
-%if 0%{?systemd_preun:1}
+%if %{with_systemd}
 %systemd_preun php-fpm.service
 %else
 if [ $1 = 0 ]; then
     # Package removal, not upgrade
-%if 0%{?fedora} >= 15
-    /bin/systemctl --no-reload disable php-fpm.service >/dev/null 2>&1 || :
-    /bin/systemctl stop php-fpm.service >/dev/null 2>&1 || :
-%else
     /sbin/service php-fpm stop >/dev/null 2>&1
     /sbin/chkconfig --del php-fpm
-%endif
 fi
 %endif
 
 %postun fpm
-%if 0%{?systemd_postun_with_restart:1}
+%if %{with_systemd}
 %systemd_postun_with_restart php-fpm.service
-%else
-%if 0%{?fedora} >= 15
-/bin/systemctl daemon-reload >/dev/null 2>&1 || :
-if [ $1 -ge 1 ]; then
-    # Package upgrade, not uninstall
-    /bin/systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
-fi
 %else
 if [ $1 -ge 1 ]; then
     /sbin/service php-fpm condrestart >/dev/null 2>&1 || :
 fi
-%endif
 %endif
 
 # Handle upgrading from SysV initscript to native systemd unit.
@@ -1918,9 +1885,7 @@ fi
 %if %{with_systemd}
 %{_prefix}/lib/tmpfiles.d/php-fpm.conf
 %{_unitdir}/php-fpm.service
-%if %{with_systemdmax}
 %dir %{_sysconfdir}/systemd/system/php-fpm.service.d
-%endif
 %dir /run/php-fpm
 %else
 %{_initrddir}/php-fpm
@@ -2006,6 +1971,23 @@ fi
 
 
 %changelog
+* Wed Dec 16 2015 Remi Collet <remi@fedoraproject.org> 7.0.1-1
+- Update to 7.0.1
+  http://www.php.net/releases/7_0_1.php
+- curl: add CURL_SSLVERSION_TLSv1_x constant (EL)
+
+* Wed Dec  9 2015 Remi Collet <remi@fedoraproject.org> 7.0.1-0.1.0RC1
+- Update to 7.0.1RC1
+- drop --disable-huge-code-pages build option on EL-6,
+  but keep it disabled in default configuration
+- php-devel obsoletes php-pecl-jsonc-devel
+
+* Sat Dec  5 2015 Remi Collet <remi@fedoraproject.org> 7.0.0-3
+- EL-6 rebuild
+
+* Thu Dec  3 2015 Remi Collet <remi@fedoraproject.org> 7.0.0-2
+- build with --disable-huge-code-pages on EL-6
+
 * Tue Dec  1 2015 Remi Collet <remi@fedoraproject.org> 7.0.0-1
 - Update to 7.0.0
   http://www.php.net/releases/7_0_0.php
