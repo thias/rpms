@@ -2,7 +2,7 @@
 %global mongodist rhel70
 
 Name:		mongodb-tools
-Version:	3.0.6
+Version:	3.2.0
 Release:	0%{?dist}
 Summary:	MongoDB tools
 
@@ -37,6 +37,9 @@ install -p -m 0755 bin/* %{buildroot}%{_bindir}/
 
 
 %changelog
+* Thu Dec 17 2015 Matthias Saou <matthias@saou.eu> 3.2.0-0
+- Update to 3.2.0.
+
 * Mon Sep 21 2015 Matthias Saou <matthias@saou.eu> 3.0.6-0
 - Update to 3.0.6.
 
