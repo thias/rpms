@@ -1,6 +1,6 @@
 # remirepo spec file for php-pecl-mongodb
 #
-# Copyright (c) 2015 Remi Collet
+# Copyright (c) 2015-2016 Remi Collet
 # License: CC-BY-SA
 # http://creativecommons.org/licenses/by-sa/4.0/
 #
@@ -11,7 +11,7 @@
 %{!?__pecl:      %global __pecl      %{_bindir}/pecl}
 %{!?__php:       %global __php       %{_bindir}/php}
 
-%global with_zts   0%{?__ztsphp:1}
+%global with_zts   0%{!?_without_zts:%{?__ztsphp:1}}
 %global pecl_name  mongodb
 %if "%{php_version}" < "5.6"
 %global ini_name   %{pecl_name}.ini
@@ -19,10 +19,12 @@
 %global ini_name   40-%{pecl_name}.ini
 %endif
 #global prever     RC0
+# Still needed because of some private API
+%global buildver %(pkg-config --silence-errors --modversion libmongoc-priv 2>/dev/null || echo 65536)
 
 Summary:        MongoDB driver for PHP
 Name:           %{?scl_prefix}php-pecl-%{pecl_name}
-Version:        1.0.0
+Version:        1.1.2
 Release:        2%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 License:        BSD
 Group:          Development/Languages
@@ -34,16 +36,17 @@ BuildRequires:  %{?scl_prefix}php-devel > 5.4
 BuildRequires:  %{?scl_prefix}php-pear
 BuildRequires:  cyrus-sasl-devel
 BuildRequires:  openssl-devel
-BuildRequires:  pkgconfig(libbson-1.0)    >= 1.2.0
-BuildRequires:  pkgconfig(libmongoc-1.0)  >= 1.2.0
-BuildRequires:  pkgconfig(libmongoc-priv) >= 1.2.0
+BuildRequires:  pkgconfig(libbson-1.0)    >= 1.3.0
+BuildRequires:  pkgconfig(libmongoc-1.0)  >= 1.3.0
+BuildRequires:  pkgconfig(libmongoc-priv) >= 1.3.0
+BuildRequires:  pkgconfig(libmongoc-priv) <  1.4
 
 Requires:       %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:       %{?scl_prefix}php(api) = %{php_core_api}
+Requires:       mongo-c-driver%{?_isa} >= %{buildver}
 %{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
 
-Provides:       %{?scl_prefix}php-%{pecl_name} = %{version}
-Provides:       %{?scl_prefix}php-%{pecl_name}%{?_isa} = %{version}
+# Don't provide php-mongodb which is the pure PHP library
 Provides:       %{?scl_prefix}php-pecl(%{pecl_name}) = %{version}
 Provides:       %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
 
@@ -220,6 +223,26 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Jan 07 2016 Remi Collet <remi@fedoraproject.org> - 1.1.2-2
+- Update to 1.1.2 (stable)
+
+* Thu Dec 31 2015 Remi Collet <remi@fedoraproject.org> - 1.1.1-4
+- fix patch for 32bits build
+  open https://github.com/mongodb/mongo-php-driver/pull/191
+
+* Sat Dec 26 2015 Remi Collet <remi@fedoraproject.org> - 1.1.1-2
+- Update to 1.1.1 (stable)
+- add patch for 32bits build,
+  open https://github.com/mongodb/mongo-php-driver/pull/185
+
+* Wed Dec 16 2015 Remi Collet <remi@fedoraproject.org> - 1.1.0-1
+- Update to 1.1.0 (stable)
+- raise dependency on libmongoc >= 1.3.0
+
+* Tue Dec  8 2015 Remi Collet <remi@fedoraproject.org> - 1.0.1-2
+- update to 1.0.1 (stable)
+- ensure libmongoc >= 1.2.0 and < 1.3 is used
+
 * Fri Oct 30 2015 Remi Collet <remi@fedoraproject.org> - 1.0.0-2
 - update to 1.0.0 (stable)
 
