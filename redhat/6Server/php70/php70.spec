@@ -125,7 +125,7 @@
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 7.0.1
+Version: 7.0.2
 Release: %{?rcver:0.}%{rpmrel}%{?rcver:.%{rcver}}%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
@@ -158,7 +158,7 @@ Source99: php-fpm.init
 Patch5: php-7.0.0-includedir.patch
 Patch6: php-5.6.3-embed.patch
 Patch7: php-5.3.0-recode.patch
-Patch8: php-7.0.0-libdb.patch
+Patch8: php-7.0.2-libdb.patch
 Patch9: php-5.5.30-curl.patch
 
 # Fixes for extension modules
@@ -1096,8 +1096,14 @@ echo "d /run/php-fpm 755 root root" >php-fpm.tmpfiles
 
 # Some extensions have their own configuration file
 cp %{SOURCE50} 10-opcache.ini
-%ifarch x86_64
 %if 0%{?rhel} != 6
+cat << EOF >>10-opcache.ini
+
+; Enables or disables copying of PHP code (text segment) into HUGE PAGES.
+; This should improve performance, but requires appropriate OS configuration.
+opcache.huge_code_pages=0
+EOF
+%ifarch x86_64
 sed -e '/opcache.huge_code_pages/s/0/1/' -i 10-opcache.ini
 %endif
 %endif
@@ -1215,6 +1221,9 @@ build --libdir=%{_libdir}/php \
       --enable-pcntl \
       --enable-opcache \
       --enable-opcache-file \
+%if 0%{?rhel} == 6
+      --disable-huge-code-pages \
+%endif
       --enable-phpdbg \
       --with-imap=shared --with-imap-ssl \
       --enable-mbstring=shared \
@@ -1359,6 +1368,9 @@ build --includedir=%{_includedir}/php-zts \
       --enable-pcntl \
       --enable-opcache \
       --enable-opcache-file \
+%if 0%{?rhel} == 6
+      --disable-huge-code-pages \
+%endif
       --with-imap=shared --with-imap-ssl \
       --enable-mbstring=shared \
       --enable-mbregex \
@@ -1732,7 +1744,7 @@ echo -e "\nWARNING : These %{name}-* RPMs are not official Fedora / Red Hat buil
 echo -e "overrides the official ones. Don't file bugs on Fedora Project nor Red Hat.\n"
 echo -e "Use dedicated forum at http://forum.remirepo.net/\n"
 
-%if %{?fedora}%{!?fedora:99} < 21
+%if %{?fedora}%{!?fedora:99} < 22
 echo -e "WARNING : Fedora %{fedora} is now EOL :"
 echo -e "You should consider upgrading to a supported release.\n"
 %endif
@@ -1971,6 +1983,14 @@ fi
 
 
 %changelog
+* Wed Jan  6 2016 Remi Collet <remi@fedoraproject.org> 7.0.2-1
+- Update to 7.0.2
+  http://www.php.net/releases/7_0_2.php
+
+* Sun Dec 27 2015 Remi Collet <remi@fedoraproject.org> 7.0.2-0.1.0RC1
+- Update to 7.0.2RC1
+- opcache: build with --disable-huge-code-pages on EL-6
+
 * Wed Dec 16 2015 Remi Collet <remi@fedoraproject.org> 7.0.1-1
 - Update to 7.0.1
   http://www.php.net/releases/7_0_1.php
