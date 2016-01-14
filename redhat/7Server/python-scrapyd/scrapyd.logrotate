@@ -1,0 +1,11 @@
+/var/log/scrapyd/scrapyd.log {
+    daily
+    rotate 10
+    missingok
+    notifempty
+    compress
+    sharedscripts
+    postrotate
+        /bin/kill -USR1 `cat /run/scrapyd.pid 2>/dev/null` 2>/dev/null || true
+    endscript
+}

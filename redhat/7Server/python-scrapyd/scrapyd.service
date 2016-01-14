@@ -1,0 +1,10 @@
+[Unit]
+Description=Service for running Scrapy spiders
+After=network.target remote-fs.target nss-lookup.target
+
+[Service]
+WorkingDirectory=/var/lib/scrapyd
+ExecStart=/usr/bin/scrapyd -n -u scrapyd -g scrapyd -l /var/log/scrapyd/scrapyd.log --pidfile=/run/scrapyd.pid
+
+[Install]
+WantedBy=multi-user.target
