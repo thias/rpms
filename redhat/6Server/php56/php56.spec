@@ -144,7 +144,7 @@
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 5.6.17
+Version: 5.6.18
 %if 0%{?snapdate:1}%{?rcver:1}
 Release: 0.1.%{?snapdate}%{?rcver}%{?dist}
 %else
@@ -221,6 +221,7 @@ Patch300: php-5.6.3-datetests.patch
 Patch301: php-5.6.0-oldpcre.patch
 
 # WIP
+Patch401: php-bug62172.patch
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -990,6 +991,7 @@ rm -rf ext/json
 %endif
 
 # WIP patch
+%patch401 -p1 -b .bug62172
 
 # Prevent %%doc confusion over LICENSE files
 cp Zend/LICENSE Zend/ZEND_LICENSE
@@ -1988,6 +1990,13 @@ fi
 
 
 %changelog
+* Wed Feb  3 2016 Remi Collet <remi@fedoraproject.org> 5.6.18-1
+- Update to 5.6.18
+  http://www.php.net/releases/5_6_18.php
+
+* Fri Jan 29 2016 Remi Collet <remi@fedoraproject.org> 5.6.17-2
+- FPM: test build for https://bugs.php.net/62172
+
 * Wed Jan  6 2016 Remi Collet <remi@fedoraproject.org> 5.6.17-1
 - Update to 5.6.17
   http://www.php.net/releases/5_6_17.php
