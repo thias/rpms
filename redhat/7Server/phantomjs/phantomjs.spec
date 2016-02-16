@@ -1,10 +1,11 @@
 Summary:    Headless WebKit with JavaScript API
 Name:       phantomjs
 Version:    2.0.0
-Release:    2%{?dist}
+Release:    3%{?dist}
 License:    BSD
 Group:      Applications/Internet
 Source:     https://bitbucket.org/ariya/phantomjs/downloads/%{name}-%{version}-source.zip
+Patch0:     phantomjs-2.0.0-save.patch
 
 BuildRequires: flex
 BuildRequires: bison
@@ -27,6 +28,7 @@ Canvas, and SVG. PhantomJS is created by Ariya Hidayat.
 
 %prep
 %setup -q
+%patch0 -p1
 
 
 %build
@@ -44,6 +46,9 @@ install -D -p -m 0755 bin/phantomjs %{buildroot}%{_bindir}/phantomjs
 
 
 %changelog
+* Tue Feb  9 2016 Matthias Saou <matthias@saou.eu> 2.0.0-3
+- Include save patch.
+
 * Mon Aug 10 2015 Matthias Saou <matthias@saou.eu> 2.0.0-2
 - Spec file cleanup.
 

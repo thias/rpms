@@ -1,0 +1,76 @@
+diff --git a/src/networkaccessmanager.cpp b/src/networkaccessmanager.cpp
+index c99e322..a554321 100644
+--- a/src/networkaccessmanager.cpp
++++ b/src/networkaccessmanager.cpp
+@@ -313,7 +313,7 @@ QNetworkReply *NetworkAccessManager::createRequest(Operation op, const QNetworkR
+     data["time"] = QDateTime::currentDateTime();
+ 
+     JsNetworkRequest jsNetworkRequest(&req, this);
+-    emit resourceRequested(data, &jsNetworkRequest);
++    emit resourceRequested(data, &jsNetworkRequest, QString("0x%1").arg((quintptr)request.originatingObject(), QT_POINTER_SIZE * 2, 16, QChar('0')));
+ 
+     // Pass duty to the superclass - special case: file:/// may be disabled.
+     // This conditional must match QNetworkAccessManager's own idea of what a
+diff --git a/src/networkaccessmanager.h b/src/networkaccessmanager.h
+index f4a41fb..a46ddb8 100644
+--- a/src/networkaccessmanager.h
++++ b/src/networkaccessmanager.h
+@@ -105,7 +105,7 @@ protected:
+     void handleFinished(QNetworkReply *reply, const QVariant &status, const QVariant &statusText);
+ 
+ signals:
+-    void resourceRequested(const QVariant& data, QObject *);
++    void resourceRequested(const QVariant& data, QObject *, const QString &originatingFrameID);
+     void resourceReceived(const QVariant& data);
+     void resourceError(const QVariant& data);
+     void resourceTimeout(const QVariant& data);
+diff --git a/src/webpage.cpp b/src/webpage.cpp
+index ff1d43e..ad2b159 100644
+--- a/src/webpage.cpp
++++ b/src/webpage.cpp
+@@ -202,10 +202,11 @@ protected:
+         bool isNavigationLocked = m_webPage->navigationLocked();
+ 
+         emit m_webPage->navigationRequested(
+-                    request.url(),                   //< Requested URL
+-                    navigationType,                  //< Navigation Type
+-                    !isNavigationLocked,             //< Will navigate (not locked)?
+-                    isMainFrame);                    //< Is main frame?
++                    request.url(),                                                              //< Requested URL
++                    navigationType,                                                             //< Navigation Type
++                    !isNavigationLocked,                                                        //< Will navigate (not locked)?
++                    isMainFrame,                                                                //< Is main frame?
++                    QString("0x%1").arg((quintptr)frame, QT_POINTER_SIZE * 2, 16, QChar('0'))); //Originating Frame ID
+ 
+         return !isNavigationLocked;
+     }
+@@ -392,8 +393,8 @@ WebPage::WebPage(QObject *parent, const QUrl &baseUrl)
+     // Custom network access manager to allow traffic monitoring.
+     m_networkAccessManager = new NetworkAccessManager(this, phantomCfg);
+     m_customWebPage->setNetworkAccessManager(m_networkAccessManager);
+-    connect(m_networkAccessManager, SIGNAL(resourceRequested(QVariant, QObject *)),
+-            SIGNAL(resourceRequested(QVariant, QObject *)));
++    connect(m_networkAccessManager, SIGNAL(resourceRequested(QVariant, QObject *, QString)),
++            SIGNAL(resourceRequested(QVariant, QObject *, QString)));
+     connect(m_networkAccessManager, SIGNAL(resourceReceived(QVariant)),
+             SIGNAL(resourceReceived(QVariant)));
+     connect(m_networkAccessManager, SIGNAL(resourceError(QVariant)),
+diff --git a/src/webpage.h b/src/webpage.h
+index f27fcc2..513ab52 100644
+--- a/src/webpage.h
++++ b/src/webpage.h
+@@ -490,12 +490,12 @@ signals:
+     void javaScriptAlertSent(const QString &msg);
+     void javaScriptConsoleMessageSent(const QString &message);
+     void javaScriptErrorSent(const QString &msg, int lineNumber, const QString &sourceID, const QString &stack);
+-    void resourceRequested(const QVariant &requestData, QObject *request);
++    void resourceRequested(const QVariant &requestData, QObject *request, const QString &originatingFrameID);
+     void resourceReceived(const QVariant &resource);
+     void resourceError(const QVariant &errorData);
+     void resourceTimeout(const QVariant &errorData);
+     void urlChanged(const QUrl &url);
+-    void navigationRequested(const QUrl &url, const QString &navigationType, bool navigationLocked, bool isMainFrame);
++    void navigationRequested(const QUrl &url, const QString &navigationType, bool navigationLocked, bool isMainFrame, const QString &originatingFrameID);
+     void rawPageCreated(QObject *page);
+     void closing(QObject *page);
+     void repaintRequested(const int x, const int y, const int width, const int height);
