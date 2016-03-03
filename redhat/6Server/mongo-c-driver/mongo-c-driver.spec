@@ -1,6 +1,6 @@
-# remirepo spec file for mongo-c-driver
+# remirepo/fedora spec file for mongo-c-driver
 #
-# Copyright (c) 2015 Remi Collet
+# Copyright (c) 2015-2016 Remi Collet
 # License: CC-BY-SA
 # http://creativecommons.org/licenses/by-sa/4.0/
 #
@@ -8,30 +8,37 @@
 #
 %global gh_owner     mongodb
 %global gh_project   mongo-c-driver
-#global gh_commit    495cd3ffa9beade31c2b410eb5e9555c7db240e1
-#global gh_short     %(c=%{gh_commit}; echo ${c:0:7})
-#global gh_date      20151001
-%global with_tests   0%{!?_without_tests:1}
 %global libname      libmongoc
 %global libver       1.0
-#global prever       rc0
+
+%if 0%{?fedora} < 24
+%ifarch %{arm}
+# mongodb on arm is broken for now, see #1303864
+%global with_tests   0%{?_with_tests:1}
+%else
+%global with_tests   0%{!?_without_tests:1}
+%endif
+%else
+%ifarch x86_64
+%global with_tests   0%{!?_without_tests:1}
+%else
+# mongodb on F24+ is broken for now, see #1313018
+%global with_tests   0%{?_with_tests:1}
+%endif
+%endif
 
 Name:      mongo-c-driver
 Summary:   Client library written in C for MongoDB
-Version:   1.2.3
-%if 0%{?gh_date}
-Release:   0.6.%{gh_date}git%{gh_short}%{?dist}
-Source0:   https://github.com/%{gh_owner}/%{gh_project}/archive/%{gh_commit}/%{gh_project}-%{version}%{?prever}-%{gh_short}.tar.gz
-BuildRequires: libtool autoconf
-%else
-Release:   1%{?dist}
-Source0:   https://github.com/%{gh_owner}/%{gh_project}/releases/download/%{version}%{?prever:-%{prever}}/%{gh_project}-%{version}%{?prever:-%{prever}}.tar.gz
-# https://jira.mongodb.org/browse/CDRIVER-1039
-Source1:   https://raw.githubusercontent.com/mongodb/mongo-c-driver/master/doc/mallard2man.py
-%endif
+Version:   1.3.3
+Release:   2%{?dist}
 License:   ASL 2.0
 Group:     System Environment/Libraries
 URL:       https://github.com/%{gh_owner}/%{gh_project}
+
+Source0:   https://github.com/%{gh_owner}/%{gh_project}/releases/download/%{version}%{?prever:-%{prever}}/%{gh_project}-%{version}%{?prever:-%{prever}}.tar.gz
+
+# https://github.com/mongodb/mongo-c-driver/pull/314
+Patch0:    %{name}-pr314.patch
 
 BuildRequires: pkgconfig(openssl)
 BuildRequires: pkgconfig(libbson-1.0)
@@ -48,11 +55,23 @@ BuildRequires: perl
 # From man pages
 BuildRequires: python
 
+Requires:   %{name}-libs%{?_isa} = %{version}-%{release}
+# Sub package removed
+Obsoletes:  %{name}-tools         < 1.3.0
+Provides:   %{name}-tools         = %{version}
+Provides:   %{name}-tools%{?_isa} = %{version}
+
 
 %description
 %{name} is a client library written in C for MongoDB.
 
-Documentation: http://api.mongodb.org/c/%{version}/
+
+%package libs
+Summary:    Shared libraries for %{name}
+Group:      Development/Libraries
+
+%description libs
+This package contains the shared libraries for %{name}.
 
 
 %package devel
@@ -65,39 +84,32 @@ Requires:   pkgconfig
 This package contains the header files and development libraries
 for %{name}.
 
-
-%package tools
-Summary:    MongoDB tools
-Group:      Applications/System
-Requires:   %{name}%{?_isa} = %{version}-%{release}
-
-%description tools
-The %{name}-tools package contains some command line tools to manage
-a MongoDB Server.
+Documentation: http://api.mongodb.org/c/%{version}/
 
 
 %prep
-%if 0%{?gh_date}
-%setup -q -n %{gh_project}-%{gh_commit}
-autoreconf -fvi -I build/autotools
-%else
 %setup -q -n %{gh_project}-%{version}%{?prever:-%{prever}}
-install -m 0755 %{SOURCE1} doc/
-mkdir doc/man
-%endif
 
-# Ensure we are using system library
-# Done after autoreconf because of m4_include
 rm -r src/libbson
+%patch0 -p1 -b .pr314
 
 
 %build
 export LIBS=-lpthread
 
 %configure \
+  --enable-hardening \
+  --enable-debug-symbols\
+  --enable-shm-counters \
+%if %{with_tests}
+  --enable-tests \
+%else
+  --disable-tests \
+%endif
   --enable-sasl \
   --enable-ssl \
   --with-libbson=system \
+  --disable-html-docs \
   --enable-man-pages
 
 make %{_smp_mflags} V=1
@@ -110,9 +122,9 @@ rm    %{buildroot}%{_libdir}/*la
 rm -r %{buildroot}%{_datadir}/doc/
 # drop "generic" man pages, avoid conflicts
 # https://jira.mongodb.org/browse/CDRIVER-1039
-#rm    %{buildroot}/%{_mandir}/man3/[a-l]*
-#rm    %{buildroot}/%{_mandir}/man3/ma*
-#rm    %{buildroot}/%{_mandir}/man3/[t-u]*
+rm    %{buildroot}/%{_mandir}/man3/[a-l]*
+rm    %{buildroot}/%{_mandir}/man3/ma*
+rm    %{buildroot}/%{_mandir}/man3/[t-u]*
 
 
 %check
@@ -121,6 +133,8 @@ rm -r %{buildroot}%{_datadir}/doc/
 mkdir dbtest
 mongod \
   --journal \
+  --bind_ip     127.0.0.1 \
+  --unixSocketPrefix /tmp \
   --logpath     $PWD/server.log \
   --pidfilepath $PWD/server.pid \
   --dbpath      $PWD/dbtest \
@@ -128,35 +142,30 @@ mongod \
 
 : Run the test suite
 ret=0
+export MONGOC_TEST_OFFLINE=1
 make check || ret=1
 
 : Cleanup
 [ -s server.pid ] && kill $(cat server.pid)
 
-%if 0%{?gh_date}
-exit 0
-%else
 exit $ret
-%endif
 %else
 : check disabled, missing '--with tests' option
 %endif
 
 
-%post   -p /sbin/ldconfig
-
-%postun -p /sbin/ldconfig
+%post   libs -p /sbin/ldconfig
+%postun libs -p /sbin/ldconfig
 
 
 %files
+%{_bindir}/mongoc-stat
+
+%files libs
 %{!?_licensedir:%global license %%doc}
 %license COPYING
 %{_libdir}/%{libname}-%{libver}.so.*
 %{_libdir}/%{libname}-priv.so.*
-
-
-%files tools
-%{_bindir}/mongoc-stat
 
 %files devel
 %doc NEWS README*
@@ -168,6 +177,27 @@ exit $ret
 
 
 %changelog
+* Mon Feb 29 2016 Remi Collet <remi@fedoraproject.org> - 1.3.3-2
+- cleanup for review
+- move libraries in "libs" sub-package
+- add patch to skip online tests
+  open https://github.com/mongodb/mongo-c-driver/pull/314
+- temporarily disable test suite on F24+ (#1313018)
+- temporarily disable test suite on arm  (#1303864)
+
+* Sun Feb  7 2016 Remi Collet <remi@fedoraproject.org> - 1.3.3-1
+- Update to 1.3.3
+
+* Tue Feb  2 2016 Remi Collet <remi@fedoraproject.org> - 1.3.2-1
+- Update to 1.3.2
+
+* Thu Jan 21 2016 Remi Collet <remi@fedoraproject.org> - 1.3.1-1
+- Update to 1.3.1
+
+* Wed Dec 16 2015 Remi Collet <remi@fedoraproject.org> - 1.3.0-1
+- Update to 1.3.0
+- move tools in devel package
+
 * Tue Dec  8 2015 Remi Collet <remi@fedoraproject.org> - 1.2.3-1
 - Update to 1.2.3
 
