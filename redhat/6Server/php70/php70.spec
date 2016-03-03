@@ -13,6 +13,7 @@
 %global zendver     20151012
 %global pdover      20150127
 # Extension version
+%global fileinfover 1.0.5
 %global opcachever  7.0.6-dev
 %global oci8ver     2.1.0
 %global zipver      1.13.0
@@ -125,7 +126,7 @@
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 7.0.3
+Version: 7.0.4
 Release: %{?rcver:0.}%{rpmrel}%{?rcver:.%{rcver}}%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
@@ -191,7 +192,6 @@ Patch300: php-5.6.3-datetests.patch
 Patch301: php-7.0.0-oldpcre.patch
 
 # WIP
-Patch401: php-bug62172.patch
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -392,6 +392,8 @@ Requires:  php-json%{?_isa}
 
 Obsoletes: php-pecl-phar < 1.2.4
 Obsoletes: php-pecl-Fileinfo < 1.0.5
+Provides:  php-pecl-Fileinfo = %{fileinfover}, php-pecl-Fileinfo%{?_isa} = %{fileinfover}
+Provides:  php-pecl(Fileinfo) = %{fileinfover}, php-pecl(Fileinfo)%{?_isa} = %{fileinfover}
 Obsoletes: php-mhash < 5.3.0
 Obsoletes: php53-mhash, php53u-mhash
 Obsoletes: php53-common, php53u-common, php54-common, php54w-common, php55u-common, php55w-common, php56u-common, php56w-common, php70u-common, php70w-common
@@ -431,6 +433,7 @@ Provides:  php-pecl-zendopcache = %{opcachever}
 Provides:  php-pecl-zendopcache%{?_isa} = %{opcachever}
 Provides:  php-pecl(opcache) = %{opcachever}
 Provides:  php-pecl(opcache)%{?_isa} = %{opcachever}
+Obsoletes: php55u-opcache, php55w-opcache, php56u-opcache, php56w-opcache, php70u-opcache, php70w-opcache
 
 %description opcache
 The Zend OPcache provides faster PHP execution through opcode caching and
@@ -502,6 +505,7 @@ Provides: php-mysqli%{?_isa} = %{version}-%{release}
 Provides: php-pdo_mysql, php-pdo_mysql%{?_isa}
 Obsoletes: php-mysql < %{version}-%{release}
 Obsoletes: php53-mysqlnd, php53u-mysqlnd, php54-mysqlnd, php54w-mysqlnd, php55u-mysqlnd, php55w-mysqlnd, php56u-mysqlnd, php56w-mysqlnd, php70u-mysqlnd, php70w-mysqlnd
+Obsoletes: php53-mysql, php53u-mysql, php54-mysql, php54w-mysql, php55u-mysql, php55w-mysql, php56u-mysql, php56w-mysql, php70u-mysql, php70w-mysql
 
 %description mysqlnd
 The php-mysqlnd package contains a dynamic shared object that will add
@@ -976,7 +980,6 @@ fi
 %endif
 
 # WIP patch
-%patch401 -p1 -b .bug62172
 
 # Prevent %%doc confusion over LICENSE files
 cp Zend/LICENSE Zend/ZEND_LICENSE
@@ -1524,6 +1527,12 @@ install -m 644 %{SOURCE2} $RPM_BUILD_ROOT%{_sysconfdir}/php.ini
 install -m 755 -d $RPM_BUILD_ROOT%{_httpd_contentdir}/icons
 install -m 644 php.gif $RPM_BUILD_ROOT%{_httpd_contentdir}/icons/php.gif
 
+%if %{with_libpcre}
+if ! pkg-config libpcre --atleast-version 8.38 ; then
+   sed -e 's/;pcre.jit=1/pcre.jit=0/' -i $RPM_BUILD_ROOT%{_sysconfdir}/php.ini
+fi
+%endif
+
 # For third-party packaging:
 install -m 755 -d $RPM_BUILD_ROOT%{_datadir}/php
 
@@ -1985,6 +1994,14 @@ fi
 
 
 %changelog
+* Wed Mar  2 2016 Remi Collet <remi@fedoraproject.org> 7.0.4-1
+- Update to 7.0.4
+  http://www.php.net/releases/7_0_4.php
+- pcre: disables JIT compilation of patterns with system pcre < 8.38
+
+* Thu Feb 18 2016 Remi Collet <remi@fedoraproject.org> 7.0.4-0.1.0RC1
+- Update to 7.0.4RC1
+
 * Wed Feb  3 2016 Remi Collet <remi@fedoraproject.org> 7.0.3-1
 - Update to 7.0.3
   http://www.php.net/releases/7_0_3.php
