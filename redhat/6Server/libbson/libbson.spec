@@ -1,13 +1,11 @@
-# spec file for libbson
+# remirepo spec file for libbson
 #
-# Copyright (c) 2015 Remi Collet
+# Copyright (c) 2015-2016 Remi Collet
 # License: CC-BY-SA
 # http://creativecommons.org/licenses/by-sa/4.0/
 #
 # Please, preserve the changelog entries
 #
-%global gh_commit    e434c354a3939db063ee78345834baed19002f7e
-%global gh_short     %(c=%{gh_commit}; echo ${c:0:7})
 %global gh_owner     mongodb
 %global gh_project   libbson
 %global libver       1.0
@@ -19,14 +17,12 @@
 
 Name:      libbson
 Summary:   Library to build, parse, and iterate BSON documents
-Version:   1.3.0
+Version:   1.3.3
 Release:   1%{?dist}
 License:   ASL 2.0
 Group:     System Environment/Libraries
 URL:       https://github.com/%{gh_owner}/%{gh_project}
 Source0:   https://github.com/%{gh_owner}/%{gh_project}/releases/download/%{version}%{?prever:-%{prever}}/%{gh_project}-%{version}%{?prever:-%{prever}}.tar.gz
-# https://jira.mongodb.org/browse/CDRIVER-1039
-Source1:   https://raw.githubusercontent.com/mongodb/libbson/master/doc/mallard2man.py
 
 BuildRequires: python
 
@@ -54,8 +50,6 @@ for %{name}.
 %prep
 %setup -q -n %{gh_project}-%{version}%{?prever:-%{prever}}
 
-install -m 0755 %{SOURCE1} doc/
-
 
 %build
 %configure --enable-man-pages
@@ -69,6 +63,7 @@ make install-man DESTDIR=%{buildroot}
 
 rm    %{buildroot}%{_libdir}/*la
 rm -r %{buildroot}%{_datadir}/doc
+
 # drop "generic" man pages, avoid conflicts
 # https://jira.mongodb.org/browse/CDRIVER-1039
 rm    %{buildroot}/%{_mandir}/man3/[c-v]*
@@ -99,6 +94,19 @@ make check
 
 
 %changelog
+* Sun Feb  7 2016 Remi Collet <remi@fedoraproject.org> - 1.3.3-1
+- Update to 1.3.3
+
+* Tue Feb  2 2016 Remi Collet <remi@fedoraproject.org> - 1.3.2-1
+- Update to 1.3.2
+
+* Thu Jan 21 2016 Remi Collet <remi@fedoraproject.org> - 1.3.1-1
+- Update to 1.3.1
+- workaround for man pages are no more generated / installed
+  https://jira.mongodb.org/browse/CDRIVER-1069
+- workaround for man pages installation broken
+  https://jira.mongodb.org/browse/CDRIVER-1068
+
 * Wed Dec 16 2015 Remi Collet <remi@fedoraproject.org> - 1.3.0-1
 - Update to 1.3.0
 
