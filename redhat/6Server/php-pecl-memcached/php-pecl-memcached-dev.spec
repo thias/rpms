@@ -1,11 +1,21 @@
-# spec file for php-pecl-memcached
+# remirepo spec file for php-pecl-memcached
+# With SCL compatibility, from:
 #
-# Copyright (c) 2009-2014 Remi Collet
+# Fedora spec file for php-pecl-memcached
+#
+# Copyright (c) 2009-2016 Remi Collet
 # License: CC-BY-SA
-# http://creativecommons.org/licenses/by-sa/3.0/
+# http://creativecommons.org/licenses/by-sa/4.0/
 #
 # Please, preserve the changelog entries
 #
+%if 0%{?scl:1}
+%if "%{scl}" == "rh-php56"
+%global sub_prefix more-php56-
+%else
+%global sub_prefix %{scl_prefix}
+%endif
+%endif
 
 %{?scl:          %scl_package         php-pecl-memcached}
 %{!?scl:         %global _root_prefix %{_prefix}}
@@ -14,9 +24,16 @@
 %{!?__php:       %global __php        %{_bindir}/php}
 
 %global with_fastlz 1
-%global with_zts    0%{?__ztsphp:1}
+%global with_igbin  1
+%global with_zts    0%{!?_without_zts:%{?__ztsphp:1}}
 %global with_tests  %{?_with_tests:1}%{!?_with_tests:0}
 %global pecl_name   memcached
+# https://github.com/php-memcached-dev/php-memcached/commits/php7
+%global gh_commit   6ace07da69a5ebc021e56a9d2f52cdc8897b4f23
+%global gh_short    %(c=%{gh_commit}; echo ${c:0:7})
+%global gh_date     20160217
+%global gh_owner    php-memcached-dev
+%global gh_project  php-memcached
 #global prever      RC1
 #global intver      rc1
 %if "%{php_version}" < "5.6"
@@ -28,27 +45,25 @@
 %endif
 
 Summary:      Extension to work with the Memcached caching daemon
-Name:         %{?scl_prefix}php-pecl-memcached
-Version:      2.2.0
-Release:      5%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
-# memcached is PHP, FastLZ is MIT
-License:      PHP and MIT
+Name:         %{?sub_prefix}php-pecl-memcached
+Version:      3.0.0
+Release:      0.1.%{gh_date}git%{gh_short}%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+License:      PHP
 Group:        Development/Languages
 URL:          http://pecl.php.net/package/%{pecl_name}
 
-Source0:      http://pecl.php.net/get/%{pecl_name}-%{version}%{?prever}.tgz
-
-# https://github.com/php-memcached-dev/php-memcached/pull/151
-Patch0:       %{pecl_name}-fastlz.patch
+Source0:      https://github.com/%{gh_owner}/%{gh_project}/archive/%{gh_commit}/%{gh_project}-%{version}%{?prever}-%{gh_short}.tar.gz
 
 BuildRoot:    %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 # 5.2.10 required to HAVE_JSON enabled
 BuildRequires: %{?scl_prefix}php-devel >= 5.2.10
 BuildRequires: %{?scl_prefix}php-pear
 BuildRequires: %{?scl_prefix}php-json
-BuildRequires: %{?scl_prefix}php-pecl-igbinary-devel
+%if %{with_igbin}
+BuildRequires: %{?sub_prefix}php-pecl-igbinary-devel
+%endif
 %ifnarch ppc64
-BuildRequires: %{?scl_prefix}php-pecl-msgpack-devel
+BuildRequires: %{?sub_prefix}php-pecl-msgpack-devel
 %endif
 BuildRequires: zlib-devel
 BuildRequires: cyrus-sasl-devel
@@ -63,10 +78,10 @@ BuildRequires: memcached
 # Filter in the SCL collection
 %{?filter_requires_in: %filter_requires_in %{_libdir}/.*\.so}
 # libvent from SCL as not available in system
-BuildRequires: %{?scl_prefix}libevent-devel  > 2
-Requires:      %{?scl_prefix}libevent%{_isa} > 2
-BuildRequires: %{?scl_prefix}libmemcached-devel  > 1
-Requires:      %{?scl_prefix}libmemcached-libs%{_isa} > 1
+BuildRequires: %{?sub_prefix}libevent-devel  > 2
+Requires:      %{?sub_prefix}libevent%{_isa} > 2
+BuildRequires: %{?sub_prefix}libmemcached-devel  > 1
+Requires:      %{?sub_prefix}libmemcached-libs%{_isa} > 1
 %else
 BuildRequires: libevent-devel >= 2.0.2
 %if 0%{?rhel} == 5
@@ -77,16 +92,16 @@ BuildRequires: libmemcached-devel  >= 1.0.16
 %endif
 %endif
 
-Requires(post): %{__pecl}
-Requires(postun): %{__pecl}
-
-Requires:     %{?scl_prefix}php-json%{?_isa}
-Requires:     %{?scl_prefix}php-pecl-igbinary%{?_isa}
 Requires:     %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:     %{?scl_prefix}php(api) = %{php_core_api}
-%ifnarch ppc64
-Requires:     %{?scl_prefix}php-pecl-msgpack%{?_isa}
+Requires:     %{?scl_prefix}php-json%{?_isa}
+%if %{with_igbin}
+Requires:     %{?sub_prefix}php-pecl-igbinary%{?_isa}
 %endif
+%ifnarch ppc64
+Requires:     %{?sub_prefix}php-pecl-msgpack%{?_isa}
+%endif
+%{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
 
 Provides:     %{?scl_prefix}php-%{pecl_name} = %{version}
 Provides:     %{?scl_prefix}php-%{pecl_name}%{?_isa} = %{version}
@@ -95,14 +110,21 @@ Provides:     %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
 
 %if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
 # Other third party repo stuff
-Obsoletes:     php53-pecl-%{pecl_name}
-Obsoletes:     php53u-pecl-%{pecl_name}
-Obsoletes:     php54-pecl-%{pecl_name}
+Obsoletes:     php53-pecl-%{pecl_name}  <= %{version}
+Obsoletes:     php53u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php54-pecl-%{pecl_name}  <= %{version}
+Obsoletes:     php54w-pecl-%{pecl_name} <= %{version}
 %if "%{php_version}" > "5.5"
-Obsoletes:     php55u-pecl-%{pecl_name}
+Obsoletes:     php55u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php55w-pecl-%{pecl_name} <= %{version}
 %endif
 %if "%{php_version}" > "5.6"
-Obsoletes:     php56u-pecl-%{pecl_name}
+Obsoletes:     php56u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php56w-pecl-%{pecl_name} <= %{version}
+%endif
+%if "%{php_version}" > "7.0"
+Obsoletes:     php70u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php70w-pecl-%{pecl_name} <= %{version}
 %endif
 %endif
 
@@ -123,23 +145,36 @@ applications by alleviating database load.
 
 It also provides a session handler (memcached). 
 
+Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')%{?scl: as Software Collection (%{scl} by %{?scl_vendor}%{!?scl_vendor:rh})}.
+
 
 %prep 
 %setup -c -q
+mv %{gh_project}-%{gh_commit} NTS
+sed -e '/PHP_MEMCACHED_VERSION/s/3.0.0b1/%{version}-dev/' -i NTS/php_memcached.h
+%{__php} -r '
+  $pkg = simplexml_load_file("NTS/package.xml");
+  $pkg->date = substr("%{gh_date}",0,4)."-".substr("%{gh_date}",4,2)."-".substr("%{gh_date}",6,2);
+  $pkg->version->release = "%{version}dev";
+  $pkg->stability->release = "devel";
+  $pkg->asXML("package.xml");
+'
 
-mv %{pecl_name}-%{version}%{?prever} NTS
+# Don't install/register tests
+sed -e 's/role="test"/role="src"/' \
+    %{?_licensedir:-e '/LICENSE/s/role="doc"/role="src"/' } \
+    -i package.xml
 
 cd NTS
-%patch0 -p1 -b .fastlz
 %if %{with_fastlz}
 rm -r fastlz
-sed -e '/name="fastlz/d' -i ../package.xml
+sed -e '/name=.fastlz/d' -i ../package.xml
 %endif
 
 # Check version as upstream often forget to update this
 extver=$(sed -n '/#define PHP_MEMCACHED_VERSION/{s/.* "//;s/".*$//;p}' php_memcached.h)
-if test "x${extver}" != "x%{version}%{?intver}"; then
-   : Error: Upstream HTTP version is now ${extver}, expecting %{version}%{?prever}.
+if test "x${extver}" != "x%{version}%{?gh_date:-dev}%{?intver}"; then
+   : Error: Upstream HTTP version is now ${extver}, expecting %{version}%{?prever}%{?gh_date:-dev}.
    : Update the pdover macro and rebuild.
    exit 1
 fi
@@ -178,13 +213,16 @@ cp -r NTS ZTS
 export PKG_CONFIG_PATH=%{_libdir}/pkgconfig
 
 peclconf() {
-%configure --enable-memcached-igbinary \
+%configure \
+%if %{with_igbin}
+           --enable-memcached-igbinary \
+%endif
            --enable-memcached-json \
            --enable-memcached-sasl \
 %ifnarch ppc64
            --enable-memcached-msgpack \
 %endif
-%if 0%{?rhel} == 5
+%if 1
            --disable-memcached-protocol \
 %else
            --enable-memcached-protocol \
@@ -224,11 +262,8 @@ make install -C ZTS INSTALL_ROOT=%{buildroot}
 install -D -m 644 %{ini_name} %{buildroot}%{php_ztsinidir}/%{ini_name}
 %endif
 
-# Test & Documentation
+# Documentation
 cd NTS
-for i in $(grep 'role="test"' ../package.xml | sed -e 's/^.*name="//;s/".*$//')
-do install -Dpm 644 $i %{buildroot}%{pecl_testdir}/%{pecl_name}/$i
-done
 for i in $(grep 'role="doc"' ../package.xml | sed -e 's/^.*name="//;s/".*$//')
 do install -Dpm 644 $i %{buildroot}%{pecl_docdir}/%{pecl_name}/$i
 done
@@ -238,14 +273,24 @@ done
 rm -rf %{buildroot}
 
 
-%post
-%{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+%if 0%{?fedora} < 24
+# when pear installed alone, after us
+%triggerin -- %{?scl_prefix}php-pear
+if [ -x %{__pecl} ] ; then
+    %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+fi
 
+# posttrans as pear can be installed after us
+%posttrans
+if [ -x %{__pecl} ] ; then
+    %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+fi
 
 %postun
-if [ $1 -eq 0 ] ; then
+if [ $1 -eq 0 -a -x %{__pecl} ] ; then
     %{pecl_uninstall} %{pecl_name} >/dev/null || :
 fi
+%endif
 
 
 %check
@@ -279,7 +324,7 @@ TEST_PHP_EXECUTABLE=%{__php} \
 TEST_PHP_ARGS="$OPT -d extension=$PWD/modules/%{pecl_name}.so" \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
-%{__php} -n run-tests.php || ret=1
+%{__php} -n run-tests.php --show-diff tests/*phpt || ret=1
 popd
 
 %if %{with_zts}
@@ -290,7 +335,7 @@ TEST_PHP_EXECUTABLE=%{__ztsphp} \
 TEST_PHP_ARGS="$OPT -d extension=$PWD/modules/%{pecl_name}.so" \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
-%{__ztsphp} -n run-tests.php || ret=1
+%{__ztsphp} -n run-tests.php --show-diff tests/*phpt  || ret=1
 popd
 %endif
 
@@ -305,8 +350,8 @@ exit $ret
 
 %files
 %defattr(-,root,root,-)
+%{?_licensedir:%license NTS/LICENSE}
 %doc %{pecl_docdir}/%{pecl_name}
-%doc %{pecl_testdir}/%{pecl_name}
 %{pecl_xmldir}/%{name}.xml
 
 %config(noreplace) %{php_inidir}/%{ini_name}
@@ -319,6 +364,43 @@ exit $ret
 
 
 %changelog
+* Thu Mar  3 2016 Remi Collet <remi@fedoraproject.org> - 3.0.0-0.1.20160217git6ace07d
+- update to 3.0.0-dev
+- switch back to php-memcached-dev sources
+
+* Wed Mar  2 2016 Remi Collet <remi@fedoraproject.org> - 2.2.1-0.2.20150628git3c79a97
+- add patch for igbinary, see
+  https://github.com/rlerdorf/php-memcached/pull/3
+
+* Sun Jan 10 2016 Remi Collet <remi@fedoraproject.org> - 2.2.1-0.1.20150628git3c79a97
+- bump version to 2.2.1-dev, stability=devel
+
+* Tue Oct 13 2015 Remi Collet <remi@fedoraproject.org> - 2.2.0-11.20150628git3c79a97
+- rebuild for PHP 7.0.0RC5 new API version
+
+* Fri Sep 18 2015 Remi Collet <remi@fedoraproject.org> - 2.2.0-10.20150628git3c79a97
+- F23 rebuild with rh_layout
+
+* Wed Jul 22 2015 Remi Collet <rcollet@redhat.com> - 2.2.0-9.20150628git3c79a97
+- rebuild against php 7.0.0beta2
+
+* Wed Jul  8 2015 Remi Collet <rcollet@redhat.com> - 2.2.0-8.20150628git3c79a97
+- new snapshot
+
+* Sat Jun 27 2015 Remi Collet <rcollet@redhat.com> - 2.2.0-7.20150423git4187e22
+- switch sources from pecl to github
+- temporarily use rlerdorf fork (php7 compatibility)
+- disable igbinary
+- open https://github.com/rlerdorf/php-memcached/pull/2 - msgpack
+
+* Tue Jun 23 2015 Remi Collet <rcollet@redhat.com> - 2.2.0-6
+- allow build against rh-php56 (as more-php56)
+- don't install/register tests
+- drop runtime dependency on pear, new scriptlets
+
+* Wed Dec 24 2014 Remi Collet <remi@fedoraproject.org> - 2.2.0-5.1
+- Fedora 21 SCL mass rebuild
+
 * Fri Aug 29 2014 Remi Collet <rcollet@redhat.com> - 2.2.0-5
 - test build with system fastlz
 
