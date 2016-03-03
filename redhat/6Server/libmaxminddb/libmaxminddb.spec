@@ -1,5 +1,5 @@
 Name:       libmaxminddb
-Version:    1.0.4
+Version:    1.1.4
 Release:    1%{?dist}
 Summary:    Library for the MaxMind DB file format
 Group:      System Environment/Libraries
@@ -18,7 +18,7 @@ flexibility in the type of data associated with an address.
 %package devel
 Summary:    Development files for the %{name} library
 Group:      Development/Libraries
-Requires:   %{name} = %{version}-%{release}
+Requires:   %{name}%{?_isa} = %{version}-%{release}
 
 %description devel
 Development files for the %{name} library.
@@ -56,6 +56,7 @@ rm -rf %{buildroot}
 %files devel
 %defattr(-,root,root,-)
 %doc doc/libmaxminddb.md
+%{_libdir}/pkgconfig/libmaxminddb.pc
 %{_libdir}/libmaxminddb.so
 %{_includedir}/maxminddb*.h
 %exclude %{_libdir}/libmaxminddb.a
@@ -64,6 +65,10 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Feb  9 2016 Matthias Saou <matthias@saou.eu> 1.1.4-1
+- Update to 1.1.4.
+- Include new pkgconfig file.
+
 * Mon Jan 12 2015 Matthias Saou <matthias@saou.eu> 1.0.4-1
 - Update to 1.0.4.
 
