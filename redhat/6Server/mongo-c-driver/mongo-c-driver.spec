@@ -22,23 +22,20 @@
 %ifarch x86_64
 %global with_tests   0%{!?_without_tests:1}
 %else
-# mongodb on F24+ is broken for now, see #1313018
+# mongodb on i386/F24+ is broken for now, see #1313018
 %global with_tests   0%{?_with_tests:1}
 %endif
 %endif
 
 Name:      mongo-c-driver
 Summary:   Client library written in C for MongoDB
-Version:   1.3.3
-Release:   2%{?dist}
+Version:   1.3.5
+Release:   1%{?dist}
 License:   ASL 2.0
 Group:     System Environment/Libraries
 URL:       https://github.com/%{gh_owner}/%{gh_project}
 
 Source0:   https://github.com/%{gh_owner}/%{gh_project}/releases/download/%{version}%{?prever:-%{prever}}/%{gh_project}-%{version}%{?prever:-%{prever}}.tar.gz
-
-# https://github.com/mongodb/mongo-c-driver/pull/314
-Patch0:    %{name}-pr314.patch
 
 BuildRequires: pkgconfig(openssl)
 BuildRequires: pkgconfig(libbson-1.0)
@@ -91,7 +88,10 @@ Documentation: http://api.mongodb.org/c/%{version}/
 %setup -q -n %{gh_project}-%{version}%{?prever:-%{prever}}
 
 rm -r src/libbson
-%patch0 -p1 -b .pr314
+
+# Ignore check for libbson version = libmongoc version
+sed -e 's/libbson-1.0 >= $MONGOC_RELEASED_VERSION/libbson-1.0 >= 1.3/' \
+    -i configure
 
 
 %build
@@ -101,6 +101,7 @@ export LIBS=-lpthread
   --enable-hardening \
   --enable-debug-symbols\
   --enable-shm-counters \
+  --disable-automatic-init-and-cleanup \
 %if %{with_tests}
   --enable-tests \
 %else
@@ -142,7 +143,7 @@ mongod \
 
 : Run the test suite
 ret=0
-export MONGOC_TEST_OFFLINE=1
+export MONGOC_TEST_OFFLINE=on
 make check || ret=1
 
 : Cleanup
@@ -177,13 +178,25 @@ exit $ret
 
 
 %changelog
+* Thu Mar 31 2016 Remi Collet <remi@fedoraproject.org> - 1.3.5-1
+- update to 1.3.5
+- use --disable-automatic-init-and-cleanup build option
+- ignore check for libbson version = libmongoc version
+
+* Sat Mar 19 2016 Remi Collet <remi@fedoraproject.org> - 1.3.4-2
+- build with MONGOC_NO_AUTOMATIC_GLOBALS
+
+* Tue Mar 15 2016 Remi Collet <remi@fedoraproject.org> - 1.3.4-1
+- update to 1.3.4
+- drop patch merged upstream
+
 * Mon Feb 29 2016 Remi Collet <remi@fedoraproject.org> - 1.3.3-2
 - cleanup for review
 - move libraries in "libs" sub-package
 - add patch to skip online tests
   open https://github.com/mongodb/mongo-c-driver/pull/314
-- temporarily disable test suite on F24+ (#1313018)
 - temporarily disable test suite on arm  (#1303864)
+- temporarily disable test suite on i686/F24+ (#1313018)
 
 * Sun Feb  7 2016 Remi Collet <remi@fedoraproject.org> - 1.3.3-1
 - Update to 1.3.3
