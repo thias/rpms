@@ -126,7 +126,7 @@
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 7.0.4
+Version: 7.0.5
 Release: %{?rcver:0.}%{rpmrel}%{?rcver:.%{rcver}}%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
@@ -1573,6 +1573,9 @@ install -m 755 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php
 install -m 700 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/session
 install -m 700 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/wsdlcache
 install -m 700 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/opcache
+%if 0%{?fedora} >= 24
+install -m 755 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/peclxml
+%endif
 
 %if %{with_lsws}
 install -m 755 build-apache/sapi/litespeed/php $RPM_BUILD_ROOT%{_bindir}/lsphp
@@ -1736,6 +1739,9 @@ sed -e "s/@PHP_APIVER@/%{apiver}%{isasuffix}/" \
     -e "/zts/d" \
 %endif
     < %{SOURCE3} > macros.php
+%if 0%{?fedora} >= 24
+echo '%pecl_xmldir   %{_localstatedir}/lib/php/peclxml' >>macros.php
+%endif
 install -m 644 -D macros.php \
            $RPM_BUILD_ROOT%{macrosdir}/macros.php
 
@@ -1857,6 +1863,9 @@ fi
 %dir %{_libdir}/php-zts/modules
 %endif
 %dir %{_localstatedir}/lib/php
+%if 0%{?fedora} >= 24
+%dir %{_localstatedir}/lib/php/peclxml
+%endif
 %dir %{_datadir}/php
 
 %files cli
@@ -1994,6 +2003,16 @@ fi
 
 
 %changelog
+* Wed Mar 30 2016 Remi Collet <remi@fedoraproject.org> 7.0.5-1
+- Update to 7.0.5
+  http://www.php.net/releases/7_0_5.php
+
+* Wed Mar 16 2016 Remi Collet <remi@fedoraproject.org> 7.0.5-0.1.0RC1
+- Update to 7.0.5RC1
+
+* Fri Mar  4 2016 Remi Collet <remi@fedoraproject.org> 7.0.4-2
+- adapt for F24: define %%pecl_xmldir and own it
+
 * Wed Mar  2 2016 Remi Collet <remi@fedoraproject.org> 7.0.4-1
 - Update to 7.0.4
   http://www.php.net/releases/7_0_4.php
