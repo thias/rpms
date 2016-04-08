@@ -13,6 +13,7 @@
 %global zendver     20131226
 %global pdover      20080721
 # Extension version
+%global fileinfover 1.0.5
 %global opcachever  7.0.6-dev
 %global oci8ver     2.0.10
 
@@ -144,7 +145,7 @@
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 5.6.18
+Version: 5.6.19
 %if 0%{?snapdate:1}%{?rcver:1}
 Release: 0.1.%{?snapdate}%{?rcver}%{?dist}
 %else
@@ -221,7 +222,6 @@ Patch300: php-5.6.3-datetests.patch
 Patch301: php-5.6.0-oldpcre.patch
 
 # WIP
-Patch401: php-bug62172.patch
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -437,6 +437,8 @@ Requires: php-pecl-zip%{?_isa}
 Provides: php-zlib, php-zlib%{?_isa}
 Obsoletes: php-pecl-phar < 1.2.4
 Obsoletes: php-pecl-Fileinfo < 1.0.5
+Provides:  php-pecl-Fileinfo = %{fileinfover}, php-pecl-Fileinfo%{?_isa} = %{fileinfover}
+Provides:  php-pecl(Fileinfo) = %{fileinfover}, php-pecl(Fileinfo)%{?_isa} = %{fileinfover}
 Obsoletes: php-mhash < 5.3.0
 Obsoletes: php53-mhash, php53u-mhash
 Obsoletes: php53-common, php53u-common, php54-common, php54w-common, php55u-common, php55w-common, php56u-common, php56w-common
@@ -477,6 +479,8 @@ Provides:  php-pecl-zendopcache = %{opcachever}
 Provides:  php-pecl-zendopcache%{?_isa} = %{opcachever}
 Provides:  php-pecl(opcache) = %{opcachever}
 Provides:  php-pecl(opcache)%{?_isa} = %{opcachever}
+Obsoletes: php55u-opcache, php55w-opcache, php56u-opcache, php56w-opcache
+
 
 %description opcache
 The Zend OPcache provides faster PHP execution through opcode caching and
@@ -550,6 +554,7 @@ Provides: php-mysqli%{?_isa} = %{version}-%{release}
 Provides: php-pdo_mysql, php-pdo_mysql%{?_isa}
 Obsoletes: php-mysql < %{version}-%{release}
 Obsoletes: php53-mysqlnd, php53u-mysqlnd, php54-mysqlnd, php54w-mysqlnd, php55u-mysqlnd, php55w-mysqlnd, php56u-mysqlnd, php56w-mysqlnd
+Obsoletes: php53-mysql, php53u-mysql, php54-mysql, php54w-mysql, php55u-mysql, php55w-mysql, php56u-mysql, php56w-mysql
 
 %description mysqlnd
 The php-mysqlnd package contains a dynamic shared object that will add
@@ -991,7 +996,6 @@ rm -rf ext/json
 %endif
 
 # WIP patch
-%patch401 -p1 -b .bug62172
 
 # Prevent %%doc confusion over LICENSE files
 cp Zend/LICENSE Zend/ZEND_LICENSE
@@ -1990,6 +1994,10 @@ fi
 
 
 %changelog
+* Thu Mar  3 2016 Remi Collet <remi@fedoraproject.org> 5.6.19-1
+- Update to 5.6.19
+  http://www.php.net/releases/5_6_19.php
+
 * Wed Feb  3 2016 Remi Collet <remi@fedoraproject.org> 5.6.18-1
 - Update to 5.6.18
   http://www.php.net/releases/5_6_18.php
