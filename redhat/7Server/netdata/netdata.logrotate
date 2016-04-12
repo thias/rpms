@@ -1,0 +1,8 @@
+/var/log/netdata/*.log {
+    missingok
+    nocreate
+    sharedscripts
+    postrotate
+        /usr/bin/systemctl restart netdata.service >/dev/null 2>&1 || true
+    endscript
+}

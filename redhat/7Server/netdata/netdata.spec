@@ -1,13 +1,15 @@
 Name:		netdata
 Version:	1.0.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Real-time performance monitoring
 
 Group:		Applications/System
 License:	GPLv3+
 URL:		http://netdata.firehol.org/
 Source0:	http://firehol.org/download/netdata/releases/v1.0.0/netdata-1.0.0.tar.xz
+Source1:    netdata.logrotate
 
+Requires: logrotate
 Requires(post): systemd
 Requires(preun): systemd
 Requires(postun): systemd
@@ -30,6 +32,8 @@ make %{?_smp_mflags}
 
 %install
 %make_install
+install -p -m 0644 -D %{SOURCE1} \
+  %{buildroot}%{_sysconfdir}/logrotate.d/netdata
 install -p -m 0644 -D system/netdata-systemd \
   %{buildroot}%{_unitdir}/netdata.service
 touch %{buildroot}%{_sysconfdir}/netdata/netdata.conf
@@ -54,12 +58,14 @@ exit 0
 %files
 %license LICENSE.md
 %doc ChangeLog README.md
+%config(noreplace) %{_sysconfdir}/logrotate.d/netdata
 %dir %{_sysconfdir}/netdata/
 %config(noreplace) %{_sysconfdir}/netdata/apps_groups.conf
 %config(noreplace) %{_sysconfdir}/netdata/charts.d.conf
 %ghost %config %{_sysconfdir}/netdata/netdata.conf
 %{_unitdir}/netdata.service
 %{_libexecdir}/netdata/
+%attr(4755,root,root) %{_libexecdir}/netdata/plugins.d/apps.plugin
 %{_sbindir}/netdata
 %dir %{_datadir}/netdata/
 # Owner must be the daemon's running user, even though access is read-only
@@ -71,6 +77,8 @@ exit 0
 
 
 %changelog
-* Tue Apr 12 2016 Matthias Saou <matthias@saou.eu> 1.0.0-1
+* Tue Apr 12 2016 Matthias Saou <matthias@saou.eu> 1.0.0-2
 - Initial RPM release.
+- Mode 4755 on apps.plugin since it requires root to read /proc.
+- Include logrotate configuration.
 
