@@ -1,44 +1,73 @@
-# spec file for librabbitmq
+# remirepo spec file for librabbitmq-last
+# renamed to allow parallel installation
 #
-# Copyright (c) 2012-2014 Remi Collet
+# Fedora spec file for librabbitmq
+#
+# Copyright (c) 2012-2015 Remi Collet
 # License: CC-BY-SA
-# http://creativecommons.org/licenses/by-sa/3.0/
+# http://creativecommons.org/licenses/by-sa/4.0/
 #
 # Please, preserve the changelog entries
 #
 
-Name:      librabbitmq
+%global gh_commit   caad0ef1533783729c7644a226c989c79b4c497b
+%global gh_short    %(c=%{gh_commit}; echo ${c:0:7})
+%global gh_owner    alanxz
+%global gh_project  rabbitmq-c
+%global libname     librabbitmq
+# soname 4 since 0.6.0 (Fedora 23) 0.7.0/4.1, 0.8.0/4.2
+# soname 1 up to 0.5.2
+%global soname      4
+
+%if 0%{?fedora} < 23
+Name:      %{libname}-last
+%else
+Name:      %{libname}
+%endif
 Summary:   Client library for AMQP
-Version:   0.5.2
+Version:   0.8.0
 Release:   1%{?dist}
 License:   MIT
 Group:     System Environment/Libraries
 URL:       https://github.com/alanxz/rabbitmq-c
 
-Source0:   https://github.com/alanxz/rabbitmq-c/releases/download/v%{version}/rabbitmq-c-%{version}.tar.gz
+Source0:   https://github.com/%{gh_owner}/%{gh_project}/archive/%{gh_commit}/%{gh_project}-%{version}-%{gh_short}.tar.gz
 
 BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires: libtool
-BuildRequires: openssl-devel
-# For tools
 %if 0%{?rhel} == 5
+BuildRequires: cmake28
 BuildRequires: popt
 %else
+BuildRequires: cmake > 2.8
 BuildRequires: popt-devel
 %endif
+BuildRequires: openssl-devel
 # For man page
 BuildRequires: xmlto
+
+%if "%{name}" == "%{libname}"
+Obsoletes:      %{libname}-last <= %{version}
+%endif
 
 
 %description
 This is a C-language AMQP client library for use with AMQP servers
 speaking protocol versions 0-9-1.
+%if "%{name}" != %{libname}
+This package is designed to be installed beside system %{libname}.
+%endif
 
 
 %package devel
 Summary:    Header files and development libraries for %{name}
 Group:      Development/Libraries
 Requires:   %{name}%{?_isa} = %{version}-%{release}
+%if "%{name}" != %{libname}
+Conflicts:  %{libname}-devel < %{version}
+Provides:   %{libname}-devel = %{version}-%{release}
+%else
+Obsoletes:  %{libname}-last-devel <= %{version}
+%endif
 
 %description devel
 This package contains the header files and development libraries
@@ -49,6 +78,12 @@ for %{name}.
 Summary:    Example tools built using the librabbitmq package
 Group:      Development/Libraries
 Requires:   %{name}%{?_isa} = %{version}
+%if "%{name}" != %{libname}
+Conflicts:  %{libname}-tools < %{version}
+Provides:   %{libname}-tools = %{version}-%{release}
+%else
+Obsoletes:  %{libname}-last-tools <= %{version}
+%endif
 
 %description tools
 This package contains example tools built using %{name}.
@@ -62,27 +97,21 @@ amqp-publish        Publish a message on an AMQP server
 
 
 %prep
-%setup -q -n rabbitmq-c-%{version}
+%setup -q -n %{gh_project}-%{gh_commit}
 
 # Copy sources to be included in -devel docs.
 cp -pr examples Examples
 
 
 %build
+# static lib required for tests
 %if 0%{?rhel} == 5
-: keep upstream configure
+%cmake28 \
 %else
-autoreconf -i
+%cmake \
 %endif
-
-%configure \
-   --enable-tools \
-   --enable-docs  \
-   --with-ssl=openssl
-
-# rpath removal
-sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
+  -DBUILD_TOOLS_DOCS:BOOL=ON \
+  -DBUILD_STATIC_LIBS:BOOL=ON
 
 make %{_smp_mflags}
 
@@ -90,7 +119,7 @@ make %{_smp_mflags}
 %install
 make install  DESTDIR="%{buildroot}"
 
-rm %{buildroot}%{_libdir}/%{name}.la
+rm %{buildroot}%{_libdir}/%{libname}.a
 
 
 %check
@@ -98,8 +127,7 @@ rm %{buildroot}%{_libdir}/%{name}.la
 grep @ %{buildroot}%{_libdir}/pkgconfig/librabbitmq.pc && exit 1
 
 : upstream tests
-export LD_LIBRARY_PATH=%{buildroot}%{_libdir}
-make check
+make test
 
 
 %clean
@@ -115,16 +143,16 @@ rm -rf %{buildroot}
 %defattr (-,root,root,-)
 %{!?_licensedir:%global license %%doc}
 %license LICENSE-MIT
-%{_libdir}/%{name}.so.1*
+%{_libdir}/%{libname}.so.%{soname}*
 
 
 %files devel
 %defattr (-,root,root,-)
 %doc AUTHORS THANKS TODO *.md
 %doc Examples
-%{_libdir}/%{name}.so
+%{_libdir}/%{libname}.so
 %{_includedir}/amqp*
-%{_libdir}/pkgconfig/librabbitmq.pc
+%{_libdir}/pkgconfig/%{libname}.pc
 
 %files tools
 %defattr (-,root,root,-)
@@ -134,6 +162,22 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Apr 12 2016 Remi Collet <remi@fedoraproject.org> - 0.8.0-1
+- update to 0.8.0
+
+* Tue Oct 13 2015 Remi Collet <remi@fedoraproject.org> - 0.7.1-1
+- update to 0.7.1
+
+* Fri Jul  3 2015 Remi Collet <remi@fedoraproject.org> - 0.7.0-1
+- update to 0.7.0
+- swicth to cmake
+- switch from upstream tarball to github sources
+
+* Mon Apr 20 2015 Remi Collet <remi@fedoraproject.org> - 0.6.0-1
+- update to 0.6.0
+- soname changed to .4
+- rename to librabbitmq-last (except F23+)
+
 * Mon Sep 15 2014 Remi Collet <remi@fedoraproject.org> - 0.5.2-1
 - update to 0.5.2
 
