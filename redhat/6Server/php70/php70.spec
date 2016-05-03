@@ -122,11 +122,11 @@
 %endif
 
 #global rcver         RC1
-%global rpmrel        1
+%global rpmrel        3
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 7.0.5
+Version: 7.0.6
 Release: %{?rcver:0.}%{rpmrel}%{?rcver:.%{rcver}}%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
@@ -161,10 +161,6 @@ Patch6: php-5.6.3-embed.patch
 Patch7: php-5.3.0-recode.patch
 Patch8: php-7.0.2-libdb.patch
 Patch9: php-5.5.30-curl.patch
-
-# Fixes for extension modules
-# https://bugs.php.net/63171 no odbc call during timeout
-Patch21: php-7.0.0-odbctimer.patch
 
 # Functional changes
 Patch40: php-7.0.0-dlopen.patch
@@ -948,8 +944,6 @@ httpd -V  | grep -q 'threaded:.*yes' && exit 1
 %if 0%{?rhel}
 %patch9 -p1 -b .curltls
 %endif
-
-%patch21 -p1 -b .odbctimer
 
 %patch40 -p1 -b .dlopen
 %if 0%{?fedora} >= 21 || 0%{?rhel} >= 5
@@ -2003,11 +1997,25 @@ fi
 
 
 %changelog
+* Thu Apr 28 2016 Remi Collet <remi@fedoraproject.org> 7.0.6-3
+- Update to 7.0.6 - http://www.php.net/releases/7_0_6.php
+- rebuild for new sources
+
+* Wed Apr 27 2016 Remi Collet <remi@fedoraproject.org> 7.0.6-1
+- Update to 7.0.6
+  http://www.php.net/releases/7_0_6.php
+
+* Tue Apr 12 2016 Remi Collet <remi@fedoraproject.org> 7.0.6-0.1.RC1
+- Update to 7.0.6RC1
+
+* Fri Apr  8 2016 Remi Collet <remi@fedoraproject.org> 7.0.5-2
+- Fixed bug #71914 (Reference is lost in "switch")
+
 * Wed Mar 30 2016 Remi Collet <remi@fedoraproject.org> 7.0.5-1
 - Update to 7.0.5
   http://www.php.net/releases/7_0_5.php
 
-* Wed Mar 16 2016 Remi Collet <remi@fedoraproject.org> 7.0.5-0.1.0RC1
+* Wed Mar 16 2016 Remi Collet <remi@fedoraproject.org> 7.0.5-0.1.RC1
 - Update to 7.0.5RC1
 
 * Fri Mar  4 2016 Remi Collet <remi@fedoraproject.org> 7.0.4-2
@@ -2018,24 +2026,24 @@ fi
   http://www.php.net/releases/7_0_4.php
 - pcre: disables JIT compilation of patterns with system pcre < 8.38
 
-* Thu Feb 18 2016 Remi Collet <remi@fedoraproject.org> 7.0.4-0.1.0RC1
+* Thu Feb 18 2016 Remi Collet <remi@fedoraproject.org> 7.0.4-0.1.RC1
 - Update to 7.0.4RC1
 
 * Wed Feb  3 2016 Remi Collet <remi@fedoraproject.org> 7.0.3-1
 - Update to 7.0.3
   http://www.php.net/releases/7_0_3.php
 
-* Fri Jan 29 2016 Remi Collet <remi@fedoraproject.org> 7.0.3-0.2.0RC1
+* Fri Jan 29 2016 Remi Collet <remi@fedoraproject.org> 7.0.3-0.2.RC1
 - FPM: test build for https://bugs.php.net/62172
 
-* Wed Jan 20 2016 Remi Collet <remi@fedoraproject.org> 7.0.3-0.1.0RC1
+* Wed Jan 20 2016 Remi Collet <remi@fedoraproject.org> 7.0.3-0.1.RC1
 - Update to 7.0.3RC1
 
 * Wed Jan  6 2016 Remi Collet <remi@fedoraproject.org> 7.0.2-1
 - Update to 7.0.2
   http://www.php.net/releases/7_0_2.php
 
-* Sun Dec 27 2015 Remi Collet <remi@fedoraproject.org> 7.0.2-0.1.0RC1
+* Sun Dec 27 2015 Remi Collet <remi@fedoraproject.org> 7.0.2-0.1.RC1
 - Update to 7.0.2RC1
 - opcache: build with --disable-huge-code-pages on EL-6
 
@@ -2044,7 +2052,7 @@ fi
   http://www.php.net/releases/7_0_1.php
 - curl: add CURL_SSLVERSION_TLSv1_x constant (EL)
 
-* Wed Dec  9 2015 Remi Collet <remi@fedoraproject.org> 7.0.1-0.1.0RC1
+* Wed Dec  9 2015 Remi Collet <remi@fedoraproject.org> 7.0.1-0.1.RC1
 - Update to 7.0.1RC1
 - drop --disable-huge-code-pages build option on EL-6,
   but keep it disabled in default configuration
