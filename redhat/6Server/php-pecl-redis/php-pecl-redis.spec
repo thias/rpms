@@ -1,15 +1,23 @@
-# spec file for php-pecl-redis
+# remirepo spec file for php-pecl-redis
+# adapted for scl, from
 #
-# Copyright (c) 2012-2015 Remi Collet
+# Fedora spec file for php-pecl-redis
+#
+# Copyright (c) 2012-2016 Remi Collet
 # License: CC-BY-SA
-# http://creativecommons.org/licenses/by-sa/3.0/
+# http://creativecommons.org/licenses/by-sa/4.0/
 #
 # Please, preserve the changelog entries
 #
-%{?scl:          %scl_package        php-pecl-redis}
-%{!?php_inidir:  %global php_inidir  %{_sysconfdir}/php.d}
-%{!?__pecl:      %global __pecl      %{_bindir}/pecl}
-%{!?__php:       %global __php       %{_bindir}/php}
+%if 0%{?scl:1}
+%if "%{scl}" == "rh-php56"
+%global sub_prefix more-php56-
+%else
+%global sub_prefix %{scl_prefix}
+%endif
+%scl_package       php-pecl-redis
+%endif
+
 
 %global pecl_name   redis
 %global with_zts    0%{?__ztsphp:1}
@@ -23,19 +31,18 @@
 %endif
 
 Summary:       Extension for communicating with the Redis key-value store
-Name:          %{?scl_prefix}php-pecl-redis
-Version:       2.2.7
+Name:          %{?sub_prefix}php-pecl-redis
+Version:       2.2.8
 Release:       1%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
 License:       PHP
 Group:         Development/Languages
 URL:           http://pecl.php.net/package/redis
 Source0:       http://pecl.php.net/get/%{pecl_name}-%{version}.tgz
-# https://github.com/nicolasff/phpredis/issues/332 - missing tests
-Source1:       https://github.com/phpredis/phpredis/archive/%{version}.tar.gz
 
 BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: %{?scl_prefix}php-devel
-BuildRequires: %{?scl_prefix}php-pecl-igbinary-devel
+BuildRequires: %{?scl_prefix}php-pear
+BuildRequires: %{?sub_prefix}php-pecl-igbinary-devel
 # to run Test suite
 %if %{with_tests}
 BuildRequires: redis >= 2.6
@@ -44,14 +51,18 @@ BuildRequires: redis >= 2.6
 Requires:      %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:      %{?scl_prefix}php(api) = %{php_core_api}
 # php-pecl-igbinary missing php-pecl(igbinary)%{?_isa}
-Requires:      %{?scl_prefix}php-pecl-igbinary%{?_isa}
+Requires:      %{?sub_prefix}php-pecl-igbinary%{?_isa}
 %{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
 
-Obsoletes:     %{?scl_prefix}php-redis < %{version}
-Provides:      %{?scl_prefix}php-redis = %{version}-%{release}
-Provides:      %{?scl_prefix}php-redis%{?_isa} = %{version}-%{release}
-Provides:      %{?scl_prefix}php-pecl(%{pecl_name}) = %{version}
+Obsoletes:     %{?scl_prefix}php-%{pecl_name}               < %{version}
+Provides:      %{?scl_prefix}php-%{pecl_name}               = %{version}
+Provides:      %{?scl_prefix}php-%{pecl_name}%{?_isa}       = %{version}
+Provides:      %{?scl_prefix}php-pecl(%{pecl_name})         = %{version}
 Provides:      %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
+%if "%{?scl_prefix}" != "%{?sub_prefix}"
+Provides:      %{?scl_prefix}php-pecl-%{pecl_name}          = %{version}-%{release}
+Provides:      %{?scl_prefix}php-pecl-%{pecl_name}%{?_isa}  = %{version}-%{release}
+%endif
 
 %if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
 # Other third party repo stuff
@@ -84,16 +95,19 @@ This Redis client implements most of the latest Redis API.
 As method only only works when also implemented on the server side,
 some doesn't work with an old redis server version.
 
-Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')%{?scl: as Software Collection}.
+Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')%{?scl: as Software Collection (%{scl} by %{?scl_vendor}%{!?scl_vendor:rh})}.
 
 
 %prep
-%setup -q -c -a 1
+%setup -q -c
+
+# Don't install/register tests
+sed -e 's/role="test"/role="src"/' \
+    %{?_licensedir:-e '/COPYING/s/role="doc"/role="src"/' } \
+    -i package.xml
 
 # rename source folder
 mv %{pecl_name}-%{version} NTS
-# tests folder from github archive
-mv phpredis-%{version}/tests NTS/tests
 
 cd NTS
 
@@ -124,6 +138,17 @@ extension = %{pecl_name}.so
 
 ;session.save_handler = %{pecl_name}
 ;session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeout=2.5, tcp://host3:6379?weight=2"
+
+; Configuration
+;redis.arrays.names = ''
+;redis.arrays.hosts = ''
+;redis.arrays.previous = ''
+;redis.arrays.functions = ''
+;redis.arrays.index = ''
+;redis.arrays.autorehash = ''
+;redis.clusters.seeds = ''
+;redis.clusters.timeout = ''
+;redis.clusters.read_timeout = ''
 EOF
 
 
@@ -189,11 +214,6 @@ done
 %if %{with_tests}
 cd NTS/tests
 
-# this test requires redis >= 2.6.9
-# https://github.com/nicolasff/phpredis/pull/333
-sed -e s/testClient/SKIP_testClient/ \
-    -i TestRedis.php
-
 # Launch redis server
 mkdir -p {run,log,lib}/redis
 sed -e "s:/^pidfile.*$:/pidfile $PWD/run/redis.pid:" \
@@ -212,7 +232,7 @@ port=6382
 %endif
 %endif
 sed -e "s/6379/$port/" -i redis.conf
-sed -e "s/6379/$port/" -i TestRedis.php
+sed -e "s/6379/$port/" -i *.php
 %{_bindir}/redis-server ./redis.conf
 
 # Run the test Suite
@@ -234,6 +254,7 @@ exit $ret
 %endif
 
 
+%if 0%{?fedora} < 24
 # when pear installed alone, after us
 %triggerin -- %{?scl_prefix}php-pear
 if [ -x %{__pecl} ] ; then
@@ -250,6 +271,7 @@ fi
 if [ $1 -eq 0 -a -x %{__pecl} ] ; then
     %{pecl_uninstall} %{pecl_name} >/dev/null || :
 fi
+%endif
 
 
 %clean
@@ -272,6 +294,15 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Jun  9 2016 Remi Collet <remi@fedoraproject.org> - 2.2.8-1
+- Update to 2.2.8 (stable)
+
+* Wed Mar  9 2016 Remi Collet <remi@fedoraproject.org> - 2.2.7-3
+- adapt for F24
+
+* Sat Jun 20 2015 Remi Collet <remi@fedoraproject.org> - 2.2.7-2
+- allow build against rh-php56 (as more-php56)
+
 * Tue Mar 03 2015 Remi Collet <remi@fedoraproject.org> - 2.2.7-1
 - Update to 2.2.7 (stable)
 - drop runtime dependency on pear, new scriptlets
