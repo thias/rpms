@@ -1,0 +1,227 @@
+diff -Naupr twemproxy-0.4.1.orig/configure.ac twemproxy-0.4.1/configure.ac
+--- twemproxy-0.4.1.orig/configure.ac	2015-06-23 08:06:05.000000000 +0200
++++ twemproxy-0.4.1/configure.ac	2016-06-23 17:16:42.723179799 +0200
+@@ -6,7 +6,7 @@ m4_define([NC_BUGS], [manj@cs.stanford.e
+ 
+ # Initialize autoconf
+ AC_PREREQ([2.64])
+-AC_INIT([nutcracker], [NC_MAJOR.NC_MINOR.NC_PATCH], [NC_BUGS])
++AC_INIT([twemproxy], [NC_MAJOR.NC_MINOR.NC_PATCH], [NC_BUGS])
+ AC_CONFIG_SRCDIR([src/nc.c])
+ AC_CONFIG_AUX_DIR([config])
+ AC_CONFIG_HEADERS([config.h:config.h.in])
+diff -Naupr twemproxy-0.4.1.orig/Makefile.am twemproxy-0.4.1/Makefile.am
+--- twemproxy-0.4.1.orig/Makefile.am	2015-06-23 08:06:05.000000000 +0200
++++ twemproxy-0.4.1/Makefile.am	2016-06-23 17:24:48.909370880 +0200
+@@ -4,6 +4,6 @@ ACLOCAL_AMFLAGS = -I m4
+ 
+ SUBDIRS = contrib src
+ 
+-dist_man_MANS = man/nutcracker.8
++dist_man_MANS = man/twemproxy.8
+ 
+ EXTRA_DIST = README.md NOTICE LICENSE ChangeLog conf scripts notes
+diff -Naupr twemproxy-0.4.1.orig/man/nutcracker.8 twemproxy-0.4.1/man/nutcracker.8
+--- twemproxy-0.4.1.orig/man/nutcracker.8	2015-06-23 08:06:05.000000000 +0200
++++ twemproxy-0.4.1/man/nutcracker.8	2016-06-23 17:21:39.737282586 +0200
+@@ -1,11 +1,11 @@
+ .TH NUTCRACKER 8 "June 13, 2013"
+ .SH NAME
+-nutcracker \- Fast, light-weight proxy for memcached and Redis
++twemproxy \- Fast, light-weight proxy for memcached and Redis
+ .SH SYNOPSIS
+-.B nutcracker
++.B twemproxy
+ .RI [ options ]
+ .SH DESCRIPTION
+-\fBnutcracker\fP, also known as \fBtwemproxy\fP (pronounced "two-em-proxy"), is
++\fBtwemproxy\fP, also known as \fBtwemproxy\fP (pronounced "two-em-proxy"), is
+ a fast and lightweight proxy for the memcached and Redis protocols.
+ .PP
+ It was primarily built to reduce the connection count on backend caching
+@@ -73,4 +73,4 @@ Set pid file to \fIfilename\fP.
+ .BR redis-server (1)
+ .br
+ .SH AUTHOR
+-nutcracker was written by Twitter, Inc.
++twemproxy was written by Twitter, Inc.
+diff -Naupr twemproxy-0.4.1.orig/src/Makefile.am twemproxy-0.4.1/src/Makefile.am
+--- twemproxy-0.4.1.orig/src/Makefile.am	2015-06-23 08:06:05.000000000 +0200
++++ twemproxy-0.4.1/src/Makefile.am	2016-06-23 17:19:06.936773073 +0200
+@@ -31,9 +31,9 @@ endif
+ 
+ SUBDIRS = hashkit proto event
+ 
+-sbin_PROGRAMS = nutcracker
++sbin_PROGRAMS = twemproxy
+ 
+-nutcracker_SOURCES =			\
++twemproxy_SOURCES =			\
+ 	nc_core.c nc_core.h		\
+ 	nc_connection.c nc_connection.h	\
+ 	nc_client.c nc_client.h		\
+@@ -54,7 +54,7 @@ nutcracker_SOURCES =			\
+ 	nc_queue.h			\
+ 	nc.c
+ 
+-nutcracker_LDADD = $(top_builddir)/src/hashkit/libhashkit.a
+-nutcracker_LDADD += $(top_builddir)/src/proto/libproto.a
+-nutcracker_LDADD += $(top_builddir)/src/event/libevent.a
+-nutcracker_LDADD += $(top_builddir)/contrib/yaml-0.1.4/src/.libs/libyaml.a
++twemproxy_LDADD = $(top_builddir)/src/hashkit/libhashkit.a
++twemproxy_LDADD += $(top_builddir)/src/proto/libproto.a
++twemproxy_LDADD += $(top_builddir)/src/event/libevent.a
++twemproxy_LDADD += $(top_builddir)/contrib/yaml-0.1.4/src/.libs/libyaml.a
+diff -Naupr twemproxy-0.4.1.orig/src/nc.c twemproxy-0.4.1/src/nc.c
+--- twemproxy-0.4.1.orig/src/nc.c	2015-06-23 08:06:05.000000000 +0200
++++ twemproxy-0.4.1/src/nc.c	2016-06-23 17:20:43.257833513 +0200
+@@ -28,7 +28,7 @@
+ #include <nc_conf.h>
+ #include <nc_signal.h>
+ 
+-#define NC_CONF_PATH        "conf/nutcracker.yml"
++#define NC_CONF_PATH        "conf/twemproxy.yml"
+ 
+ #define NC_LOG_DEFAULT      LOG_NOTICE
+ #define NC_LOG_MIN          LOG_EMERG
+@@ -180,9 +180,9 @@ nc_print_run(struct instance *nci)
+ 
+     status = uname(&name);
+     if (status < 0) {
+-        loga("nutcracker-%s started on pid %d", NC_VERSION_STRING, nci->pid);
++        loga("twemproxy-%s started on pid %d", NC_VERSION_STRING, nci->pid);
+     } else {
+-        loga("nutcracker-%s built for %s %s %s started on pid %d",
++        loga("twemproxy-%s built for %s %s %s started on pid %d",
+              NC_VERSION_STRING, name.sysname, name.release, name.machine,
+              nci->pid);
+     }
+@@ -202,7 +202,7 @@ static void
+ nc_show_usage(void)
+ {
+     log_stderr(
+-        "Usage: nutcracker [-?hVdDt] [-v verbosity level] [-o output file]" CRLF
++        "Usage: twemproxy [-?hVdDt] [-v verbosity level] [-o output file]" CRLF
+         "                  [-c conf file] [-s stats port] [-a stats addr]" CRLF
+         "                  [-i stats interval] [-p pid file] [-m mbuf size]" CRLF
+         "");
+@@ -342,7 +342,7 @@ nc_get_options(int argc, char **argv, st
+         case 'v':
+             value = nc_atoi(optarg, strlen(optarg));
+             if (value < 0) {
+-                log_stderr("nutcracker: option -v requires a number");
++                log_stderr("twemproxy: option -v requires a number");
+                 return NC_ERROR;
+             }
+             nci->log_level = value;
+@@ -359,11 +359,11 @@ nc_get_options(int argc, char **argv, st
+         case 's':
+             value = nc_atoi(optarg, strlen(optarg));
+             if (value < 0) {
+-                log_stderr("nutcracker: option -s requires a number");
++                log_stderr("twemproxy: option -s requires a number");
+                 return NC_ERROR;
+             }
+             if (!nc_valid_port(value)) {
+-                log_stderr("nutcracker: option -s value %d is not a valid "
++                log_stderr("twemproxy: option -s value %d is not a valid "
+                            "port", value);
+                 return NC_ERROR;
+             }
+@@ -374,7 +374,7 @@ nc_get_options(int argc, char **argv, st
+         case 'i':
+             value = nc_atoi(optarg, strlen(optarg));
+             if (value < 0) {
+-                log_stderr("nutcracker: option -i requires a number");
++                log_stderr("twemproxy: option -i requires a number");
+                 return NC_ERROR;
+             }
+ 
+@@ -392,12 +392,12 @@ nc_get_options(int argc, char **argv, st
+         case 'm':
+             value = nc_atoi(optarg, strlen(optarg));
+             if (value <= 0) {
+-                log_stderr("nutcracker: option -m requires a non-zero number");
++                log_stderr("twemproxy: option -m requires a non-zero number");
+                 return NC_ERROR;
+             }
+ 
+             if (value < NC_MBUF_MIN_SIZE || value > NC_MBUF_MAX_SIZE) {
+-                log_stderr("nutcracker: mbuf chunk size must be between %zu and"
++                log_stderr("twemproxy: mbuf chunk size must be between %zu and"
+                            " %zu bytes", NC_MBUF_MIN_SIZE, NC_MBUF_MAX_SIZE);
+                 return NC_ERROR;
+             }
+@@ -410,7 +410,7 @@ nc_get_options(int argc, char **argv, st
+             case 'o':
+             case 'c':
+             case 'p':
+-                log_stderr("nutcracker: option -%c requires a file name",
++                log_stderr("twemproxy: option -%c requires a file name",
+                            optopt);
+                 break;
+ 
+@@ -418,21 +418,21 @@ nc_get_options(int argc, char **argv, st
+             case 'v':
+             case 's':
+             case 'i':
+-                log_stderr("nutcracker: option -%c requires a number", optopt);
++                log_stderr("twemproxy: option -%c requires a number", optopt);
+                 break;
+ 
+             case 'a':
+-                log_stderr("nutcracker: option -%c requires a string", optopt);
++                log_stderr("twemproxy: option -%c requires a string", optopt);
+                 break;
+ 
+             default:
+-                log_stderr("nutcracker: invalid option -- '%c'", optopt);
++                log_stderr("twemproxy: invalid option -- '%c'", optopt);
+                 break;
+             }
+             return NC_ERROR;
+ 
+         default:
+-            log_stderr("nutcracker: invalid option -- '%c'", optopt);
++            log_stderr("twemproxy: invalid option -- '%c'", optopt);
+             return NC_ERROR;
+ 
+         }
+@@ -452,14 +452,14 @@ nc_test_conf(struct instance *nci)
+ 
+     cf = conf_create(nci->conf_filename);
+     if (cf == NULL) {
+-        log_stderr("nutcracker: configuration file '%s' syntax is invalid",
++        log_stderr("twemproxy: configuration file '%s' syntax is invalid",
+                    nci->conf_filename);
+         return false;
+     }
+ 
+     conf_destroy(cf);
+ 
+-    log_stderr("nutcracker: configuration file '%s' syntax is ok",
++    log_stderr("twemproxy: configuration file '%s' syntax is ok",
+                nci->conf_filename);
+     return true;
+ }
+@@ -551,7 +551,7 @@ main(int argc, char **argv)
+     }
+ 
+     if (show_version) {
+-        log_stderr("This is nutcracker-%s" CRLF, NC_VERSION_STRING);
++        log_stderr("This is twemproxy-%s" CRLF, NC_VERSION_STRING);
+         if (show_help) {
+             nc_show_usage();
+         }
+diff -Naupr twemproxy-0.4.1.orig/src/nc_stats.c twemproxy-0.4.1/src/nc_stats.c
+--- twemproxy-0.4.1.orig/src/nc_stats.c	2015-06-23 08:06:05.000000000 +0200
++++ twemproxy-0.4.1/src/nc_stats.c	2016-06-23 17:20:19.517065091 +0200
+@@ -916,7 +916,7 @@ stats_create(uint16_t stats_port, char *
+     st->sd = -1;
+ 
+     string_set_text(&st->service_str, "service");
+-    string_set_text(&st->service, "nutcracker");
++    string_set_text(&st->service, "twemproxy");
+ 
+     string_set_text(&st->source_str, "source");
+     string_set_raw(&st->source, source);

@@ -1,0 +1,13 @@
+[Unit]
+Description=twemproxy
+After=redis.target memcached.target
+Before=php-fpm.target nginx.target
+
+[Service]
+User=twemproxy
+EnvironmentFile=/etc/sysconfig/twemproxy
+ExecStartPre=/usr/sbin/twemproxy -t
+ExecStart=/usr/sbin/twemproxy $OPTIONS
+
+[Install]
+WantedBy=multi-user.target
