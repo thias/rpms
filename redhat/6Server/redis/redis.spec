@@ -19,15 +19,26 @@
 # Tests fail in mock, not in local build.
 %global with_tests   %{?_with_tests:1}%{!?_with_tests:0}
 
+# Pre-version are only available in github
+#global prever       rc3
+%global gh_commit    d5dab73127a3f02cf5c4964c66a6c7c7147b9dc0
+%global gh_short     %(c=%{gh_commit}; echo ${c:0:7})
+%global gh_owner     antirez
+%global gh_project   redis
+
 Name:             redis
-Version:          3.0.7
-Release:          2%{?dist}
+Version:          3.2.0
+Release:          1%{?dist}
 Summary:          A persistent key-value database
 
 Group:            Applications/Databases
 License:          BSD
 URL:              http://redis.io
-Source0:          http://download.redis.io/releases/%{name}-%{version}%{?prever:-%{prever}}.tar.gz
+%if 0%{?prever:1}
+Source0:          https://github.com/%{gh_owner}/%{gh_project}/archive/%{gh_commit}/%{name}-%{version}-%{gh_short}.tar.gz
+%else
+Source0:          http://download.redis.io/releases/%{name}-%{version}.tar.gz
+%endif
 Source1:          %{name}.logrotate
 Source2:          %{name}.init
 Source3:          %{name}.service
@@ -39,8 +50,8 @@ Source8:          %{name}-limit-systemd
 Source9:          %{name}-limit-init
 
 # Update configuration for Fedora
-Patch0:           0001-redis-2.8.18-redis-conf.patch
-Patch1:           0002-redis-2.8.18-deps-library-fPIC-performance-tuning.patch
+Patch0:           0001-redis-3.2-redis-conf.patch
+Patch1:           0002-redis-3.2-deps-library-fPIC-performance-tuning.patch
 Patch2:           0003-redis-2.8.11-use-system-jemalloc.patch
 
 BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -95,7 +106,12 @@ Documentation: http://redis.io/documentation
 
 
 %prep
-%setup -q -n %{name}-%{version}%{?prever:-%{prever}}
+%if 0%{?prever:1}
+%setup -q -n %{gh_project}-%{gh_commit}
+%else
+%setup -q -n %{name}-%{version}
+%endif
+
 %patch0 -p1 -b .rpmconf
 %patch1 -p1 -b .pic
 %patch2 -p1 -b .jem
@@ -205,7 +221,7 @@ fi
 %defattr(-,root,root,-)
 %{!?_licensedir:%global license %%doc}
 %license COPYING
-%doc 00-RELEASENOTES BUGS CONTRIBUTING MANIFESTO README
+%doc 00-RELEASENOTES BUGS CONTRIBUTING MANIFESTO README.md
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
 %attr(0644, redis, root) %config(noreplace) %{_sysconfdir}/%{name}.conf
 %attr(0644, redis, root) %config(noreplace) %{_sysconfdir}/%{name}-sentinel.conf
@@ -229,12 +245,21 @@ fi
 
 
 %changelog
-* Mon Feb  8 2016 Haïkel Guémar <hguemar@fedoraproject.org> - 3.0.7-2
+* Tue May 10 2016 Remi Collet <remi@fedoraproject.org> - 3.2.0-1
+- update to 3.2.0
+
+* Mon Feb  8 2016 Haïkel Guémar <hguemar@fedoraproject.org> - 3.2-0.4.rc3
 - Fix redis-shutdown to handle password-protected instances shutdown
 
-* Tue Jan 26 2016 Remi Collet <remi@fedoraproject.org> - 3.0.7-1
-- Redis 3.0.7 - Release date: 25 jan 2016
-- Upgrade urgency: MODERATE
+* Thu Jan 28 2016 Remi Collet <remi@fedoraproject.org> - 3.2-0.3.rc3
+- update to 3.2-rc3 (version 3.1.103)
+
+* Tue Jan 26 2016 Remi Collet <remi@fedoraproject.org> - 3.2-0.2.rc2
+- update to 3.2-rc2 (version 3.1.102)
+
+* Fri Jan 15 2016 Remi Collet <remi@fedoraproject.org> - 3.2-0.1.rc1
+- update to 3.2-rc1 (version 3.1.101)
+  This is the first release candidate of Redis 3.2
 
 * Sat Dec 26 2015 Remi Collet <remi@fedoraproject.org> - 3.0.6-1
 - Redis 3.0.6 - Release date: 18 Dec 2015
