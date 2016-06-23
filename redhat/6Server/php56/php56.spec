@@ -145,8 +145,8 @@
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 5.6.22
-Release: 1%{?dist}.3
+Version: 5.6.23
+Release: 1%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -1153,9 +1153,6 @@ ln -sf ../configure
     --with-freetype-dir=%{_prefix} \
     --with-png-dir=%{_prefix} \
     --with-xpm-dir=%{_prefix} \
-%if %{with_vpx}
-    --with-vpx-dir=%{_prefix} \
-%endif
     --enable-gd-native-ttf \
     --with-t1lib=%{_prefix} \
     --without-gdbm \
@@ -1203,6 +1200,9 @@ build --libdir=%{_libdir}/php \
       --with-gd=shared,%{_prefix} \
 %else
       --with-gd=shared \
+%if %{with_vpx}
+      --with-vpx-dir=%{_prefix} \
+%endif
 %endif
       --with-gmp=shared \
       --enable-calendar=shared \
@@ -1345,6 +1345,9 @@ build --includedir=%{_includedir}/php-zts \
       --with-gd=shared,%{_prefix} \
 %else
       --with-gd=shared \
+%if %{with_vpx}
+      --with-vpx-dir=%{_prefix} \
+%endif
 %endif
       --with-gmp=shared \
       --enable-calendar=shared \
@@ -1981,6 +1984,9 @@ fi
 
 
 %changelog
+* Wed Jun 22 2016 Remi Collet <remi@fedoraproject.org> 5.6.23-1
+- Update to 5.6.23 - http://www.php.net/releases/5_6_23.php
+
 * Thu May 26 2016 Remi Collet <remi@fedoraproject.org> 5.6.22-1
 - Update to 5.6.22 - http://www.php.net/releases/5_6_22.php
 
