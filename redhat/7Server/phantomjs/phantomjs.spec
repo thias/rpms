@@ -1,11 +1,13 @@
+%define patchlevel adsecure6
+
 Summary:    Headless WebKit with JavaScript API
 Name:       phantomjs
 Version:    2.0.0
-Release:    3%{?dist}
+Release:    6%{?dist}.%{patchlevel}
 License:    BSD
 Group:      Applications/Internet
 Source:     https://bitbucket.org/ariya/phantomjs/downloads/%{name}-%{version}-source.zip
-Patch0:     phantomjs-2.0.0-save.patch
+Patch0:     phantomjs-2.0.0-%{patchlevel}.patch
 
 BuildRequires: flex
 BuildRequires: bison
@@ -28,7 +30,7 @@ Canvas, and SVG. PhantomJS is created by Ariya Hidayat.
 
 %prep
 %setup -q
-%patch0 -p1
+%patch0 -p0
 
 
 %build
@@ -46,6 +48,15 @@ install -D -p -m 0755 bin/phantomjs %{buildroot}%{_bindir}/phantomjs
 
 
 %changelog
+* Wed Mar 23 2016 Matthias Saou <matthias@saou.eu> 2.0.0-6
+- Update patch to adsecure2.
+
+* Wed Mar  9 2016 Matthias Saou <matthias@saou.eu> 2.0.0-5
+- Update patch, now renamed to 'adsecure' and include that in the release.
+
+* Tue Feb 16 2016 Matthias Saou <matthias@saou.eu> 2.0.0-4
+- Update save patch.
+
 * Tue Feb  9 2016 Matthias Saou <matthias@saou.eu> 2.0.0-3
 - Include save patch.
 

@@ -1,0 +1,373 @@
+diff --git src/consts.h src/consts.h
+index 52caad7..e8d5e0e 100644
+--- src/consts.h
++++ src/consts.h
+@@ -35,7 +35,7 @@
+ #define PHANTOMJS_VERSION_MAJOR     2
+ #define PHANTOMJS_VERSION_MINOR     0
+ #define PHANTOMJS_VERSION_PATCH     0
+-#define PHANTOMJS_VERSION_STRING    "2.0.0"
++#define PHANTOMJS_VERSION_STRING    "2.0.0 (adsecure5)"
+ 
+ #define HTTP_HEADER_CONTENT_LENGTH      "content-length"
+ #define HTTP_HEADER_CONTENT_TYPE        "content-type"
+diff --git src/main.cpp src/main.cpp
+index abd8e5f..fd2712d 100644
+--- src/main.cpp
++++ src/main.cpp
+@@ -42,7 +42,7 @@
+ 
+ int main(int argc, char** argv)
+ {
+-    CrashHandler crash_guard;
++    //CrashHandler crash_guard;
+     QApplication app(argc, argv);
+ 
+     app.setWindowIcon(QIcon(":/phantomjs-icon.png"));
+diff --git src/modules/webpage.js src/modules/webpage.js
+index 998708c..aa37e2a 100644
+--- src/modules/webpage.js
++++ src/modules/webpage.js
+@@ -266,6 +266,8 @@ function decorateNewPage(opts, page) {
+ 
+     definePageSignalHandler(page, handlers, "onClosing", "closing");
+ 
++    definePageSignalHandler(page, handlers, "onInitializedFrame", "initializedFrame");
++
+     // Private callback for "page.open()"
+     definePageSignalHandler(page, handlers, "_onPageOpenFinished", "loadFinished");
+ 
+diff --git src/networkaccessmanager.cpp src/networkaccessmanager.cpp
+index c99e322..a554321 100644
+--- src/networkaccessmanager.cpp
++++ src/networkaccessmanager.cpp
+@@ -313,7 +313,7 @@ QNetworkReply *NetworkAccessManager::createRequest(Operation op, const QNetworkR
+     data["time"] = QDateTime::currentDateTime();
+ 
+     JsNetworkRequest jsNetworkRequest(&req, this);
+-    emit resourceRequested(data, &jsNetworkRequest);
++    emit resourceRequested(data, &jsNetworkRequest, QString("0x%1").arg((quintptr)request.originatingObject(), QT_POINTER_SIZE * 2, 16, QChar('0')));
+ 
+     // Pass duty to the superclass - special case: file:/// may be disabled.
+     // This conditional must match QNetworkAccessManager's own idea of what a
+diff --git src/networkaccessmanager.h src/networkaccessmanager.h
+index f4a41fb..a46ddb8 100644
+--- src/networkaccessmanager.h
++++ src/networkaccessmanager.h
+@@ -105,7 +105,7 @@ protected:
+     void handleFinished(QNetworkReply *reply, const QVariant &status, const QVariant &statusText);
+ 
+ signals:
+-    void resourceRequested(const QVariant& data, QObject *);
++    void resourceRequested(const QVariant& data, QObject *, const QString &originatingFrameID);
+     void resourceReceived(const QVariant& data);
+     void resourceError(const QVariant& data);
+     void resourceTimeout(const QVariant& data);
+diff --git src/phantom.h src/phantom.h
+index 5b7a962..f79b848 100644
+--- src/phantom.h
++++ src/phantom.h
+@@ -202,4 +202,4 @@ private:
+     friend class CustomPage;
+ };
+ 
+-#endif // PHANTOM_H
++#endif // PHANTOM_H
+\ No newline at end of file
+diff --git src/qt/qtbase/src/platformsupport/fontdatabases/fontconfig/qfontconfigdatabase.cpp src/qt/qtbase/src/platformsupport/fontdatabases/fontconfig/qfontconfigdatabase.cpp
+index 17717dd..f94b349 100644
+--- src/qt/qtbase/src/platformsupport/fontdatabases/fontconfig/qfontconfigdatabase.cpp
++++ src/qt/qtbase/src/platformsupport/fontdatabases/fontconfig/qfontconfigdatabase.cpp
+@@ -660,6 +660,8 @@ QFontEngine *QFontconfigDatabase::fontEngine(const QFontDef &f, void *usrPtr)
+ QFontEngine *QFontconfigDatabase::fontEngine(const QByteArray &fontData, qreal pixelSize, QFont::HintingPreference hintingPreference)
+ {
+     QFontEngineFT *engine = static_cast<QFontEngineFT*>(QBasicFontDatabase::fontEngine(fontData, pixelSize, hintingPreference));
++    if (engine == 0)
++	return NULL;
+     QFontDef fontDef = engine->fontDef;
+ 
+     QFontEngineFT::GlyphFormat format;
+diff --git src/qt/qtwebkit/Source/WebCore/bindings/js/JSDOMWindowCustom.cpp src/qt/qtwebkit/Source/WebCore/bindings/js/JSDOMWindowCustom.cpp
+index 9b2e54b..ead1b56 100644
+--- src/qt/qtwebkit/Source/WebCore/bindings/js/JSDOMWindowCustom.cpp
++++ src/qt/qtwebkit/Source/WebCore/bindings/js/JSDOMWindowCustom.cpp
+@@ -541,6 +541,9 @@ JSValue JSDOMWindow::open(ExecState* exec)
+     if (exec->hadException())
+         return jsUndefined();
+     AtomicString frameName = exec->argument(1).isUndefinedOrNull() ? "_blank" : exec->argument(1).toString(exec)->value(exec);
++    //Force a new window to be opened when the function window.open is called no matter the parameters (_parent, _top, _self, etc.).
++    frameName = "_blank";
++
+     if (exec->hadException())
+         return jsUndefined();
+     String windowFeaturesString = valueToStringWithUndefinedOrNullCheck(exec, exec->argument(2));
+diff --git src/qt/qtwebkit/Source/WebCore/html/HTMLAnchorElement.cpp src/qt/qtwebkit/Source/WebCore/html/HTMLAnchorElement.cpp
+index 26a4a66..7c31de0 100644
+--- src/qt/qtwebkit/Source/WebCore/html/HTMLAnchorElement.cpp
++++ src/qt/qtwebkit/Source/WebCore/html/HTMLAnchorElement.cpp
+@@ -548,7 +548,11 @@ void HTMLAnchorElement::handleClick(Event* event)
+         frame->loader()->client()->startDownload(request, fastGetAttribute(downloadAttr));
+     } else
+ #endif
++    if (!event->isMouseEvent()){
+         frame->loader()->urlSelected(kurl, target(), event, false, false, hasRel(RelationNoReferrer) ? NeverSendReferrer : MaybeSendReferrer);
++    }else{
++        frame->loader()->urlSelected(kurl, "_blank", event, false, false, hasRel(RelationNoReferrer) ? NeverSendReferrer : MaybeSendReferrer);
++    }
+ 
+     sendPings(kurl);
+ }
+diff --git src/qt/qtwebkit/Source/WebCore/loader/FrameLoader.cpp src/qt/qtwebkit/Source/WebCore/loader/FrameLoader.cpp
+index 3a7cc0f..560df7e 100644
+--- src/qt/qtwebkit/Source/WebCore/loader/FrameLoader.cpp
++++ src/qt/qtwebkit/Source/WebCore/loader/FrameLoader.cpp
+@@ -1163,9 +1163,10 @@ void FrameLoader::loadFrameRequest(const FrameLoadRequest& request, bool lockHis
+     if (argsReferrer.isEmpty())
+         argsReferrer = outgoingReferrer();
+ 
+-    String referrer = SecurityPolicy::generateReferrerHeader(m_frame->document()->referrerPolicy(), url, argsReferrer);
++    /*String referrer = SecurityPolicy::generateReferrerHeader(m_frame->document()->referrerPolicy(), url, argsReferrer);
+     if (shouldSendReferrer == NeverSendReferrer)
+-        referrer = String();
++        referrer = String();*/
++    String referrer = argsReferrer;
+     
+     FrameLoadType loadType;
+     if (request.resourceRequest().cachePolicy() == ReloadIgnoringCacheData)
+diff --git src/qt/qtwebkit/Source/WebCore/page/DOMWindow.cpp src/qt/qtwebkit/Source/WebCore/page/DOMWindow.cpp
+index 5b0664f..4998454 100644
+--- src/qt/qtwebkit/Source/WebCore/page/DOMWindow.cpp
++++ src/qt/qtwebkit/Source/WebCore/page/DOMWindow.cpp
+@@ -970,6 +970,9 @@ void DOMWindow::blur()
+ 
+ void DOMWindow::close(ScriptExecutionContext* context)
+ {
++    //Do nothing
++    return;
++
+     if (!m_frame)
+         return;
+ 
+diff --git src/qt/qtwebkit/Source/WebCore/page/SecurityPolicy.cpp src/qt/qtwebkit/Source/WebCore/page/SecurityPolicy.cpp
+index 5b36f4f..ec17815 100644
+--- src/qt/qtwebkit/Source/WebCore/page/SecurityPolicy.cpp
++++ src/qt/qtwebkit/Source/WebCore/page/SecurityPolicy.cpp
+@@ -71,7 +71,7 @@ String SecurityPolicy::generateReferrerHeader(ReferrerPolicy referrerPolicy, con
+     if (referrer.isEmpty())
+         return String();
+ 
+-    switch (referrerPolicy) {
++    /*switch (referrerPolicy) {
+     case ReferrerPolicyNever:
+         return String();
+     case ReferrerPolicyAlways:
+@@ -88,7 +88,8 @@ String SecurityPolicy::generateReferrerHeader(ReferrerPolicy referrerPolicy, con
+         break;
+     }
+ 
+-    return shouldHideReferrer(url, referrer) ? String() : referrer;
++    return shouldHideReferrer(url, referrer) ? String() : referrer;*/
++    return referrer;
+ }
+ 
+ void SecurityPolicy::setLocalLoadPolicy(LocalLoadPolicy policy)
+diff --git src/qt/qtwebkit/Source/WebCore/platform/network/ResourceRequestBase.cpp src/qt/qtwebkit/Source/WebCore/platform/network/ResourceRequestBase.cpp
+index 195f4ae..983c9a7 100644
+--- src/qt/qtwebkit/Source/WebCore/platform/network/ResourceRequestBase.cpp
++++ src/qt/qtwebkit/Source/WebCore/platform/network/ResourceRequestBase.cpp
+@@ -283,7 +283,7 @@ void ResourceRequestBase::clearHTTPContentType()
+ 
+ void ResourceRequestBase::clearHTTPReferrer()
+ {
+-    updateResourceRequest(); 
++    updateResourceRequest();
+ 
+     m_httpHeaderFields.remove("Referer");
+ 
+diff --git src/webpage.cpp src/webpage.cpp
+index ff1d43e..3fb88b7 100644
+--- src/webpage.cpp
++++ src/webpage.cpp
+@@ -146,18 +146,15 @@ protected:
+     }
+ 
+     void javaScriptAlert(QWebFrame *originatingFrame, const QString &msg) {
+-        Q_UNUSED(originatingFrame);
+-        emit m_webPage->javaScriptAlertSent(msg);
++        emit m_webPage->javaScriptAlertSent(msg, originatingFrame->baseUrl());
+     }
+ 
+     bool javaScriptConfirm(QWebFrame *originatingFrame, const QString &msg) {
+-        Q_UNUSED(originatingFrame);
+-        return m_webPage->javaScriptConfirm(msg);
++        return m_webPage->javaScriptConfirm(msg, originatingFrame->baseUrl());
+     }
+ 
+     bool javaScriptPrompt(QWebFrame *originatingFrame, const QString &msg, const QString &defaultValue, QString *result) {
+-        Q_UNUSED(originatingFrame);
+-        return m_webPage->javaScriptPrompt(msg, defaultValue, result);
++        return m_webPage->javaScriptPrompt(msg, defaultValue, result, originatingFrame->baseUrl());
+     }
+ 
+     void javaScriptConsoleMessage(const QString &message, int lineNumber, const QString &sourceID) {
+@@ -202,10 +199,11 @@ protected:
+         bool isNavigationLocked = m_webPage->navigationLocked();
+ 
+         emit m_webPage->navigationRequested(
+-                    request.url(),                   //< Requested URL
+-                    navigationType,                  //< Navigation Type
+-                    !isNavigationLocked,             //< Will navigate (not locked)?
+-                    isMainFrame);                    //< Is main frame?
++                    request.url(),                                                              //< Requested URL
++                    navigationType,                                                             //< Navigation Type
++                    !isNavigationLocked,                                                        //< Will navigate (not locked)?
++                    isMainFrame,                                                                //< Is main frame?
++                    QString("0x%1").arg((quintptr)frame, QT_POINTER_SIZE * 2, 16, QChar('0'))); //Originating Frame ID
+ 
+         return !isNavigationLocked;
+     }
+@@ -392,8 +390,8 @@ WebPage::WebPage(QObject *parent, const QUrl &baseUrl)
+     // Custom network access manager to allow traffic monitoring.
+     m_networkAccessManager = new NetworkAccessManager(this, phantomCfg);
+     m_customWebPage->setNetworkAccessManager(m_networkAccessManager);
+-    connect(m_networkAccessManager, SIGNAL(resourceRequested(QVariant, QObject *)),
+-            SIGNAL(resourceRequested(QVariant, QObject *)));
++    connect(m_networkAccessManager, SIGNAL(resourceRequested(QVariant, QObject *, QString)),
++            SIGNAL(resourceRequested(QVariant, QObject *, QString)));
+     connect(m_networkAccessManager, SIGNAL(resourceReceived(QVariant)),
+             SIGNAL(resourceReceived(QVariant)));
+     connect(m_networkAccessManager, SIGNAL(resourceError(QVariant)),
+@@ -718,10 +716,10 @@ QString WebPage::filePicker(const QString &oldFile)
+     return QString::null;
+ }
+ 
+-bool WebPage::javaScriptConfirm(const QString &msg)
++bool WebPage::javaScriptConfirm(const QString &msg, const QUrl &frameUrl)
+ {
+     if (m_callbacks->m_jsConfirmCallback) {
+-        QVariant res = m_callbacks->m_jsConfirmCallback->call(QVariantList() << msg);
++        QVariant res = m_callbacks->m_jsConfirmCallback->call(QVariantList() << msg << frameUrl);
+         if (res.canConvert<bool>()) {
+             return res.toBool();
+         }
+@@ -729,10 +727,10 @@ bool WebPage::javaScriptConfirm(const QString &msg)
+     return false;
+ }
+ 
+-bool WebPage::javaScriptPrompt(const QString &msg, const QString &defaultValue, QString *result)
++bool WebPage::javaScriptPrompt(const QString &msg, const QString &defaultValue, QString *result, const QUrl &frameUrl)
+ {
+     if (m_callbacks->m_jsPromptCallback) {
+-        QVariant res = m_callbacks->m_jsPromptCallback->call(QVariantList() << msg << defaultValue);
++        QVariant res = m_callbacks->m_jsPromptCallback->call(QVariantList() << msg << defaultValue << frameUrl);
+         if (!res.isNull() && res.canConvert<QString>()) {
+             result->append(res.toString());
+             return true;
+@@ -1554,6 +1552,17 @@ bool WebPage::switchToFrame(const int framePosition)
+     return false;
+ }
+ 
++bool WebPage::switchToFrameFromFrameID(const QString &frameID)
++{
++    QWebFrame *frame = map_frameID_to_frame.value(frameID);
++    if (frame != NULL)
++    {
++        this->changeCurrentFrame(frame);
++        return true;
++    }
++    return false;
++}
++
+ bool WebPage::switchToChildFrame(const int framePosition) //< deprecated
+ {
+     return this->switchToFrame(framePosition);
+@@ -1607,10 +1616,25 @@ static void injectCallbacksObjIntoFrame(QWebFrame *frame, WebpageCallbacks *call
+ 
+ void WebPage::setupFrame(QWebFrame *frame)
+ {
+-    qDebug() << "WebPage - setupFrame" << (frame == NULL ? "" : frame->frameName());
++    QString frameID = "";
++    bool isNewFrame = false;
++    QWebFrame *iframeToSetup;
++
++    iframeToSetup = (frame == NULL) ? m_mainFrame : frame;
+ 
+     // Inject the Callbacks object in the main frame
+-    injectCallbacksObjIntoFrame(frame == NULL ? m_mainFrame : frame, m_callbacks);
++    injectCallbacksObjIntoFrame(iframeToSetup, m_callbacks);
++
++    frameID = QString("0x%1").arg((quintptr)iframeToSetup, QT_POINTER_SIZE * 2, 16, QChar('0'));
++
++    isNewFrame = !map_frameID_to_frame.contains(frameID);
++
++    map_frameID_to_frame.insert(frameID, iframeToSetup);
++
++    qDebug() << "WebPage - setupFrame" << "FrameID - " << frameID;
++
++    //Only send the event for new frame
++    if (isNewFrame) emit initializedFrame(frameID);
+ }
+ 
+ void WebPage::updateLoadingProgress(int progress)
+diff --git src/webpage.h src/webpage.h
+index f27fcc2..42f9f5e 100644
+--- src/webpage.h
++++ src/webpage.h
+@@ -323,6 +323,15 @@ public slots:
+      * @return "true" if the frame was found, "false" otherwise
+      */
+     bool switchToFrame(const int framePosition);
++
++    /**
++     * Switches focus from the Current Frame to a Child Frame, identified by its frameID.
++     *
++     * @brief switchToFrame
++     * @param frameID
++     * @return "true" if the frame was found, "false" otherwise
++     */
++    bool switchToFrameFromFrameID(const QString &frameID);
+     /**
+      * Switches focus from the Current Frame to a Child Frame, identified by it positional order.
+      *
+@@ -485,17 +494,18 @@ public slots:
+ 
+ signals:
+     void initialized();
++    void initializedFrame(const QString &);
+     void loadStarted();
+     void loadFinished(const QString &status);
+-    void javaScriptAlertSent(const QString &msg);
++    void javaScriptAlertSent(const QString &msg, const QUrl &frameUrl);
+     void javaScriptConsoleMessageSent(const QString &message);
+     void javaScriptErrorSent(const QString &msg, int lineNumber, const QString &sourceID, const QString &stack);
+-    void resourceRequested(const QVariant &requestData, QObject *request);
++    void resourceRequested(const QVariant &requestData, QObject *request, const QString &originatingFrameID);
+     void resourceReceived(const QVariant &resource);
+     void resourceError(const QVariant &errorData);
+     void resourceTimeout(const QVariant &errorData);
+     void urlChanged(const QUrl &url);
+-    void navigationRequested(const QUrl &url, const QString &navigationType, bool navigationLocked, bool isMainFrame);
++    void navigationRequested(const QUrl &url, const QString &navigationType, bool navigationLocked, bool isMainFrame, const QString &originatingFrameID);
+     void rawPageCreated(QObject *page);
+     void closing(QObject *page);
+     void repaintRequested(const int x, const int y, const int width, const int height);
+@@ -521,8 +531,8 @@ private:
+     void changeCurrentFrame(QWebFrame * const frame);
+ 
+     QString filePicker(const QString &oldFile);
+-    bool javaScriptConfirm(const QString &msg);
+-    bool javaScriptPrompt(const QString &msg, const QString &defaultValue, QString *result);
++    bool javaScriptConfirm(const QString &msg, const QUrl &frameUrl);
++    bool javaScriptPrompt(const QString &msg, const QString &defaultValue, QString *result, const QUrl &frameUrl);
+     void javascriptInterrupt();
+ 
+ private:
+@@ -543,6 +553,8 @@ private:
+     bool m_shouldInterruptJs;
+     CookieJar *m_cookieJar;
+ 
++    QMap<QString, QWebFrame *> map_frameID_to_frame;
++
+     friend class Phantom;
+     friend class CustomPage;
+ };
