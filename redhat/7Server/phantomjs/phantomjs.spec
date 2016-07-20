@@ -1,13 +1,19 @@
-%define patchlevel adsecure6
+%define patchlevel adsecure1
+
+# See https://github.com/ariya/phantomjs/tree/master/src/qt for submodule info
+%define hash_qtbase   b5cc008
+%define hash_qtwebkit e7b7433
 
 Summary:    Headless WebKit with JavaScript API
 Name:       phantomjs
-Version:    2.0.0
-Release:    6%{?dist}.%{patchlevel}
+Version:    2.1.1
+Release:    1%{?dist}.%{patchlevel}
 License:    BSD
 Group:      Applications/Internet
-Source:     https://bitbucket.org/ariya/phantomjs/downloads/%{name}-%{version}-source.zip
-Patch0:     phantomjs-2.0.0-%{patchlevel}.patch
+Source0:    https://github.com/ariya/phantomjs/archive/%{version}.tar.gz
+Source1:    https://github.com/Vitallium/qtbase/archive/%{hash_qtbase}.tar.gz
+Source2:    https://github.com/Vitallium/qtwebkit/archive/%{hash_qtwebkit}.tar.gz
+Patch0:     phantomjs-2.1.1-%{patchlevel}.patch
 
 BuildRequires: flex
 BuildRequires: bison
@@ -22,6 +28,20 @@ BuildRequires: sqlite-devel
 BuildRequires: libpng-devel
 BuildRequires: libjpeg-devel
 
+# Qt 5
+#Buildrequires: libxcb
+#Buildrequires: libxcb-devel
+#BuildRequires: xcb-util
+#BuildRequires: xcb-util-devel
+#BuildRequires: xcb-util-image
+#BuildRequires: xcb-util-image-devel
+#BuildRequires: xcb-util-keysyms
+#BuildRequires: xcb-util-keysyms-devel
+#BuildRequires: xcb-util-wm
+#BuildRequires: xcb-util-wm-devel
+#BuildRequires: libXrender-devel
+#BuildRequires: libXi-devel
+
 %description
 PhantomJS is a headless WebKit with JavaScript API. It has fast and native
 support for various web standards: DOM handling, CSS selector, JSON,
@@ -29,12 +49,19 @@ Canvas, and SVG. PhantomJS is created by Ariya Hidayat.
 
 
 %prep
-%setup -q
-%patch0 -p0
+%setup -q -a1 -a2
+# Move external sources into place
+for dir in qtbase qtwebkit; do
+  rmdir src/qt/${dir}
+  mv ${dir}-* src/qt/${dir}
+  # Trick checks into thinking this isn't a release, but a git clone
+  mkdir src/qt/${dir}/.git
+done
+%patch0 -p1
 
 
 %build
-./build.sh --confirm
+./build.py --confirm
 
 
 %install
@@ -48,6 +75,9 @@ install -D -p -m 0755 bin/phantomjs %{buildroot}%{_bindir}/phantomjs
 
 
 %changelog
+* Tue Jul 19 2016 Matthias Saou <matthias@saou.eu> 2.1.1-1
+- Update to 2.1.1.
+
 * Wed Mar 23 2016 Matthias Saou <matthias@saou.eu> 2.0.0-6
 - Update patch to adsecure2.
 
