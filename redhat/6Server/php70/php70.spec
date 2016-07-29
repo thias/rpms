@@ -125,7 +125,7 @@
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 7.0.8
+Version: 7.0.9
 Release: %{?rcver:0.}%{rpmrel}%{?rcver:.%{rcver}}%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
@@ -177,6 +177,7 @@ Patch47: php-5.6.3-phpinfo.patch
 Patch91: php-5.6.3-oci8conf.patch
 
 # Upstream fixes (100+)
+Patch100: bug72564.patch
 
 # Security fixes (200+)
 
@@ -958,6 +959,7 @@ httpd -V  | grep -q 'threaded:.*yes' && exit 1
 %patch91 -p1 -b .remi-oci8
 
 # upstream patches
+%patch100 -p1 -b .bug72564
 
 # security patches
 
@@ -1561,6 +1563,8 @@ install -m 700 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/wsdlcache
 install -m 700 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/opcache
 %if 0%{?fedora} >= 24
 install -m 755 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/peclxml
+install -m 755 -d $RPM_BUILD_ROOT%{_docdir}/pecl
+install -m 755 -d $RPM_BUILD_ROOT%{_datadir}/tests/pecl
 %endif
 
 %if %{with_lsws}
@@ -1851,6 +1855,9 @@ fi
 %dir %{_localstatedir}/lib/php
 %if 0%{?fedora} >= 24
 %dir %{_localstatedir}/lib/php/peclxml
+%dir %{_docdir}/pecl
+%dir %{_datadir}/tests
+%dir %{_datadir}/tests/pecl
 %endif
 %dir %{_datadir}/php
 
@@ -1989,6 +1996,16 @@ fi
 
 
 %changelog
+* Wed Jul 20 2016 Remi Collet <remi@fedoraproject.org> 7.0.9-1
+- Update to 7.0.9 - http://www.php.net/releases/7_0_9.php
+- wddx: add upstream patch for https://bugs.php.net/72564
+
+* Wed Jul  6 2016 Remi Collet <remi@fedoraproject.org> 7.0.9-0.1.RC1
+- Update to 7.0.9RC1
+
+* Thu Jun 30 2016 Remi Collet <remi@fedoraproject.org> 7.0.8-1.1
+- own tests/doc directories for pecl packages (f24)
+
 * Wed Jun 22 2016 Remi Collet <remi@fedoraproject.org> 7.0.8-1
 - Update to 7.0.8 - http://www.php.net/releases/7_0_8.php
 
