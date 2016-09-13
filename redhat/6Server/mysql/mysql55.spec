@@ -3,14 +3,10 @@
 %else
 %global with_systemd 0
 %endif
-#if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
-#global with_dtrace 1
-#else
-%global with_dtrace 0
-#endif
+%global with_dtrace  0
 
 Name: mysql
-Version: 5.5.45
+Version: 5.5.52
 Release: 1%{?dist}
 
 Summary: MySQL client programs and shared libraries
@@ -838,6 +834,34 @@ fi
 %{_mandir}/man1/mysql_client_test.1*
 
 %changelog
+* Wed Sep  7 2016 Remi Collet <RPMS@FamilleCollet.com> - 5.5.52-1
+- update to MySQL 5.5.52 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-52.html
+
+* Fri Jul 29 2016 Remi Collet <RPMS@FamilleCollet.com> - 5.5.51-1
+- update to MySQL 5.5.51 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-51.html
+
+* Fri Jun  3 2016 Remi Collet <RPMS@FamilleCollet.com> - 5.5.50-1
+- update to MySQL 5.5.50 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-50.html
+
+* Tue Apr 12 2016 Remi Collet <RPMS@FamilleCollet.com> - 5.5.49-1
+- update to MySQL 5.5.49 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-49.html
+
+* Fri Feb 12 2016 Remi Collet <RPMS@FamilleCollet.com> - 5.5.48-1
+- update to MySQL 5.5.48 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-48.html
+
+* Thu Dec 10 2015 Remi Collet <RPMS@FamilleCollet.com> - 5.5.47-1
+- update to MySQL 5.5.47 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-47.html
+
+* Thu Oct  1 2015 Remi Collet <RPMS@FamilleCollet.com> - 5.5.46-1
+- update to MySQL 5.5.46 Community Server GA
+  http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-46.html
+
 * Fri Jul 24 2015 Remi Collet <RPMS@FamilleCollet.com> - 5.5.45-1
 - update to MySQL 5.5.45 Community Server GA
   http://dev.mysql.com/doc/relnotes/mysql/5.5/en/news-5-5-45.html
