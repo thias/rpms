@@ -143,10 +143,17 @@
 %global db_devel  libdb-devel
 %endif
 
+#global rcver  RC1
+%global rpmrel 1
+
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 5.6.24
-Release: 1%{?dist}
+Version: 5.6.25
+%if 0%{?rcver:1}
+Release: 0.%{rpmrel}.%{rcver}%{?dist}
+%else
+Release: %{rpmrel}%{?dist}
+%endif
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -205,7 +212,8 @@ Patch91: php-5.6.3-oci8conf.patch
 
 # Fixes for tests (300+)
 # Factory is droped from system tzdata
-Patch300: php-5.6.3-datetests.patch
+# Relax some tests with erratic results with system tzdata
+Patch300: php-5.6.24-datetests.patch
 # Revert changes for pcre < 8.34
 Patch301: php-5.6.0-oldpcre.patch
 
@@ -1989,6 +1997,12 @@ fi
 
 
 %changelog
+* Wed Aug 31 2016 Remi Collet <remi@fedoraproject.org> 5.6.25-1
+- Update to 5.6.25 - http://www.php.net/releases/5_6_25.php
+
+* Thu Aug  4 2016 Remi Collet <remi@fedoraproject.org> 5.6.25-0.1.RC1
+- update to 5.6.25RC1
+
 * Thu Jul 21 2016 Remi Collet <remi@fedoraproject.org> 5.6.24-1
 - Update to 5.6.24 - http://www.php.net/releases/5_6_24.php
 
