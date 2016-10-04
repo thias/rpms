@@ -1,0 +1,3 @@
+# Google Safe Browsing API key
+APIKEY=""
+SRVADDR="localhost:8080"

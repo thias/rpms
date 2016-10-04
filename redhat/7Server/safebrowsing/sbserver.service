@@ -1,0 +1,11 @@
+[Unit]
+Description=Google Safe Browsing Proxy Server
+
+[Service]
+User=sbserver
+EnvironmentFile=-/etc/sysconfig/sbserver
+WorkingDirectory=/var/lib/sbserver
+ExecStart=/usr/bin/sbserver -apikey $APIKEY -db sbserver.db -srvaddr $SRVADDR
+
+[Install]
+WantedBy=multi-user.target
