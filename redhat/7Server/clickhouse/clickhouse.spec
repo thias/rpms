@@ -12,10 +12,10 @@
 # cat debian/daemons
 %global daemons compressor clickhouse-client clickhouse-server clickhouse-benchmark config-processor
 %global daemon_name clickhouse-server
+%global daemon_user clickhouse
 
 # Include files for SysV init or systemd
-#if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
-%if 0
+%if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
 %bcond_without init_systemd
 %bcond_with init_sysv
 %else
@@ -23,9 +23,12 @@
 %bcond_without init_sysv
 %endif
 
+# FIXME: Find out why this gets in, and remove it cleanly
+%filter_from_requires /GLIBC_PRIVATE/d;
+
 Name: clickhouse
 Version: 1.1.54022
-Release: 1%{?dist}
+Release: 2%{?dist}
 Summary: Column-oriented database management system
 
 Group: Applications/Databases
@@ -123,22 +126,28 @@ for daemon in %{daemons}; do
   DESTDIR=%{buildroot} cmake -DCOMPONENT=$daemon -P cmake_install.cmake
 done
 cd ..
+# Data and log directories
+mkdir -p %{buildroot}/var/lib/clickhouse/{data/default,metadata/default,tmp}
 mkdir -p %{buildroot}/var/log/%{daemon_name}
+# Service file
 %if %{with init_systemd}
 install -p -D -m 0644 %{SOURCE1} %{buildroot}%{_unitdir}/%{daemon_name}.service
 rm -f %{buildroot}%{_sysconfdir}/init.d/%{daemon_name}
 %endif
-%if %{with_init_sysv}
+%if %{with init_sysv}
 mkdir -p %{buildroot}%{_sysconfdir}/rc.d/init.d
 mv %{buildroot}%{_sysconfdir}/init.d/%{daemon_name} \
    %{buildroot}%{_sysconfdir}/rc.d/init.d/
 %endif
+# Update default configuration
+sed -i -e 's|/opt/clickhouse|/var/lib/clickhouse|g; /listen_host/s|::|::1|' \
+  %{buildroot}%{_sysconfdir}/clickhouse-server/config.xml
 
 
 %pre server
-/usr/sbin/groupadd -r metrika >/dev/null 2>&1 || :
-/usr/sbin/useradd -M -N -g metrika -r -d %{_datadir}/clickhouse \
-  -s /sbin/nologin -c "ClickHouse Server" metrika >/dev/null 2>&1 || :
+/usr/sbin/groupadd -r %{daemon_user} >/dev/null 2>&1 || :
+/usr/sbin/useradd -M -N -g %{daemon_user} -r -d /var/lib/clickhouse \
+  -s /sbin/nologin -c "ClickHouse Server" %{daemon_user} >/dev/null 2>&1 || :
 
 %post server
 %if %{with init_systemd}
@@ -171,13 +180,19 @@ fi
 %files server
 %license LICENSE
 %doc README.md
-%attr(0755,metrika,metrika) %dir %{_sysconfdir}/clickhouse-server/
-%attr(0644,metrika,metrika) %config(noreplace) %{_sysconfdir}/clickhouse-server/config.xml
-%attr(0644,metrika,metrika) %config(noreplace) %{_sysconfdir}/clickhouse-server/users.xml
-%{_sysconfdir}/security/limits.d/metrika.conf
+%attr(0755,%{daemon_user},%{daemon_user}) %dir %{_sysconfdir}/clickhouse-server/
+%attr(0644,%{daemon_user},%{daemon_user}) %config(noreplace) %{_sysconfdir}/clickhouse-server/config.xml
+%attr(0644,%{daemon_user},%{daemon_user}) %config(noreplace) %{_sysconfdir}/clickhouse-server/users.xml
+%{_sysconfdir}/security/limits.d/%{daemon_user}.conf
 #%{_sysconfdir}/cron.d/clickhouse-server
 %{_bindir}/clickhouse-server
-%attr(0755,metrika,metrika) %dir /var/log/%{daemon_name}/
+%attr(0750,%{daemon_user},%{daemon_user}) %dir /var/lib/clickhouse/
+%attr(0750,%{daemon_user},%{daemon_user}) %dir /var/lib/clickhouse/data/
+%attr(0750,%{daemon_user},%{daemon_user}) %dir /var/lib/clickhouse/data/default/
+%attr(0750,%{daemon_user},%{daemon_user}) %dir /var/lib/clickhouse/metadata/
+%attr(0750,%{daemon_user},%{daemon_user}) %dir /var/lib/clickhouse/metadata/default/
+%attr(0750,%{daemon_user},%{daemon_user}) %dir /var/lib/clickhouse/tmp/
+%attr(0750,%{daemon_user},%{daemon_user}) %dir /var/log/%{daemon_name}/
 %if %{with init_systemd}
 %{_unitdir}/%{daemon_name}.service
 %endif
@@ -201,6 +216,14 @@ fi
 
 
 %changelog
-* Mon Oct 10 2016 Matthias Saou <matthias@saou.eu> 1.1.54022-1
+* Mon Oct 10 2016 Matthias Saou <matthias@saou.eu> 1.1.54022-2
+- Try GLIBC_COMPATIBILITY=1 but build fails on sqlite errors.
+- Filter requirements because of libpthread.so.0(GLIBC_PRIVATE)(64bit).
+- Switch to more generic 'clickhouse' user and group.
+- Include systemd service now.
+- Use /var/lib/clickhouse as the default data path.
+- Listen on loopback only by default.
+
+* Thu Oct  6 2016 Matthias Saou <matthias@saou.eu> 1.1.54022-1
 - Initial RPM release.
 
