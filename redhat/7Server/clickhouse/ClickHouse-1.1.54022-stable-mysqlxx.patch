@@ -1,0 +1,36 @@
+diff -Naupr ClickHouse-1.1.54022-stable.orig/CMakeLists.txt ClickHouse-1.1.54022-stable/CMakeLists.txt
+--- ClickHouse-1.1.54022-stable.orig/CMakeLists.txt	2016-09-26 13:40:02.000000000 +0000
++++ ClickHouse-1.1.54022-stable/CMakeLists.txt	2016-10-06 14:11:02.451016158 +0000
+@@ -144,6 +144,7 @@ ENDIF()
+ include_directories (/usr/local/include/)
+ 
+ link_directories (/usr/local/lib)
++link_directories (/usr/lib64/mysql)
+ 
+ # Directory for Yandex specific files
+ SET(CLICKHOUSE_PRIVATE_DIR ${ClickHouse_SOURCE_DIR}/private/)
+diff -Naupr ClickHouse-1.1.54022-stable.orig/libs/libmysqlxx/CMakeLists.txt ClickHouse-1.1.54022-stable/libs/libmysqlxx/CMakeLists.txt
+--- ClickHouse-1.1.54022-stable.orig/libs/libmysqlxx/CMakeLists.txt	2016-09-26 13:40:02.000000000 +0000
++++ ClickHouse-1.1.54022-stable/libs/libmysqlxx/CMakeLists.txt	2016-10-06 14:10:47.976067925 +0000
+@@ -28,13 +28,14 @@ add_dependencies (mysqlxx common)
+ 
+ target_link_libraries (mysqlxx common libmysqlclient.a libssl.a libcrypto.a libz.a dl)
+ 
+-
+-ADD_CUSTOM_COMMAND(
+-    TARGET mysqlxx
+-    POST_BUILD
+-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/patch.sh
+-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+-    COMMENT "Patching mysqlclient library.")
++# FIXME: If this is really needed, it should be patching a copy of the
++# system-wide static library in order to work as non root user
++#ADD_CUSTOM_COMMAND(
++#    TARGET mysqlxx
++#    POST_BUILD
++#    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/patch.sh
++#    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
++#    COMMENT "Patching mysqlclient library.")
+ 
+ IF(TESTS)
+ 	add_subdirectory (src/tests)

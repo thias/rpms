@@ -1,0 +1,20 @@
+diff -Naupr ClickHouse-1.1.54022-stable.orig/dbms/src/Client/CMakeLists.txt ClickHouse-1.1.54022-stable/dbms/src/Client/CMakeLists.txt
+--- ClickHouse-1.1.54022-stable.orig/dbms/src/Client/CMakeLists.txt	2016-09-26 13:40:02.000000000 +0000
++++ ClickHouse-1.1.54022-stable/dbms/src/Client/CMakeLists.txt	2016-10-10 14:57:34.245211602 +0000
+@@ -1,12 +1,15 @@
+ find_library(READLINE_LIB
+ 	NAMES libreadline.a libreadline.so)
+ 
++find_library(TERMCAP_LIB
++	NAMES libtermcap.a libncurses.a libncurses.so)
++
+ find_library(LIBEDIT_LIB
+ 	NAMES libedit.a libedit.so)
+ 
+ if(READLINE_LIB)
+ 	add_definitions(-D USE_READLINE)
+-	set(LINE_EDITING_LIBS ${READLINE_LIB} libtermcap.a)
++	set(LINE_EDITING_LIBS ${READLINE_LIB} ${TERMCAP_LIB})
+ 	message(STATUS "Using line editing libraries: ${LINE_EDITING_LIBS}")
+ elseif(LIBEDIT_LIB)
+ 	add_definitions(-D USE_LIBEDIT)
