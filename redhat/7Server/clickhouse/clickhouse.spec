@@ -14,7 +14,7 @@
 %global daemons compressor clickhouse-client clickhouse-server clickhouse-benchmark config-processor
 %global daemon_name clickhouse-server
 %global daemon_user clickhouse
-%global revision 54022
+%global revision 54030
 
 # FIXME: Find out why this gets in, and remove it cleanly
 %global __requires_exclude GLIBC_PRIVATE
@@ -22,7 +22,7 @@
 
 Name: clickhouse
 Version: 1.1.%{revision}
-Release: 3%{?dist}
+Release: 1%{?dist}
 Summary: Column-oriented database management system
 Group: Applications/Databases
 License: ASL 2.0
@@ -31,7 +31,7 @@ Source0: https://github.com/yandex/ClickHouse/archive/v%{version}-stable.tar.gz
 Source1: clickhouse-server.service
 Patch0: ClickHouse-1.1.54022-stable-mysqlxx.patch
 Patch1: ClickHouse-1.1.54022-stable-readline.patch
-Patch2: ClickHouse-1.1.54022-stable-less-static.patch
+Patch2: ClickHouse-1.1.54030-stable-less-static.patch
 
 # These are tough ones on RHEL7, tricky (re)builds, but not impossible!
 BuildRequires: gcc >= 6.2.0
@@ -96,7 +96,7 @@ sed -i -e 's|77777|%{revision}|' libs/libcommon/src/create_revision.sh
 
 %build
 export DISABLE_MONGODB=1
-#export GLIBC_COMPATIBILITY=1
+export GLIBC_COMPATIBILITY=1
 mkdir build
 cd build
 cmake ..
@@ -171,6 +171,9 @@ sed -i -e 's|/opt/clickhouse|/var/lib/clickhouse|g; /listen_host/s|::|::1|' \
 
 
 %changelog
+* Mon Nov  7 2016 Matthias Saou <matthias@saou.eu> 1.1.54030-1
+- Update to 1.1.54030-stable.
+
 * Tue Oct 11 2016 Matthias Saou <matthias@saou.eu> 1.1.54022-3
 - Dynamically link openssl, glib2, icu, glibc and zlib.
 - Set proper revision for the built binaries.

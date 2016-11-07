@@ -1,6 +1,6 @@
-diff -Naupr ClickHouse-1.1.54022-stable.orig/contrib/libpoco/Net/CMakeLists.txt ClickHouse-1.1.54022-stable/contrib/libpoco/Net/CMakeLists.txt
---- ClickHouse-1.1.54022-stable.orig/contrib/libpoco/Net/CMakeLists.txt	2016-09-26 13:40:02.000000000 +0000
-+++ ClickHouse-1.1.54022-stable/contrib/libpoco/Net/CMakeLists.txt	2016-10-11 08:53:15.751390510 +0000
+diff -Naupr ClickHouse-1.1.54030-stable.orig/contrib/libpoco/Net/CMakeLists.txt ClickHouse-1.1.54030-stable/contrib/libpoco/Net/CMakeLists.txt
+--- ClickHouse-1.1.54030-stable.orig/contrib/libpoco/Net/CMakeLists.txt	2016-10-24 14:34:08.000000000 +0200
++++ ClickHouse-1.1.54030-stable/contrib/libpoco/Net/CMakeLists.txt	2016-11-07 11:55:22.420160958 +0100
 @@ -17,7 +17,7 @@ if(WIN32)
          set(SYSLIBS ${SYSLIBS} "ws2_32.lib" "iphlpapi.lib")
      endif()    
@@ -10,19 +10,19 @@ diff -Naupr ClickHouse-1.1.54022-stable.orig/contrib/libpoco/Net/CMakeLists.txt 
  endif(WIN32)
  
  add_library( "${LIBNAME}" ${LIB_MODE} ${SRCS} )
-diff -Naupr ClickHouse-1.1.54022-stable.orig/dbms/CMakeLists.txt ClickHouse-1.1.54022-stable/dbms/CMakeLists.txt
---- ClickHouse-1.1.54022-stable.orig/dbms/CMakeLists.txt	2016-09-26 13:40:02.000000000 +0000
-+++ ClickHouse-1.1.54022-stable/dbms/CMakeLists.txt	2016-10-11 09:36:58.833905379 +0000
+diff -Naupr ClickHouse-1.1.54030-stable.orig/dbms/CMakeLists.txt ClickHouse-1.1.54030-stable/dbms/CMakeLists.txt
+--- ClickHouse-1.1.54030-stable.orig/dbms/CMakeLists.txt	2016-10-24 14:34:08.000000000 +0200
++++ ClickHouse-1.1.54030-stable/dbms/CMakeLists.txt	2016-11-07 11:55:22.421160948 +0100
 @@ -12,7 +12,7 @@ endif()
- if (${DISABLE_MONGODB})
+ if (DISABLE_MONGODB)
  	add_definitions(-D DISABLE_MONGODB)
  else()
 -	set (LINK_MONGOCLIENT libmongoclient.a libssl.a libcrypto.a libboost_thread.a)
 +	set (LINK_MONGOCLIENT libmongoclient.a ssl crypto libboost_thread.a)
  endif()
  
- 
-@@ -969,7 +969,7 @@ target_link_libraries(dbms
+ if (DISABLE_LIBTCMALLOC)
+@@ -977,7 +977,7 @@ target_link_libraries(dbms
  	double-conversion
  	${LINK_LIBRARIES_ONLY_ON_X86_64}
  	re2 re2_st
@@ -31,9 +31,9 @@ diff -Naupr ClickHouse-1.1.54022-stable.orig/dbms/CMakeLists.txt ClickHouse-1.1.
  	libboost_system.a
  	${LINK_MONGOCLIENT}
  	libboost_regex.a
-diff -Naupr ClickHouse-1.1.54022-stable.orig/libs/libcommon/CMakeLists.txt ClickHouse-1.1.54022-stable/libs/libcommon/CMakeLists.txt
---- ClickHouse-1.1.54022-stable.orig/libs/libcommon/CMakeLists.txt	2016-09-26 13:40:02.000000000 +0000
-+++ ClickHouse-1.1.54022-stable/libs/libcommon/CMakeLists.txt	2016-10-11 09:37:36.063761820 +0000
+diff -Naupr ClickHouse-1.1.54030-stable.orig/libs/libcommon/CMakeLists.txt ClickHouse-1.1.54030-stable/libs/libcommon/CMakeLists.txt
+--- ClickHouse-1.1.54030-stable.orig/libs/libcommon/CMakeLists.txt	2016-10-24 14:34:08.000000000 +0200
++++ ClickHouse-1.1.54030-stable/libs/libcommon/CMakeLists.txt	2016-11-07 11:55:22.421160948 +0100
 @@ -64,9 +64,9 @@ target_link_libraries (
  	pocoext
  	${MALLOC_LIBRARIES}
@@ -47,9 +47,9 @@ diff -Naupr ClickHouse-1.1.54022-stable.orig/libs/libcommon/CMakeLists.txt Click
  
  IF(TESTS)
  	add_subdirectory (src/tests)
-diff -Naupr ClickHouse-1.1.54022-stable.orig/libs/libcommon/src/tests/CMakeLists.txt ClickHouse-1.1.54022-stable/libs/libcommon/src/tests/CMakeLists.txt
---- ClickHouse-1.1.54022-stable.orig/libs/libcommon/src/tests/CMakeLists.txt	2016-09-26 13:40:02.000000000 +0000
-+++ ClickHouse-1.1.54022-stable/libs/libcommon/src/tests/CMakeLists.txt	2016-10-11 09:38:18.253599137 +0000
+diff -Naupr ClickHouse-1.1.54030-stable.orig/libs/libcommon/src/tests/CMakeLists.txt ClickHouse-1.1.54030-stable/libs/libcommon/src/tests/CMakeLists.txt
+--- ClickHouse-1.1.54030-stable.orig/libs/libcommon/src/tests/CMakeLists.txt	2016-10-24 14:34:08.000000000 +0200
++++ ClickHouse-1.1.54030-stable/libs/libcommon/src/tests/CMakeLists.txt	2016-11-07 11:55:22.421160948 +0100
 @@ -8,10 +8,10 @@ add_executable (multi_version multi_vers
  add_executable (json_test json_test.cpp)
  add_executable (strong_typedef strong_typedef.cpp)
@@ -65,9 +65,9 @@ diff -Naupr ClickHouse-1.1.54022-stable.orig/libs/libcommon/src/tests/CMakeLists
  target_link_libraries (multi_version dbms libboost_system.a rt)
  target_link_libraries (json_test dbms libboost_system.a rt)
  target_link_libraries (strong_typedef common)
-diff -Naupr ClickHouse-1.1.54022-stable.orig/libs/libmysqlxx/CMakeLists.txt ClickHouse-1.1.54022-stable/libs/libmysqlxx/CMakeLists.txt
---- ClickHouse-1.1.54022-stable.orig/libs/libmysqlxx/CMakeLists.txt	2016-09-26 13:40:02.000000000 +0000
-+++ ClickHouse-1.1.54022-stable/libs/libmysqlxx/CMakeLists.txt	2016-10-11 09:35:58.622137553 +0000
+diff -Naupr ClickHouse-1.1.54030-stable.orig/libs/libmysqlxx/CMakeLists.txt ClickHouse-1.1.54030-stable/libs/libmysqlxx/CMakeLists.txt
+--- ClickHouse-1.1.54030-stable.orig/libs/libmysqlxx/CMakeLists.txt	2016-10-24 14:34:08.000000000 +0200
++++ ClickHouse-1.1.54030-stable/libs/libmysqlxx/CMakeLists.txt	2016-11-07 11:55:22.421160948 +0100
 @@ -26,15 +26,15 @@ add_library (mysqlxx
  
  add_dependencies (mysqlxx common)
