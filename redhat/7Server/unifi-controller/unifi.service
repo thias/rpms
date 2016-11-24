@@ -1,0 +1,14 @@
+[Unit]
+Description=Ubiquiti UniFi Controller
+After=syslog.target network.target
+
+[Service]
+User=ubnt
+WorkingDirectory=@UNIFI_PREFIX@
+ExecStart=/usr/bin/java -Xmx1024M -jar @UNIFI_PREFIX@/lib/ace.jar start
+ExecStop=/usr/bin/java -jar @UNIFI_PREFIX@/lib/ace.jar stop
+#SuccessExitStatus=143
+#TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target
