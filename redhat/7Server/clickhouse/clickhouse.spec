@@ -14,7 +14,7 @@
 %global daemons compressor clickhouse-client clickhouse-server clickhouse-benchmark config-processor
 %global daemon_name clickhouse-server
 %global daemon_user clickhouse
-%global revision 54030
+%global revision 54046
 
 # FIXME: Find out why this gets in, and remove it cleanly
 %global __requires_exclude GLIBC_PRIVATE
@@ -171,6 +171,10 @@ sed -i -e 's|/opt/clickhouse|/var/lib/clickhouse|g; /listen_host/s|::|::1|' \
 
 
 %changelog
+* Thu Nov 24 2016 Matthias Saou <matthias@saou.eu> 1.1.54046-1
+- Update to 1.1.54046-stable.
+- Add LimitNPROC=65536 to service unit.
+
 * Mon Nov  7 2016 Matthias Saou <matthias@saou.eu> 1.1.54030-1
 - Update to 1.1.54030-stable.
 

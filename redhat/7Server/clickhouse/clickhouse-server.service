@@ -6,6 +6,7 @@ After=network.target remote-fs.target nss-lookup.target
 #ExecStartPre=/bin/grep -q sse4_2 /proc/cpuinfo
 ExecStart=/usr/bin/clickhouse-server --log-file=/var/log/clickhouse-server/clickhouse-server.log
 LimitNOFILE=262144
+LimitNPROC=65536
 PrivateTmp=true
 User=clickhouse
 WorkingDirectory=/etc/clickhouse-server
