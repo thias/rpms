@@ -2,7 +2,7 @@
 %global unifi_prefix /opt/UniFi
 
 Name: unifi-controller
-Version: 5.2.9
+Version: 5.3.8
 Release: 1%{?dist}
 Summary: UniFi wireless AP (UAP), routing (USG), and switching (USW) controller
 Group: System Environment/Daemons
@@ -83,6 +83,9 @@ fi
 
 
 %changelog
+* Mon Jan  9 2017 Matthias Saou <matthias@saou.eu> 5.3.8-1
+- Update to 5.3.8.
+
 * Tue Nov 22 2016 Matthias Saou <matthias@saou.eu> 5.2.9-1
 - Initial RPM release.
 
