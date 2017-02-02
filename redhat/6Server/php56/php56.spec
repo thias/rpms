@@ -148,7 +148,7 @@
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 5.6.27
+Version: 5.6.29
 %if 0%{?rcver:1}
 Release: 0.%{rpmrel}.%{rcver}%{?dist}
 %else
@@ -956,7 +956,7 @@ httpd -V  | grep -q 'threaded:.*yes' && exit 1
 %endif
 
 %patch40 -p1 -b .dlopen
-%if 0%{?fedora} >= 23 || 0%{?rhel} >= 5
+%if 0%{?fedora} >= 24 || 0%{?rhel} >= 5
 %patch42 -p1 -b .systzdata
 %endif
 %patch43 -p1 -b .headers
@@ -1174,7 +1174,7 @@ ln -sf ../configure
     --with-layout=GNU \
     --with-kerberos \
     --with-libxml-dir=%{_prefix} \
-%if 0%{?fedora} >= 19 || 0%{?rhel} >= 5
+%if 0%{?fedora} >= 24 || 0%{?rhel} >= 5
     --with-system-tzdata \
 %endif
     --with-mhash \
@@ -1997,6 +1997,18 @@ fi
 
 
 %changelog
+* Thu Dec  8 2016 Remi Collet <remi@fedoraproject.org> 5.6.29-1
+- Update to 5.6.29 - http://www.php.net/releases/5_6_29.php
+
+* Thu Nov 24 2016 Remi Collet <remi@fedoraproject.org> 5.6.29-0.1.RC1
+- update to 5.6.29RC1
+
+* Wed Nov  9 2016 Remi Collet <remi@fedoraproject.org> 5.6.28-1
+- Update to 5.6.28 - http://www.php.net/releases/5_6_28.php
+
+* Fri Oct 28 2016 Remi Collet <remi@fedoraproject.org> 5.6.28-0.1.RC1
+- update to 5.6.28RC1
+
 * Fri Oct 14 2016 Remi Collet <remi@fedoraproject.org> 5.6.27-1
 - Update to 5.6.27 - http://www.php.net/releases/5_6_27.php
 
