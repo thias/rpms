@@ -5,16 +5,10 @@
 #
 # This spec file requires custom RHEL/CentOS 7 (re)builds in order to build
 # with GCC 6.x against many static libraries.
-#
-# Originally deb-specific, the build logic has been extracted from the
-# 'release' script and the 'debian/*' files.
 
-
-# cat debian/daemons
-%global daemons compressor clickhouse-client clickhouse-server clickhouse-benchmark config-processor
 %global daemon_name clickhouse-server
 %global daemon_user clickhouse
-%global revision 54046
+%global revision 54144
 
 # FIXME: Find out why this gets in, and remove it cleanly
 %global __requires_exclude GLIBC_PRIVATE
@@ -29,9 +23,6 @@ License: ASL 2.0
 URL: https://clickhouse.yandex/
 Source0: https://github.com/yandex/ClickHouse/archive/v%{version}-stable.tar.gz
 Source1: clickhouse-server.service
-Patch0: ClickHouse-1.1.54022-stable-mysqlxx.patch
-Patch1: ClickHouse-1.1.54022-stable-readline.patch
-Patch2: ClickHouse-1.1.54030-stable-less-static.patch
 
 # These are tough ones on RHEL7, tricky (re)builds, but not impossible!
 BuildRequires: gcc >= 6.2.0
@@ -58,8 +49,19 @@ BuildRequires: systemd
 ClickHouse is an open-source column-oriented database management system that
 allows generating analytical data reports in real time.
 
+
+%package common
+Summary: ClickHouse column-oriented database management system common files
+
+%description common
+ClickHouse is an open-source column-oriented database management system that
+allows generating analytical data reports in real time.
+This package contains the files common to the client and the server.
+
+
 %package server
 Summary: ClickHouse column-oriented database management system server
+Requires: clickhouse-common = %{version}-%{release}
 
 %description server
 ClickHouse is an open-source column-oriented database management system that
@@ -69,6 +71,7 @@ This package contains the ClickHouse Server.
 
 %package client
 Summary: ClickHouse column-oriented database management system client
+Requires: clickhouse-common = %{version}-%{release}
 
 %description client
 ClickHouse is an open-source column-oriented database management system that
@@ -78,6 +81,7 @@ This package contains the ClickHouse Client.
 
 %package utils
 Summary: ClickHouse column-oriented database management utilities
+Requires: clickhouse-common = %{version}-%{release}
 
 %description utils
 ClickHouse is an open-source column-oriented database management system that
@@ -87,16 +91,10 @@ This package contains the ClickHouse utilities.
 
 %prep
 %setup -q -n ClickHouse-%{version}-stable
-%patch0 -p1
-%patch1 -p1
-%patch2 -p1
-# Set proper revision, the included git command fails with release tarballs
-sed -i -e 's|77777|%{revision}|' libs/libcommon/src/create_revision.sh
 
 
 %build
-export DISABLE_MONGODB=1
-export GLIBC_COMPATIBILITY=1
+export USE_STATIC_LIBRARIES=0
 mkdir build
 cd build
 cmake ..
@@ -106,12 +104,12 @@ cd ..
 
 %install
 cd build
-for daemon in %{daemons}; do
-  DESTDIR=%{buildroot} cmake -DCOMPONENT=$daemon -P cmake_install.cmake
-done
+make install DESTDIR=%{buildroot}
 cd ..
 # We don't want these
 rm -f %{buildroot}%{_sysconfdir}/security/limits.d/metrika.conf
+rm -rf %{buildroot}/usr/lib/cmake/
+rm -rf %{buildroot}/usr/{lib/libz*,include/z*,share/man/man3/zlib*,share/pkgconfig/zlib*}
 # Data and log directories
 mkdir -p %{buildroot}/var/lib/clickhouse/{data/default,metadata/default,tmp}
 mkdir -p %{buildroot}/var/log/%{daemon_name}
@@ -139,9 +137,14 @@ sed -i -e 's|/opt/clickhouse|/var/lib/clickhouse|g; /listen_host/s|::|::1|' \
 %systemd_postun %{daemon_name}.service
 
 
-%files server
+%files common
 %license LICENSE
 %doc README.md
+%{_bindir}/clickhouse
+
+
+%files server
+%license LICENSE
 %attr(0755,%{daemon_user},%{daemon_user}) %dir %{_sysconfdir}/clickhouse-server/
 %attr(0644,%{daemon_user},%{daemon_user}) %config(noreplace) %{_sysconfdir}/clickhouse-server/config.xml
 %attr(0644,%{daemon_user},%{daemon_user}) %config(noreplace) %{_sysconfdir}/clickhouse-server/users.xml
@@ -161,16 +164,23 @@ sed -i -e 's|/opt/clickhouse|/var/lib/clickhouse|g; /listen_host/s|::|::1|' \
 %dir %{_sysconfdir}/clickhouse-client/
 %config(noreplace) %{_sysconfdir}/clickhouse-client/config.xml
 %{_bindir}/clickhouse-client
+%{_bindir}/clickhouse-local
 
 
 %files utils
 %license LICENSE
 %{_bindir}/clickhouse-benchmark
-%{_bindir}/compressor
+%{_bindir}/clickhouse-compressor
 %{_bindir}/config-processor
+%{_bindir}/corrector_utf8
 
 
 %changelog
+* Wed Feb  1 2017 Matthias Saou <matthias@saou.eu> 1.1.54144-1
+- Update to 1.1.54144-stable.
+- Remove shared lib patches, use the new USE_STATIC_LIBRARIES=0 way.
+- Create new common package, both server and client binaries are symlinks.
+
 * Thu Nov 24 2016 Matthias Saou <matthias@saou.eu> 1.1.54046-1
 - Update to 1.1.54046-stable.
 - Add LimitNPROC=65536 to service unit.
