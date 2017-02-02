@@ -125,7 +125,7 @@
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 7.0.13
+Version: 7.0.14
 Release: %{?rcver:0.}%{rpmrel}%{?rcver:.%{rcver}}%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
@@ -945,7 +945,7 @@ httpd -V  | grep -q 'threaded:.*yes' && exit 1
 %endif
 
 %patch40 -p1 -b .dlopen
-%if 0%{?fedora} >= 23 || 0%{?rhel} >= 5
+%if 0%{?fedora} >= 24 || 0%{?rhel} >= 5
 %patch42 -p1 -b .systzdata
 %endif
 %patch43 -p1 -b .headers
@@ -1185,7 +1185,7 @@ ln -sf ../configure
     --with-layout=GNU \
     --with-kerberos \
     --with-libxml-dir=%{_prefix} \
-%if 0%{?fedora} >= 21 || 0%{?rhel} >= 5
+%if 0%{?fedora} >= 24 || 0%{?rhel} >= 5
     --with-system-tzdata \
 %endif
     --with-mhash \
@@ -1512,12 +1512,6 @@ install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/
 install -m 644 %{SOURCE2} $RPM_BUILD_ROOT%{_sysconfdir}/php.ini
 install -m 755 -d $RPM_BUILD_ROOT%{_httpd_contentdir}/icons
 install -m 644 php.gif $RPM_BUILD_ROOT%{_httpd_contentdir}/icons/php.gif
-
-%if %{with_libpcre}
-if ! pkg-config libpcre --atleast-version 8.38 ; then
-   sed -e 's/;pcre.jit=1/pcre.jit=0/' -i $RPM_BUILD_ROOT%{_sysconfdir}/php.ini
-fi
-%endif
 
 # For third-party packaging:
 install -m 755 -d $RPM_BUILD_ROOT%{_datadir}/php
@@ -1994,6 +1988,16 @@ fi
 
 
 %changelog
+* Wed Dec  7 2016 Remi Collet <remi@fedoraproject.org> 7.0.14-1
+- Update to 7.0.14 - http://www.php.net/releases/7_0_14.php
+- disable pcre.jit everywhere as it raise AVC #1398474
+
+* Mon Dec  5 2016 Remi Collet <remi@fedoraproject.org> 7.0.13-2
+- disable pcre.jit everywhere as it raise AVC #1398474
+
+* Wed Nov 23 2016 Remi Collet <remi@fedoraproject.org> 7.0.14-0.1.RC1
+- Update to 7.0.14RC1
+
 * Tue Nov  8 2016 Remi Collet <remi@fedoraproject.org> 7.0.13-1
 - Update to 7.0.13 - http://www.php.net/releases/7_0_13.php
 
