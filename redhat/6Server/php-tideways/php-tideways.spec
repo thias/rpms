@@ -1,6 +1,6 @@
 Summary:       Tideways PHP Profiler Extension
 Name:          php-tideways
-Version:       4.0.5
+Version:       4.1.1
 Release:       1%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
 License:       ASL 2.0
 Group:         Development/Languages
@@ -58,6 +58,9 @@ php \
 
 
 %changelog
+* Wed Feb  8 2017 Matthias Saou <matthias@saou.eu> 4.1.1-1
+- Update to 4.1.1.
+
 * Thu Sep  1 2016 Matthias Saou <matthias@saou.eu> 4.0.5-1
 - Initial RPM release.
 
