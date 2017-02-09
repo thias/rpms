@@ -16,7 +16,7 @@
 
 Name:           php-%{ext_name}
 Summary:        API for reading MaxMind DB files
-Version:        1.0.3
+Version:        1.1.3
 Release:        1%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
 
 URL:            http://www.maxmind.com/
@@ -75,12 +75,18 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %{!?_licensedir:%global license %%doc}
 %license LICENSE
-%doc composer.json README.md examples
+%doc CHANGELOG.md composer.json README.md
 %config(noreplace) %{php_inidir}/%{ini_name}
 %{php_extdir}/%{ext_name}.so
 
 
 %changelog
+* Wed Feb  8 2017 Matthias Saou <matthias@saou.eu> 1.1.3-1
+- Update to 1.1.3.
+
+* Tue Feb  9 2016 Matthias Saou <matthias@saou.eu> 1.1.0-1
+- Update to 1.1.0.
+
 * Wed Jul  1 2015 Matthias Saou <matthias@saou.eu> 1.0.3-1
 - Update to 1.0.3.
 
