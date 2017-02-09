@@ -3,16 +3,13 @@
 #
 # Fedora spec file for php-pecl-rrd
 #
-# Copyright (c) 2011-2015 Remi Collet
+# Copyright (c) 2011-2016 Remi Collet
 # License: CC-BY-SA
 # http://creativecommons.org/licenses/by-sa/4.0/
 #
 # Please, preserve the changelog entries
 #
 %{?scl:          %scl_package        php-pecl-rrd}
-%{!?php_inidir:  %global php_inidir  %{_sysconfdir}/php.d}
-%{!?__pecl:      %global __pecl      %{_bindir}/pecl}
-%{!?__php:       %global __php       %{_bindir}/php}
 
 %global with_zts  0%{!?_without_zts:%{?__ztsphp:1}}
 %global pecl_name rrd
@@ -21,18 +18,17 @@
 
 Summary:      PHP Bindings for rrdtool
 Name:         %{?scl_prefix}php-pecl-rrd
-Version:      2.0.0
-Release:      1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Version:      2.0.1
+Release:      3%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 License:      BSD
 Group:        Development/Languages
 URL:          http://pecl.php.net/package/rrd
 
 Source:       http://pecl.php.net/get/%{pecl_name}-%{version}%{?prever}.tgz
 
-BuildRoot:    %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: %{?scl_prefix}php-devel >= 7
 BuildRequires: rrdtool
-BuildRequires: rrdtool-devel >= 1.3.0
+BuildRequires: pkgconfig(librrd) >= 1.3.0
 BuildRequires: %{?scl_prefix}php-pear
 
 Requires:     %{?scl_prefix}php(zend-abi) = %{php_zend_api}
@@ -40,10 +36,14 @@ Requires:     %{?scl_prefix}php(api) = %{php_core_api}
 %{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
 
 Conflicts:    %{?scl_prefix}rrdtool-php
-Provides:     %{?scl_prefix}php-pecl(%{pecl_name}) = %{version}%{?pre}
-Provides:     %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}%{?pre}
-Provides:     %{?scl_prefix}php-%{pecl_name} = %{version}%{?pre}
-Provides:     %{?scl_prefix}php-%{pecl_name}%{?_isa} = %{version}%{?pre}
+Provides:     %{?scl_prefix}php-%{pecl_name}               = %{version}
+Provides:     %{?scl_prefix}php-%{pecl_name}%{?_isa}       = %{version}
+Provides:     %{?scl_prefix}php-pecl(%{pecl_name})         = %{version}
+Provides:     %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
+%if "%{?scl_prefix}" != "%{?sub_prefix}"
+Provides:     %{?scl_prefix}php-pecl-%{pecl_name}          = %{version}-%{release}
+Provides:     %{?scl_prefix}php-pecl-%{pecl_name}%{?_isa}  = %{version}-%{release}
+%endif
 
 %if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
 # Other third party repo stuff
@@ -55,9 +55,11 @@ Obsoletes:     php55u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php55w-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php56u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php56w-pecl-%{pecl_name} <= %{version}
-%if "%{php_version}" > "7.0"
 Obsoletes:     php70u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php70w-pecl-%{pecl_name} <= %{version}
+%if "%{php_version}" > "7.1"
+Obsoletes:     php71u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php71w-pecl-%{pecl_name} <= %{version}
 %endif
 %endif
 
@@ -81,7 +83,9 @@ Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSIO
 mv %{pecl_name}-%{version}%{?prever} NTS
 
 # Don't install/register tests
-sed -e 's/role="test"/role="src"/' -i package.xml
+sed -e 's/role="test"/role="src"/' \
+    %{?_licensedir:-e '/LICENSE/s/role="doc"/role="src"/' } \
+    -i package.xml
 
 cd NTS
 
@@ -174,10 +178,7 @@ TEST_PHP_EXECUTABLE=%{_bindir}/php \
    run-tests.php --show-diff
 
 
-%clean
-rm -rf %{buildroot}
-
-
+%if 0%{?fedora} < 24
 # when pear installed alone, after us
 %triggerin -- %{?scl_prefix}php-pear
 if [ -x %{__pecl} ] ; then
@@ -194,10 +195,10 @@ fi
 if [ $1 -eq 0 -a -x %{__pecl} ] ; then
     %{pecl_uninstall} %{pecl_name} >/dev/null || :
 fi
+%endif
 
 
 %files
-%defattr(-, root, root, -)
 %doc %{pecl_docdir}/%{pecl_name}
 %{?_licensedir:%license NTS/LICENSE}
 %{pecl_xmldir}/%{name}.xml
@@ -212,6 +213,18 @@ fi
 
 
 %changelog
+* Thu Dec  1 2016 Remi Collet <remi@fedoraproject.org> - 2.0.1-3
+- rebuild with PHP 7.1.0 GA
+
+* Wed Sep 14 2016 Remi Collet <remi@fedoraproject.org> - 2.0.1-2
+- rebuild for PHP 7.1 new API version
+
+* Wed May 11 2016 Remi Collet <remi@fedoraproject.org> - 2.0.1-1
+- update to 2.0.1 (no change)
+
+* Sun Mar  6 2016 Remi Collet <remi@fedoraproject.org> - 2.0.0-2
+- adapt for F24
+
 * Mon Dec 28 2015 Remi Collet <remi@fedoraproject.org> - 2.0.0-1
 - update to 2.0.0
 
