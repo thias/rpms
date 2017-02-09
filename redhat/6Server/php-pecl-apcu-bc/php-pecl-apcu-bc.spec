@@ -21,7 +21,7 @@
 %global proj_name  apcu_bc
 %global pecl_name  apcu-bc
 %global ext_name   apc
-%global apcver     %(%{_bindir}/php -r 'echo phpversion("apcu");' 2>/dev/null || echo 65536)
+%global apcver     %(%{_bindir}/php -r 'echo (phpversion("apcu")?:0);' 2>/dev/null || echo 65536)
 %global with_zts   0%{!?_without_zts:%{?__ztsphp:1}}
 # After 40-apcu.ini
 %global ini_name   50-%{ext_name}.ini
@@ -30,10 +30,10 @@ Name:           %{?sub_prefix}php-pecl-%{pecl_name}
 Summary:        APCu Backwards Compatibility Module
 Version:        1.0.3
 %if 0%{?gh_date:1}
-Release:        0.1.%{gh_date}git%{gh_short}%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Release:        0.2.%{gh_date}git%{gh_short}%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 Source0:        https://github.com/%{gh_owner}/%{gh_project}/archive/%{gh_commit}/%{proj_name}-%{version}-%{gh_short}.tar.gz
 %else
-Release:        1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Release:        6%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 Source0:        http://pecl.php.net/get/%{proj_name}-%{version}.tgz
 %endif
 
@@ -41,7 +41,6 @@ License:        PHP
 Group:          Development/Languages
 URL:            http://pecl.php.net/package/APCu
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  %{?scl_prefix}php-devel > 7
 BuildRequires:  %{?scl_prefix}php-pear
 BuildRequires:  %{?scl_prefix}php-pecl-apcu-devel >= 5.1.2
@@ -76,6 +75,10 @@ Obsoletes:     php56u-pecl-%{ext_name}  <= %{version}
 Obsoletes:     php56w-pecl-%{ext_name}  <= %{version}
 Obsoletes:     php70u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php70w-pecl-%{pecl_name} <= %{version}
+%if "%{php_version}" > "7.1"
+Obsoletes:     php71u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php71w-pecl-%{pecl_name} <= %{version}
+%endif
 %endif
 
 %if 0%{?fedora} < 20 && 0%{?rhel} < 7
@@ -146,8 +149,6 @@ make %{?_smp_mflags}
 
 
 %install
-rm -rf %{buildroot}
-
 # Install the NTS stuff
 make -C NTS install INSTALL_ROOT=%{buildroot}
 install -D -m 644 %{ini_name} %{buildroot}%{php_inidir}/%{ini_name}
@@ -198,10 +199,6 @@ REPORT_EXIT_STATUS=1 \
 %endif
 
 
-%clean
-rm -rf %{buildroot}
-
-
 %if 0%{?fedora} < 24
 # when pear installed alone, after us
 %triggerin -- %{?scl_prefix}php-pear
@@ -223,7 +220,6 @@ fi
 
 
 %files
-%defattr(-,root,root,-)
 %{?_licensedir:%license NTS/LICENSE}
 %doc %{pecl_docdir}/%{proj_name}
 %{pecl_xmldir}/%{name}.xml
@@ -238,6 +234,21 @@ fi
 
 
 %changelog
+* Thu Dec  1 2016 Remi Collet <remi@fedoraproject.org> - 1.0.3-6
+- rebuild with PHP 7.1.0 GA
+
+* Wed Sep 14 2016 Remi Collet <remi@fedoraproject.org> - 1.0.3-5
+- rebuild for PHP 7.1 new API version
+
+* Mon Jul 25 2016 Remi Collet <remi@fedoraproject.org> - 1.0.3-4
+- re-enable ZTS build with PHP 7.1
+
+* Sat Jul 23 2016 Remi Collet <remi@fedoraproject.org> - 1.0.3-3
+- disable ZTS build with PHP 7.1
+
+* Mon Mar  7 2016 Remi Collet <remi@fedoraproject.org> - 1.0.3-2
+- fix apcver macro definition
+
 * Thu Feb 11 2016 Remi Collet <remi@fedoraproject.org> - 1.0.3-1
 - Update to 1.0.3 (beta)
 
