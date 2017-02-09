@@ -16,11 +16,11 @@
 
 %global pecl_name   xdebug
 %global with_zts    0%{!?_without_zts:%{?__ztsphp:1}}
-%global gh_commit   821c1fd2e09e65a9d33414ce7ce234e2ea6fdf83
+%global gh_commit   150336d1fa29e311636c682db0c1550117762947
 %global gh_short    %(c=%{gh_commit}; echo ${c:0:7})
-#global gh_date     20151118
+#global gh_date     20161004
 %global with_tests  0%{?_with_tests:1}
-#global prever      RC4
+#global prever      rc1
 
 # XDebug should be loaded after opcache
 %if "%{php_version}" < "5.6"
@@ -31,19 +31,23 @@
 
 Name:           %{?scl_prefix}php-pecl-xdebug
 Summary:        PECL package for debugging PHP scripts
-Version:        2.4.0
+Version:        2.5.0
+%if 0%{?gh_date:1}
+Release:        0.5.%{gh_date}git%{gh_short}%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+%else
 Release:        1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
-Source0:        https://github.com/%{pecl_name}/%{pecl_name}/archive/%{gh_commit}/%{pecl_name}-%{version}%{?prever}-%{gh_short}.tar.gz
+%endif
 
 # The Xdebug License, version 1.01
 # (Based on "The PHP License", version 3.0)
 License:        BSD
 Group:          Development/Languages
 URL:            http://xdebug.org/
+Source0:        https://github.com/%{pecl_name}/%{pecl_name}/archive/%{gh_commit}/%{pecl_name}-%{version}%{?prever}-%{gh_short}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  %{?scl_prefix}php-pear  > 1.9.1
-BuildRequires:  %{?scl_prefix}php-devel > 5.4
+BuildRequires:  %{?scl_prefix}php-devel > 5.5
 BuildRequires:  libedit-devel
 BuildRequires:  libtool
 %if %{with_tests}
@@ -54,14 +58,12 @@ Requires:       %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:       %{?scl_prefix}php(api) = %{php_core_api}
 %{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
 
-Provides:       %{?scl_prefix}php-%{pecl_name} = %{version}
-Provides:       %{?scl_prefix}php-%{pecl_name}%{?_isa} = %{version}
-Provides:       %{?scl_prefix}php-pecl(Xdebug) = %{version}
-Provides:       %{?scl_prefix}php-pecl(Xdebug)%{?_isa} = %{version}
-Provides:       %{?scl_prefix}php-pecl-%{pecl_name} = %{version}-%{release}
-Provides:       %{?scl_prefix}php-pecl-%{pecl_name}%{?_isa} = %{version}-%{release}
+Provides:       %{?scl_prefix}php-%{pecl_name}              = %{version}
+Provides:       %{?scl_prefix}php-%{pecl_name}%{?_isa}      = %{version}
+Provides:       %{?scl_prefix}php-pecl(Xdebug)              = %{version}
+Provides:       %{?scl_prefix}php-pecl(Xdebug)%{?_isa}      = %{version}
 
-%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
+%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1} && 0%{?rhel}
 # Other third party repo stuff
 Obsoletes:     php53-pecl-%{pecl_name}  <= %{version}
 Obsoletes:     php53u-pecl-%{pecl_name} <= %{version}
@@ -78,6 +80,10 @@ Obsoletes:     php56w-pecl-%{pecl_name} <= %{version}
 %if "%{php_version}" > "7.0"
 Obsoletes:     php70u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php70w-pecl-%{pecl_name} <= %{version}
+%endif
+%if "%{php_version}" > "7.1"
+Obsoletes:     php71u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php71w-pecl-%{pecl_name} <= %{version}
 %endif
 %endif
 
@@ -112,7 +118,18 @@ Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSIO
 %prep
 %setup -qc
 mv %{pecl_name}-%{gh_commit} NTS
+
+%if 0%{?gh_date:1}
+%{__php} -r '
+  $pkg = simplexml_load_file("NTS/package.xml");
+  $pkg->date = substr("%{gh_date}",0,4)."-".substr("%{gh_date}",4,2)."-".substr("%{gh_date}",6,2);
+  $pkg->version->release = "%{version}dev";
+  $pkg->stability->release = "devel";
+  $pkg->asXML("package.xml");
+'
+%else
 mv NTS/package.xml .
+%endif
 
 %{?_licensedir:sed -e '/LICENSE/s/role="doc"/role="src"/' -i package.xml}
 
@@ -120,8 +137,8 @@ cd NTS
 
 # Check extension version
 ver=$(sed -n '/XDEBUG_VERSION/{s/.* "//;s/".*$//;p}' php_xdebug.h)
-if test "$ver" != "%{version}%{?prever}"; then
-   : Error: Upstream XDEBUG_VERSION version is ${ver}, expecting %{version}%{?prever}.
+if test "$ver" != "%{version}%{?prever}%{?gh_date:-dev}"; then
+   : Error: Upstream XDEBUG_VERSION version is ${ver}, expecting %{version}%{?prever}%{?gh_date:-dev}.
    exit 1
 fi
 
@@ -291,6 +308,30 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Dec  5 2016 Remi Collet <remi@fedoraproject.org> - 2.5.0-1
+- update to 2.5.0
+
+* Thu Dec  1 2016 Remi Collet <remi@fedoraproject.org> - 2.5.0-0.7.rc1
+- rebuild with PHP 7.1.0 GA
+
+* Sat Nov 12 2016 Remi Collet <remi@fedoraproject.org> - 2.5.0-0.6.rc1
+- update to 2.5.0RC1
+
+* Wed Oct 12 2016 Remi Collet <remi@fedoraproject.org> - 2.5.0-0.5.20161004git81181b4
+- new snapshot of 2.5.0-dev
+
+* Wed Sep 14 2016 Remi Collet <remi@fedoraproject.org> - 2.5.0-0.4.20160731git9fe2994
+- rebuild for PHP 7.1 new API version
+
+* Tue Aug  2 2016 Remi Collet <remi@fedoraproject.org> - 2.5.0-0.3.20160731git9fe2994
+- new snapshot of 2.5.0-dev
+
+* Fri Jul 29 2016 Remi Collet <remi@fedoraproject.org> - 2.5.0-0.2.20160705git62b3733
+- new snapshot of 2.5.0-dev
+
+* Fri Jun 10 2016 Remi Collet <remi@fedoraproject.org> - 2.5.0-0.1.20160529git78fa98b
+- update to 2.5.0-dev for PHP 7.1
+
 * Fri Mar  4 2016 Remi Collet <remi@fedoraproject.org> - 2.4.0-1
 - update to 2.4.0
 
