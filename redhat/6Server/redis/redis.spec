@@ -27,7 +27,7 @@
 %global gh_project   redis
 
 Name:             redis
-Version:          3.2.1
+Version:          3.2.5
 Release:          1%{?dist}
 Summary:          A persistent key-value database
 
@@ -42,7 +42,6 @@ Source0:          http://download.redis.io/releases/%{name}-%{version}.tar.gz
 Source1:          %{name}.logrotate
 Source2:          %{name}.init
 Source3:          %{name}.service
-Source4:          %{name}.tmpfiles
 Source5:          %{name}-sentinel.init
 Source6:          %{name}-sentinel.service
 Source7:          %{name}-shutdown
@@ -52,7 +51,12 @@ Source9:          %{name}-limit-init
 # Update configuration for Fedora
 Patch0:           0001-redis-3.2-redis-conf.patch
 Patch1:           0002-redis-3.2-deps-library-fPIC-performance-tuning.patch
-Patch2:           0003-redis-2.8.11-use-system-jemalloc.patch
+Patch2:           0003-redis-3.2.5-use-system-jemalloc.patch
+
+# https://github.com/antirez/redis/pull/3491 - man pages
+Patch3:           %{name}-pr3491.patch
+# https://github.com/antirez/redis/pull/3494 - symlink
+Patch4:           %{name}-pr3494.patch
 
 BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 %if !0%{?el5}
@@ -114,7 +118,22 @@ Documentation: http://redis.io/documentation
 
 %patch0 -p1 -b .rpmconf
 %patch1 -p1 -b .pic
-%patch2 -p1 -b .jem
+%patch2 -p0 -b .jem
+
+%patch3 -p1
+%patch4 -p1 -b .old
+
+# No hidden build.
+sed -i -e 's|\t@|\t|g' deps/lua/src/Makefile
+sed -i -e 's|$(QUIET_CC)||g' src/Makefile
+sed -i -e 's|$(QUIET_LINK)||g' src/Makefile
+sed -i -e 's|$(QUIET_INSTALL)||g' src/Makefile
+# Ensure deps are built with proper flags
+sed -i -e 's|$(CFLAGS)|%{optflags}|g' deps/Makefile
+sed -i -e 's|OPTIMIZATION?=-O3|OPTIMIZATION=%{optflags}|g' deps/hiredis/Makefile
+sed -i -e 's|$(LDFLAGS)|%{?__global_ldflags}|g' deps/hiredis/Makefile
+sed -i -e 's|$(CFLAGS)|%{optflags}|g' deps/linenoise/Makefile
+sed -i -e 's|$(LDFLAGS)|%{?__global_ldflags}|g' deps/linenoise/Makefile
 
 
 %build
@@ -141,22 +160,20 @@ make test-sentinel
 make install PREFIX=%{buildroot}%{_prefix}
 # Install misc other
 install -p -D -m 644 %{SOURCE1} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
-install -p -D -m 644 %{name}.conf  %{buildroot}%{_sysconfdir}/%{name}.conf
-install -p -D -m 644 sentinel.conf %{buildroot}%{_sysconfdir}/%{name}-sentinel.conf
-install -d -m 755 %{buildroot}%{_localstatedir}/lib/%{name}
-install -d -m 755 %{buildroot}%{_localstatedir}/log/%{name}
-install -d -m 755 %{buildroot}%{_localstatedir}/run/%{name}
+install -p -D -m 640 %{name}.conf  %{buildroot}%{_sysconfdir}/%{name}.conf
+install -p -D -m 640 sentinel.conf %{buildroot}%{_sysconfdir}/%{name}-sentinel.conf
+install -d -m 750 %{buildroot}%{_localstatedir}/lib/%{name}
+install -d -m 750 %{buildroot}%{_localstatedir}/log/%{name}
 
 %if %{with_systemd}
 # Install systemd unit
 install -p -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/%{name}.service
 install -p -D -m 644 %{SOURCE6} %{buildroot}%{_unitdir}/%{name}-sentinel.service
-# Install systemd tmpfiles config, _tmpfilesdir only defined in fedora >= 18
-install -p -D -m 644 %{SOURCE4} %{buildroot}%{_prefix}/lib/tmpfiles.d/%{name}.conf
 # this folder requires systemd >= 204
 install -p -D -m 644 %{SOURCE8} %{buildroot}%{_sysconfdir}/systemd/system/%{name}.service.d/limit.conf
 install -p -D -m 644 %{SOURCE8} %{buildroot}%{_sysconfdir}/systemd/system/%{name}-sentinel.service.d/limit.conf
 %else
+install -d -m 750 %{buildroot}%{_localstatedir}/run/%{name}
 install -p -D -m 755 %{SOURCE2} %{buildroot}%{_initrddir}/%{name}
 install -p -D -m 755 %{SOURCE5} %{buildroot}%{_initrddir}/%{name}-sentinel
 install -p -D -m 644 %{SOURCE9} %{buildroot}%{_sysconfdir}/security/limits.d/95-%{name}.conf
@@ -165,12 +182,16 @@ install -p -D -m 644 %{SOURCE9} %{buildroot}%{_sysconfdir}/security/limits.d/95-
 # Fix non-standard-executable-perm error
 chmod 755 %{buildroot}%{_bindir}/%{name}-*
 
-# create redis-sentinel command as described on
-# http://redis.io/topics/sentinel
-ln -sf %{name}-server %{buildroot}%{_bindir}/%{name}-sentinel
-
 # Install redis-shutdown
-install -pDm755 %{SOURCE7} %{buildroot}%{_bindir}/%{name}-shutdown
+install -pDm755 %{SOURCE7} %{buildroot}%{_libexecdir}/%{name}-shutdown
+
+# Install man pages
+man=$(dirname %{buildroot}%{_mandir})
+for page in man/man?/*; do
+    install -Dpm644 $page $man/$page
+done
+ln -s redis-server.1 %{buildroot}%{_mandir}/man1/redis-sentinel.1
+ln -s redis.conf.5   %{buildroot}%{_mandir}/man5/redis-sentinel.conf.5
 
 
 %post
@@ -206,6 +227,7 @@ if [ $1 = 0 ]; then
 fi
 %endif
 
+%postun
 %if 0%{?systemd_postun_with_restart:1}
 %systemd_postun_with_restart redis.service
 %systemd_postun_with_restart redis-sentinel.service
@@ -223,14 +245,15 @@ fi
 %license COPYING
 %doc 00-RELEASENOTES BUGS CONTRIBUTING MANIFESTO README.md
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
-%attr(0644, redis, root) %config(noreplace) %{_sysconfdir}/%{name}.conf
-%attr(0644, redis, root) %config(noreplace) %{_sysconfdir}/%{name}-sentinel.conf
-%dir %attr(0755, redis, redis) %{_localstatedir}/lib/%{name}
-%dir %attr(0755, redis, redis) %{_localstatedir}/log/%{name}
-%dir %attr(0755, redis, redis) %{_localstatedir}/run/%{name}
+%attr(0640, redis, root) %config(noreplace) %{_sysconfdir}/%{name}.conf
+%attr(0640, redis, root) %config(noreplace) %{_sysconfdir}/%{name}-sentinel.conf
+%dir %attr(0750, redis, redis) %{_localstatedir}/lib/%{name}
+%dir %attr(0750, redis, redis) %{_localstatedir}/log/%{name}
 %{_bindir}/%{name}-*
+%{_libexecdir}/%{name}-*
+%{_mandir}/man1/redis*
+%{_mandir}/man5/redis*
 %if %{with_systemd}
-%{_prefix}/lib/tmpfiles.d/%{name}.conf
 %{_unitdir}/%{name}.service
 %{_unitdir}/%{name}-sentinel.service
 %dir %{_sysconfdir}/systemd/system/%{name}.service.d
@@ -241,10 +264,47 @@ fi
 %{_initrddir}/%{name}
 %{_initrddir}/%{name}-sentinel
 %config(noreplace) %{_sysconfdir}/security/limits.d/95-%{name}.conf
+%dir %attr(0750, redis, redis) %{_localstatedir}/run/%{name}
 %endif
 
 
 %changelog
+* Thu Oct 27 2016 Remi Collet <remi@fedoraproject.org> - 3.2.5-1
+- Redis 3.2.5 - Released Wed Oct 26 09:16:40 CEST 2016
+- Upgrade urgency LOW: This release only fixes a compilation issue
+
+* Mon Sep 26 2016 Remi Collet <remi@fedoraproject.org> - 3.2.4-1
+- Redis 3.2.4 - Released Mon Sep 26 08:58:21 CEST 2016
+- Upgrade urgency CRITICAL: Redis 3.2 and unstable contained
+  a security vulnerability fixed by this release.
+
+* Wed Sep 14 2016 Remi Collet <remi@fedoraproject.org> - 3.2.3-4
+- move redis-shutdown to libexec
+- add missing LSB headers to init scripts
+
+* Fri Sep  9 2016 Remi Collet <remi@fedoraproject.org> - 3.2.3-3
+- add patch from https://github.com/antirez/redis/pull/3494
+
+* Fri Sep  9 2016 Remi Collet <remi@fedoraproject.org> - 3.2.3-2
+- add man pages from https://github.com/antirez/redis/pull/3491
+- data and configuration should not be publicly readable
+- remove /var/run/redis with systemd
+- provide redis-check-rdb as a symlink to redis-server
+
+* Tue Aug  2 2016 Remi Collet <remi@fedoraproject.org> - 3.2.3-1
+- Redis 3.2.3 - Release date: Tue Aug 02 10:55:24 CEST 2016
+- Upgrade urgency MODERATE: Fix replication delay and redis-cli
+  security issue.
+
+* Fri Jul 29 2016 Remi Collet <remi@fedoraproject.org> - 3.2.2-1
+- Redis 3.2.2 - Release date: Thu Jul 28 14:14:54 CEST 2016
+- Upgrade urgency MODERATE:
+  A Redis server and a Sentinel crash are now fixed.
+  GEORADIUS errors in reported entries are fixed.
+
+* Fri Jun 24 2016 Remi Collet <remi@fedoraproject.org> - 3.2.1-2
+- fix %%postun scriptlet, thanks Matthias
+
 * Mon Jun 20 2016 Remi Collet <remi@fedoraproject.org> - 3.2.1-1
 - Redis 3.2.1 - Release date: Fri Jun 17 15:01:56 CEST 2016
 - Upgrade urgency HIGH: Critical fix to Redis Sentinel,
