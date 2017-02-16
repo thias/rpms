@@ -27,7 +27,7 @@
 %global gh_project   redis
 
 Name:             redis
-Version:          3.2.5
+Version:          3.2.8
 Release:          1%{?dist}
 Summary:          A persistent key-value database
 
@@ -269,6 +269,21 @@ fi
 
 
 %changelog
+* Mon Feb 13 2017 Remi Collet <remi@fedoraproject.org> - 3.2.8-1
+- Redis 3.2.8 - Released Sun Feb 12 16:11:18 CET 2017
+- Upgrade urgency CRITICAL: This release reverts back the Jemalloc upgrade
+  that is believed to potentially cause a server deadlock. A MIGRATE crash
+  is also fixed.
+
+* Wed Feb  1 2017 Remi Collet <remi@fedoraproject.org> - 3.2.7-1
+- Redis 3.2.7 - Released Tue Jan 31 16:21:41 CET 2017
+- Upgrade urgency HIGH: This release fixes important security and
+  correctness issues.
+
+* Tue Dec  6 2016 Remi Collet <remi@fedoraproject.org> - 3.2.6-1
+- Redis 3.2.6 - Released Tue Dec 06 09:33:29 CET 2016
+- Upgrade urgency MODERATE: minor fixes.
+
 * Thu Oct 27 2016 Remi Collet <remi@fedoraproject.org> - 3.2.5-1
 - Redis 3.2.5 - Released Wed Oct 26 09:16:40 CEST 2016
 - Upgrade urgency LOW: This release only fixes a compilation issue
