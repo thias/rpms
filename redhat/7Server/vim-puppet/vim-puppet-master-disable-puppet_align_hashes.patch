@@ -1,0 +1,10 @@
+diff -Naupr vim-puppet-master.orig/after/ftplugin/puppet.vim vim-puppet-master/after/ftplugin/puppet.vim
+--- vim-puppet-master.orig/after/ftplugin/puppet.vim	2017-02-24 22:13:47.000000000 +0100
++++ vim-puppet-master/after/ftplugin/puppet.vim	2017-03-01 11:26:41.332608988 +0100
+@@ -1,5 +1,5 @@
+ if !exists('g:puppet_align_hashes')
+-    let g:puppet_align_hashes = 1
++    let g:puppet_align_hashes = 0
+ endif
+ 
+ if g:puppet_align_hashes
