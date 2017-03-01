@@ -1,0 +1,12 @@
+diff -Naupr docker_auth-1.2.orig/auth_server/main.go docker_auth-1.2/auth_server/main.go
+--- docker_auth-1.2.orig/auth_server/main.go	2016-12-23 19:25:32.000000000 +0100
++++ docker_auth-1.2/auth_server/main.go	2017-02-27 18:20:25.113144309 +0100
+@@ -14,8 +14,6 @@
+    limitations under the License.
+ */
+ 
+-//go:generate ./gen_version.py
+-
+ package main // import "github.com/cesanta/docker_auth/auth_server"
+ 
+ import (

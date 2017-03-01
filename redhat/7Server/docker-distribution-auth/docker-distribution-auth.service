@@ -1,0 +1,10 @@
+[Unit]
+Description=Docker Distribution Auth
+After=syslog.target network.target
+
+[Service]
+User=dockauth
+ExecStart=/usr/bin/docker-distribution-auth -logtostderr /etc/docker-distribution/auth/config.yml
+
+[Install]
+WantedBy=multi-user.target
