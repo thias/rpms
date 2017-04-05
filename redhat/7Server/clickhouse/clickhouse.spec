@@ -8,7 +8,7 @@
 
 %global daemon_name clickhouse-server
 %global daemon_user clickhouse
-%global revision 54144
+%global revision 54198
 
 # FIXME: Find out why this gets in, and remove it cleanly
 %global __requires_exclude GLIBC_PRIVATE
@@ -176,6 +176,9 @@ sed -i -e 's|/opt/clickhouse|/var/lib/clickhouse|g; /listen_host/s|::|::1|' \
 
 
 %changelog
+* Tue Apr  4 2017 Matthias Saou <matthias@saou.eu> 1.1.54198-1
+- Update to 1.1.54198-stable.
+
 * Wed Feb  1 2017 Matthias Saou <matthias@saou.eu> 1.1.54144-1
 - Update to 1.1.54144-stable.
 - Remove shared lib patches, use the new USE_STATIC_LIBRARIES=0 way.
