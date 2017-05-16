@@ -8,20 +8,23 @@
 #
 # Please preserve changelog entries
 #
-%{?scl:%scl_package php-pear}
-%{!?scl:%global pkg_name %{name}}
-%{!?scl:%global _root_sysconfdir %{_sysconfdir}}
-%{!?php_version:  %global php_version  %(php -r 'echo PHP_VERSION;' 2>/dev/null)}
+%if 0%{?scl:1}
+%scl_package             php-pear
+%else
+%global pkg_name         %{name}
+%global _root_sysconfdir %{_sysconfdir}
+%global _root_bindir     %{_bindir}
+%endif
 
 %global peardir %{_datadir}/pear
 %global metadir %{_localstatedir}/lib/pear
 
 %global getoptver 1.4.1
-%global arctarver 1.4.0
+%global arctarver 1.4.2
 # https://pear.php.net/bugs/bug.php?id=19367
 # Structures_Graph 1.0.4 - incorrect FSF address
 %global structver 1.1.1
-%global xmlutil   1.3.0
+%global xmlutil   1.4.2
 %global manpages  1.10.0
 
 # Tests are only run with rpmbuild --with tests
@@ -30,11 +33,13 @@
 
 %global macrosdir %(d=%{_rpmconfigdir}/macros.d; [ -d $d ] || d=%{_root_sysconfdir}/rpm; echo $d)
 
+%{!?pecl_xmldir: %global pecl_xmldir %{_sharedstatedir}/php/peclxml}
+
 #global pearprever dev3
 
 Summary: PHP Extension and Application Repository framework
 Name: %{?scl_prefix}php-pear
-Version: 1.10.1
+Version: 1.10.4
 Release: 1%{?dist}
 Epoch: 1
 # PEAR, PEAR_Manpages, Archive_Tar, XML_Util, Console_Getopt are BSD
@@ -45,11 +50,12 @@ URL: http://pear.php.net/package/PEAR
 Source0: http://download.pear.php.net/package/PEAR-%{version}%{?pearprever}.tgz
 # wget https://raw.githubusercontent.com/pear/pear-core/stable/install-pear.php
 Source1: install-pear.php
-Source3: strip.php
+Source3: cleanup.php
 Source10: pear.sh
 Source11: pecl.sh
 Source12: peardev.sh
 Source13: macros.pear
+Source14: macros-f24.pear
 Source21: http://pear.php.net/get/Archive_Tar-%{arctarver}.tgz
 Source22: http://pear.php.net/get/Console_Getopt-%{getoptver}.tgz
 Source23: http://pear.php.net/get/Structures_Graph-%{structver}.tgz
@@ -57,11 +63,12 @@ Source24: http://pear.php.net/get/XML_Util-%{xmlutil}.tgz
 Source25: http://pear.php.net/get/PEAR_Manpages-%{manpages}.tgz
 
 BuildArch: noarch
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: %{?scl_prefix}php(language) > 5.4
 BuildRequires: %{?scl_prefix}php-cli
 BuildRequires: %{?scl_prefix}php-xml
 BuildRequires: gnupg
+# For pecl_xmldir macro
+BuildRequires: %{?scl_prefix}php-devel
 %if %{with_tests}
 BuildRequires:  %{_bindir}/phpunit
 %endif
@@ -82,18 +89,21 @@ Provides:  %{?scl_prefix}php-composer(pear/pear-core-minimal) = %{version}
 Provides:  %{?scl_prefix}php-composer(pear/structures_graph) = %{structver}
 Provides:  %{?scl_prefix}php-composer(pear/xml_util) = %{xmlutil}
 
-%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
+%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1} && 0%{?rhel}
 # From other third party
-Obsoletes: php53-pear  <= %{version}
-Obsoletes: php53u-pear <= %{version}
-Obsoletes: php54-pear  <= %{version}
-Obsoletes: php54w-pear <= %{version}
-Obsoletes: php55u-pear <= %{version}
-Obsoletes: php55w-pear <= %{version}
-Obsoletes: php56u-pear <= %{version}
-Obsoletes: php56w-pear <= %{version}
-Obsoletes: php70u-pear <= %{version}
-Obsoletes: php70w-pear <= %{version}
+Obsoletes: php53-pear  <= %{epoch}:%{version}
+Obsoletes: php53u-pear <= %{epoch}:%{version}
+Obsoletes: php54-pear  <= %{epoch}:%{version}
+Obsoletes: php54w-pear <= %{epoch}:%{version}
+Obsoletes: php55u-pear <= %{epoch}:%{version}
+Obsoletes: php55w-pear <= %{epoch}:%{version}
+Obsoletes: php56u-pear <= %{epoch}:%{version}
+Obsoletes: php56w-pear <= %{epoch}:%{version}
+Obsoletes: php70u-pear <= %{epoch}:%{version}
+Obsoletes: php70w-pear <= %{epoch}:%{version}
+Obsoletes: php71u-pear <= %{epoch}:%{version}
+Obsoletes: pear1u      <= %{epoch}:%{version}
+Obsoletes: php71w-pear <= %{epoch}:%{version}
 %endif
 
 %{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}}
@@ -147,15 +157,19 @@ do
 done
 cp %{SOURCE1} .
 
-# apply patches on used PEAR during install
-# None \o/
+# apply patches on PEAR needed during install
+# other patches applied on installation tree
 
 sed -e 's/@SCL@/%{?scl:%{scl}_}/' \
     -e 's:@VARDIR@:%{_localstatedir}:' \
     -e 's:@BINDIR@:%{_bindir}:' \
     -e 's:@ETCDIR@:%{_sysconfdir}:' \
     -e 's:@PREFIX@:%{_prefix}:' \
+%if 0%{?fedora} >= 24
+    %{SOURCE14} | tee macros.pear
+%else
     %{SOURCE13} | tee macros.pear
+%endif
 
 
 %build
@@ -163,8 +177,6 @@ sed -e 's/@SCL@/%{?scl:%{scl}_}/' \
 
 
 %install
-rm -rf $RPM_BUILD_ROOT
-
 export PHP_PEAR_SYSCONF_DIR=%{_sysconfdir}
 export PHP_PEAR_SIG_KEYDIR=%{_sysconfdir}/pearkeys
 export PHP_PEAR_SIG_BIN=%{_root_bindir}/gpg
@@ -180,8 +192,10 @@ install -d $RPM_BUILD_ROOT%{peardir} \
            $RPM_BUILD_ROOT%{_localstatedir}/cache/php-pear \
            $RPM_BUILD_ROOT%{_localstatedir}/www/html \
            $RPM_BUILD_ROOT%{_localstatedir}/lib/pear/pkgxml \
+%if 0%{?fedora} < 24
            $RPM_BUILD_ROOT%{_docdir}/pecl \
            $RPM_BUILD_ROOT%{_datadir}/tests/pecl \
+%endif
            $RPM_BUILD_ROOT%{_sysconfdir}/pear
 
 export INSTALL_ROOT=$RPM_BUILD_ROOT
@@ -214,9 +228,9 @@ for exe in pear pecl peardev; do
 done
 
 # Sanitize the pear.conf
-%{_bindir}/php %{SOURCE3} $RPM_BUILD_ROOT%{_sysconfdir}/pear.conf ext_dir >new-pear.conf
-%{_bindir}/php %{SOURCE3} new-pear.conf http_proxy > $RPM_BUILD_ROOT%{_sysconfdir}/pear.conf
+%{_bindir}/php %{SOURCE3} $RPM_BUILD_ROOT%{_sysconfdir}/pear.conf %{_datadir}
 
+# Display configuration for debug
 %{_bindir}/php -r "print_r(unserialize(substr(file_get_contents('$RPM_BUILD_ROOT%{_sysconfdir}/pear.conf'),17)));"
 
 
@@ -225,7 +239,7 @@ install -m 644 -D macros.pear \
 
 # apply patches on installed PEAR tree
 pushd $RPM_BUILD_ROOT%{peardir} 
-# none
+: no patch \\o/
 popd
 
 # Why this file here ?
@@ -282,11 +296,32 @@ echo 'Test suite disabled (missing "--with tests" option)'
 %endif
 
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-rm new-pear.conf
+%if 0%{?fedora} >= 24
+# Register newly installed PECL packages
+%transfiletriggerin -- %{pecl_xmldir}
+while read file; do
+  %{_bindir}/pecl install --nodeps --soft --force --register-only --nobuild "$file" >/dev/null || :
+done
+
+# Unregister to be removed PECL packages
+# Reading the xml file to retrieve channel and package name
+%transfiletriggerun -- %{pecl_xmldir}
+%{_bindir}/php -r '
+while ($file=fgets(STDIN)) {
+  $file = trim($file);
+  $xml = simplexml_load_file($file);
+  if (isset($xml->channel) &&  isset($xml->name)) {
+    printf("%s/%s\n", $xml->channel, $xml->name);
+  } else {
+    fputs(STDERR, "Bad pecl package file ($file)\n");
+  }
+}' | while read  name; do
+  %{_bindir}/pecl uninstall --nodeps --ignore-errors --register-only "$name" >/dev/null || :
+done
+%endif
 
 
+%if 0%{?fedora} < 25
 %pre
 # Manage relocation of metadata, before update to pear
 if [ -d %{peardir}/.registry -a ! -d %{metadir}/.registry ]; then
@@ -333,6 +368,8 @@ if [ "$current" != "%{_datadir}/tests/pecl" ]; then
     test_dir %{_datadir}/tests/pecl \
     system >/dev/null || :
 fi
+%endif
+
 
 %postun
 if [ $1 -eq 0 -a -d %{metadir}/.registry ] ; then
@@ -341,7 +378,6 @@ fi
 
 
 %files
-%defattr(-,root,root,-)
 %{peardir}
 %dir %{metadir}
 %{metadir}/.channels
@@ -364,9 +400,11 @@ fi
 %doc README*
 %dir %{_docdir}/pear
 %doc %{_docdir}/pear/*
+%if 0%{?fedora} < 24
 %dir %{_docdir}/pecl
 %dir %{_datadir}/tests
 %dir %{_datadir}/tests/pecl
+%endif
 %{_datadir}/tests/pear
 %{_datadir}/pear-data
 %if 0%{?scl:1}
@@ -380,6 +418,52 @@ fi
 
 
 %changelog
+* Thu Apr 27 2017 Remi Collet <remi@fedoraproject.org> 1:1.10.4-1
+- update PEAR to 1.10.4
+
+* Tue Feb 28 2017 Remi Collet <remi@fedoraproject.org> 1:1.10.3-1
+- update PEAR to 1.10.3
+
+* Tue Feb 28 2017 Remi Collet <remi@fedoraproject.org> 1:1.10.2-1
+- update PEAR to 1.10.2 (broken)
+
+* Thu Feb 23 2017 Remi Collet <remi@fedoraproject.org> 1:1.10.1-12
+- update XML_Util to 1.4.2
+- drop patch merged upstream
+
+* Wed Feb 22 2017 Remi Collet <remi@fedoraproject.org> 1:1.10.1-11
+- add patch to fix XML_Serializer with XML_Util 1.4.1
+  from https://github.com/pear/XML_Util/pull/8
+
+* Wed Feb  8 2017 Remi Collet <remi@fedoraproject.org> 1:1.10.1-10
+- update XML_Util to 1.4.1
+
+* Sat Feb  4 2017 Remi Collet <remi@fedoraproject.org> 1:1.10.1-9
+- update XML_Util to 1.4.0
+
+* Sat Dec 10 2016 Remi Collet <remi@fedoraproject.org> 1:1.10.1-8
+- obsolete pear1u to allow simple upgrade
+
+* Fri Sep 30 2016 Remi Collet <remi@fedoraproject.org> 1:1.10.1-7
+- fix https connection via a proxy
+  patch from https://github.com/pear/pear-core/pull/51
+- silent the new scriplets (F24+)
+
+* Fri Aug  5 2016 Remi Collet <remi@fedoraproject.org> 1:1.10.1-6
+- improve default config, to avoid change in scriptlet
+- remove unneeded scriplets for Fedora 25
+
+* Thu Jun 30 2016 Remi Collet <remi@fedoraproject.org> 1:1.10.1-5
+- don't own test/doc directories for pecl packages (f24)
+- fix obsoletes
+
+* Thu Feb 25 2016 Remi Collet <remi@fedoraproject.org> 1:1.10.1-4
+- update Archive_Tar to 1.4.2
+
+* Wed Feb 10 2016 Remi Collet <remi@fedoraproject.org> 1:1.10.1-3
+- use file triggers for pecl extensions (un)registration
+- define %%pecl_install and %%pecl_uninstall as noop macro
+
 * Sat Oct 17 2015 Remi Collet <remi@fedoraproject.org> 1:1.10.1-1
 - update PEAR to 1.10.1
 
