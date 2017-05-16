@@ -3,7 +3,7 @@
 #
 # Fedora spec file for php-pecl-igbinary
 #
-# Copyright (c) 2010-2016 Remi Collet
+# Copyright (c) 2010-2017 Remi Collet
 # License: CC-BY-SA
 # http://creativecommons.org/licenses/by-sa/4.0/
 #
@@ -28,7 +28,7 @@
 
 Summary:        Replacement for the standard PHP serializer
 Name:           %{?sub_prefix}php-pecl-igbinary
-Version:        2.0.1
+Version:        2.0.4
 %if 0%{?gh_date}
 Release:        0.6.%{gh_date}git%{gh_short}%{?dist}%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
 Source0:        https://github.com/%{extname}/%{extname}/archive/%{gh_commit}/%{extname}-%{version}-%{gh_short}.tar.gz
@@ -41,7 +41,6 @@ Group:          System Environment/Libraries
 
 URL:            http://pecl.php.net/package/igbinary
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  %{?scl_prefix}php-pear
 BuildRequires:  %{?scl_prefix}php-devel >= 5.2.0
 BuildRequires:  %{?sub_prefix}php-pecl-apcu-devel
@@ -56,8 +55,8 @@ Provides:       %{?scl_prefix}php-%{extname}%{?_isa}        = %{version}
 Provides:       %{?scl_prefix}php-pecl(%{extname})          = %{version}
 Provides:       %{?scl_prefix}php-pecl(%{extname})%{?_isa}  = %{version}
 %if "%{?scl_prefix}" != "%{?sub_prefix}"
-Provides:       %{?scl_prefix}php-pecl-%{pecl_name}         = %{version}-%{release}
-Provides:       %{?scl_prefix}php-pecl-%{pecl_name}%{?_isa} = %{version}-%{release}
+Provides:       %{?scl_prefix}php-pecl-%{extname}           = %{version}-%{release}
+Provides:       %{?scl_prefix}php-pecl-%{extname}%{?_isa}   = %{version}-%{release}
 %endif
 
 %if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1} && 0%{?rhel}
@@ -82,6 +81,10 @@ Obsoletes:     php70w-pecl-%{extname}
 Obsoletes:     php71u-pecl-%{extname}
 Obsoletes:     php71w-pecl-%{extname}
 %endif
+%if "%{php_version}" > "7.2"
+Obsoletes:     php72u-pecl-%{extname}
+Obsoletes:     php72w-pecl-%{extname}
+%endif
 %endif
 
 %if 0%{?fedora} < 20 && 0%{?rhel} < 7
@@ -99,6 +102,8 @@ igbinary stores PHP data structures in a compact binary form.
 Savings are significant when using memcached or similar memory
 based storages for serialized data.
 
+Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')%{?scl: as Software Collection (%{scl} by %{?scl_vendor}%{!?scl_vendor:rh})}.
+
 
 %package devel
 Summary:       Igbinary developer files (header)
@@ -106,14 +111,16 @@ Group:         Development/Libraries
 Requires:      %{name}%{?_isa} = %{version}-%{release}
 Requires:      %{?scl_prefix}php-devel%{?_isa}
 
-Obsoletes:     %{?scl_prefix}php-%{extname}-devel         <= 1.1.1
-Provides:      %{?scl_prefix}php-%{extname}-devel         = %{version}-%{release}
-Provides:      %{?scl_prefix}php-%{extname}-devel%{?_isa} = %{version}-%{release}
+Obsoletes:     %{?scl_prefix}php-%{extname}-devel             <= 1.1.1
+Provides:      %{?scl_prefix}php-%{extname}-devel              = %{version}-%{release}
+Provides:      %{?scl_prefix}php-%{extname}-devel%{?_isa}      = %{version}-%{release}
+%if "%{?scl_prefix}" != "%{?sub_prefix}"
+Provides:      %{?scl_prefix}php-pecl-%{extname}-devel         = %{version}-%{release}
+Provides:      %{?scl_prefix}php-pecl-%{extname}-devel%{?_isa} = %{version}-%{release}
+%endif
 
 %description devel
 These are the files needed to compile programs using Igbinary
-
-Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')%{?scl: as Software Collection (%{scl} by %{?scl_vendor}%{!?scl_vendor:rh})}.
 
 
 %prep
@@ -166,6 +173,8 @@ EOF
 
 
 %build
+%{?dtsenable}
+
 cd NTS
 %{_bindir}/phpize
 %configure --with-php-config=%{_bindir}/php-config
@@ -180,7 +189,7 @@ make %{?_smp_mflags}
 
 
 %install
-rm -rf %{buildroot}
+%{?dtsenable}
 
 make install -C NTS INSTALL_ROOT=%{buildroot}
 
@@ -206,6 +215,12 @@ done
 
 
 %check
+%if "%{php_version}" > "7.2"
+# See https://github.com/igbinary/igbinary/pull/131
+rm ?TS/tests/igbinary_019.phpt
+rm ?TS/tests/igbinary_unserialize_v1_compatible.phpt
+%endif
+
 MOD=""
 # drop extension load from phpt
 sed -e '/^extension=/d' -i ?TS/tests/*phpt
@@ -226,7 +241,7 @@ fi
 : upstream test suite
 cd NTS
 TEST_PHP_EXECUTABLE=%{_bindir}/php \
-TEST_PHP_ARGS="-n $MOD -d extension=$PWD/modules/%{extname}.so" \
+TEST_PHP_ARGS="-n $MOD -d extension=%{buildroot}%{php_extdir}/%{extname}.so" \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
 %{_bindir}/php -n run-tests.php --show-diff
@@ -240,15 +255,11 @@ REPORT_EXIT_STATUS=1 \
 : upstream test suite
 cd ../ZTS
 TEST_PHP_EXECUTABLE=%{__ztsphp} \
-TEST_PHP_ARGS="-n $MOD -d extension=$PWD/modules/%{extname}.so" \
+TEST_PHP_ARGS="-n $MOD -d extension=%{buildroot}%{php_ztsextdir}/%{extname}.so" \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
 %{__ztsphp} -n run-tests.php --show-diff
 %endif
-
-
-%clean
-rm -rf %{buildroot}
 
 
 %if 0%{?fedora} < 24
@@ -272,7 +283,6 @@ fi
 
 
 %files
-%defattr(-,root,root,-)
 %{?_licensedir:%license NTS/COPYING}
 %doc %{pecl_docdir}/%{extname}
 %config(noreplace) %{php_inidir}/%{ini_name}
@@ -287,7 +297,6 @@ fi
 
 
 %files devel
-%defattr(-,root,root,-)
 %doc %{pecl_testdir}/%{extname}
 %{php_incldir}/ext/%{extname}
 
@@ -297,6 +306,17 @@ fi
 
 
 %changelog
+* Mon Apr 24 2017 Remi Collet <remi@remirepo.net> - 2.0.4-1
+- Update to 2.0.4
+
+* Thu Apr 13 2017 Remi Collet <remi@fedoraproject.org> - 2.0.3-1
+- update to 2.0.3
+- tarball generated from github (not yet available on pecl)
+- add patch "Don't call __wakeup if Serializable::unserialize() was used
+  to build object" from https://github.com/igbinary/igbinary/pull/130
+- add patch "Fix test suite for PHP 7.2"
+  from https://github.com/igbinary/igbinary/pull/131
+
 * Tue Dec 20 2016 Remi Collet <remi@fedoraproject.org> - 2.0.1-1
 - Update to 2.0.1
 
