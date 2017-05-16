@@ -1,3 +1,6 @@
+# License: MIT
+# http://opensource.org/licenses/MIT
+
 Add support for use of the system timezone database, rather
 than embedding a copy.  Discussed upstream but was not desired.
 
