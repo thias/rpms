@@ -1,22 +1,33 @@
+# remirepo spec file for libzip-last
+# renamed for parallel installation, from:
+#
+# Fedora spec file for libzip
+#
+# License: MIT
+# http://opensource.org/licenses/MIT
+#
+# Please preserve changelog entries
+#
 %global multilib_archs x86_64 %{ix86} ppc64 ppc s390x s390 sparc64 sparcv9
 %global libname libzip
+%global soname  5
 %if 0%{?rhel} == 5
 # Perl is too old
 %global with_tests     0
 %else
 %if %{?runselftest}%{!?runselftest:1}
-%global with_tests     %{?_without_tests:0}%{!?_without_tests:1}
+%global with_tests     0%{!?_without_tests:1}
 %else
-%global with_tests     %{?_with_tests:1}%{!?_with_tests:0}
+%global with_tests     0%{?_with_tests:1}
 %endif
 %endif
 
-%if 0%{?fedora} < 23
-Name:    %{libname}-last
-%else
+%if 0%{?fedora} >= 99
 Name:    %{libname}
+%else
+Name:    %{libname}%{soname}
 %endif
-Version: 1.0.1
+Version: 1.2.0
 Release: 1%{?dist}
 Group:   System Environment/Libraries
 Summary: C library for reading, creating, and modifying zip archives
@@ -36,11 +47,19 @@ BuildRequires:  perl(Cwd)
 BuildRequires:  perl(Data::Dumper)
 BuildRequires:  perl(File::Copy)
 BuildRequires:  perl(File::Path)
+BuildRequires:  perl(Getopt::Long)
 BuildRequires:  perl(IPC::Open3)
 BuildRequires:  perl(Symbol)
 BuildRequires:  perl(UNIVERSAL)
 BuildRequires:  perl(strict)
 BuildRequires:  perl(warnings)
+%if "%{name}" == "%{libname}"
+Obsoletes:      %{libname}%{soname} <= %{version}
+%if 0%{?rhel}
+# RHEL have commands in main package
+Provides:  %{libname} =  %{version}-%{release}
+%endif
+%endif
 
 
 %description
@@ -49,7 +68,7 @@ can be added from data buffers, files, or compressed data copied directly from
 other zip archives. Changes made without closing the archive can be reverted. 
 The API is documented by man pages.
 %if "%{name}" != "%{libname}"
-%{name} is designed to be installed beside %{name}.
+%{name} is designed to be installed beside %{libname}.
 %endif
 
 
@@ -58,8 +77,12 @@ Group:    Development/Libraries
 Summary:  Development files for %{name}
 Requires: %{name}%{?_isa} = %{version}-%{release}
 %if "%{name}" != "%{libname}"
-Conflicts: %{libname}-devel < %{version}
-Provides:  %{libname}-devel = %{version}-%{release}
+Conflicts: %{libname}-last-devel     <  %{version}
+Conflicts: %{libname}-devel          <  %{version}
+Provides:  %{libname}-devel          =  %{version}-%{release}
+%else
+Obsoletes: %{libname}-last-devel     <= %{version}
+Obsoletes: %{libname}%{soname}-devel <= %{version}
 %endif
 
 %description devel
@@ -68,18 +91,26 @@ developing applications that use %{name}.
 
 
 %package tools
-Summary:  Command line tools from %{libname}
+Summary:  Command line tools from %{name}
 Group:    Applications/System
 Requires: %{name}%{?_isa} = %{version}-%{release}
 %if "%{name}" != "%{libname}"
-Conflicts: %{libname} < %{version}
-Provides:  %{libname} = %{version}-%{release}
+Conflicts: %{libname}-last-tools     <  %{version}
+# Fedora 23 have sub package
+Conflicts: %{libname}-tools          <  %{version}
+Provides:  %{libname}-tools          =  %{version}-%{release}
+# RHEL have commands in main package
+Conflicts: %{libname}                <  1.1
+%else
+Obsoletes: %{libname}-last-tools     <= %{version}
+Obsoletes: %{libname}%{soname}-tools <= %{version}
 %endif
 
 %description tools
 The %{name}-tools package provides command line tools split off %{name}:
 - zipcmp
 - zipmerge
+- ziptool
 
 
 %prep
@@ -134,17 +165,18 @@ make check
 %defattr(-,root,root,-)
 %{!?_licensedir:%global license %%doc}
 %license LICENSE
-%{_libdir}/libzip.so.4*
+%{_libdir}/libzip.so.%{soname}*
 
 %files tools
 %defattr(-,root,root,-)
 %{_bindir}/zipcmp
 %{_bindir}/zipmerge
+%{_bindir}/ziptool
 %{_mandir}/man1/zip*
 
 %files devel
 %defattr(-,root,root,-)
-%doc API-CHANGES AUTHORS NEWS README THANKS TODO
+%doc API-CHANGES AUTHORS THANKS *.md
 %{_includedir}/zip.h
 %{_includedir}/zipconf*.h
 %dir %{_libdir}/libzip
@@ -157,6 +189,27 @@ make check
 
 
 %changelog
+* Sun Feb 19 2017 Remi Collet <remi@fedoraproject.org> - 1.2.0-1
+- update to 1.2.0
+- rename to libzip5 for new soname
+
+* Sat May 28 2016 Remi Collet <remi@fedoraproject.org> - 1.1.3-1
+- update to 1.1.3
+
+* Sat Feb 20 2016 Remi Collet <remi@fedoraproject.org> - 1.1.2-1
+- update to 1.1.2
+
+* Sat Feb 13 2016 Remi Collet <remi@fedoraproject.org> - 1.1.1-1
+- update to 1.1.1
+
+* Thu Jan 28 2016 Remi Collet <remi@fedoraproject.org> - 1.1-1
+- update to 1.1
+- new ziptool command
+- add fix for undefined optopt in ziptool.c (upstream)
+
+* Thu Jan 14 2016 Remi Collet <remi@fedoraproject.org> - 1.0.1-3
+- libzip obsoletes libzip-last
+
 * Tue May  5 2015 Remi Collet <remi@fedoraproject.org> - 1.0.1-1
 - update to 1.0.1
 - soname bump from .2 to .4
