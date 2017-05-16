@@ -3,7 +3,7 @@
 #
 # fedora spec file for php-pecl-zip
 #
-# Copyright (c) 2013-2016 Remi Collet
+# Copyright (c) 2013-2017 Remi Collet
 # License: CC-BY-SA
 # http://creativecommons.org/licenses/by-sa/4.0/
 #
@@ -13,12 +13,6 @@
 
 %global with_zts       0%{!?_without_zts:%{?__ztsphp:1}}
 %global pecl_name      zip
-
-%if 0%{?rhel} != 5
-%global with_libzip    1
-%else
-%global with_libzip    0
-%endif
 
 %if "%{php_version}" < "5.6"
 %global ini_name  %{pecl_name}.ini
@@ -30,24 +24,17 @@
 Summary:      A ZIP archive management extension
 Summary(fr):  Une extension de gestion des ZIP
 Name:         %{?scl_prefix}php-pecl-zip
-Version:      1.13.5
-Release:      2%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
-%if %{with_libzip}
+Version:      1.14.0
+Release:      1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 License:      PHP
-%else
-# Zip extension is PHP, Libzip library is BSD
-License:      PHP and BSD
-%endif
 Group:        Development/Languages
 URL:          http://pecl.php.net/package/zip
 
 Source:       http://pecl.php.net/get/%{pecl_name}-%{version}%{?prever}.tgz
 
-BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: %{?scl_prefix}php-devel
-%if %{with_libzip}
-BuildRequires: pkgconfig(libzip) >= 1.0.0
-%endif
+# Version 1.2.0 for encryption support
+BuildRequires: pkgconfig(libzip) >= 1.2.0
 BuildRequires: zlib-devel
 BuildRequires: %{?scl_prefix}php-pear
 
@@ -60,7 +47,7 @@ Provides:     %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
 Provides:     %{?scl_prefix}php-%{pecl_name} = 1:%{version}-%{release}
 Provides:     %{?scl_prefix}php-%{pecl_name}%{?_isa} = 1:%{version}-%{release}
 
-%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1}
+%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1} && 0%{?rhel}
 # Other third party repo stuff
 Obsoletes:     php53-pecl-%{pecl_name}  <= %{version}
 Obsoletes:     php53u-pecl-%{pecl_name} <= %{version}
@@ -124,12 +111,6 @@ if test "x${extver}" != "x%{version}%{?prever}"; then
    exit 1
 fi
 
-%if %{with_libzip}
-sed -e '/LICENSE_libzip/d' -i ../package.xml
-# delete bundled libzip to ensure it is not used
-rm -r lib
-%endif
-
 cd ..
 : Create the configuration file
 cat >%{ini_name} << 'EOF'
@@ -144,12 +125,12 @@ cp -pr NTS ZTS
 
 
 %build
+%{?dtsenable}
+
 cd NTS
 %{_bindir}/phpize
 %configure \
-%if %{with_libzip}
   --with-libzip \
-%endif
   --with-libdir=%{_lib} \
   --with-php-config=%{_bindir}/php-config
 
@@ -159,9 +140,7 @@ make %{?_smp_mflags}
 cd ../ZTS
 %{_bindir}/zts-phpize
 %configure \
-%if %{with_libzip}
   --with-libzip \
-%endif
   --with-libdir=%{_lib} \
   --with-php-config=%{_bindir}/zts-php-config
 
@@ -170,7 +149,7 @@ make %{?_smp_mflags}
 
 
 %install
-rm -rf %{buildroot}
+%{?dtsenable}
 
 make -C NTS install INSTALL_ROOT=%{buildroot}
 install -D -m 644 %{ini_name} %{buildroot}%{php_inidir}/%{ini_name}
@@ -224,9 +203,6 @@ TEST_PHP_EXECUTABLE=%{_bindir}/zts-php \
 %endif
 
 
-%clean
-rm -rf %{buildroot}
-
 %if 0%{?fedora} < 24
 # when pear installed alone, after us
 %triggerin -- %{?scl_prefix}php-pear
@@ -248,7 +224,6 @@ fi
 
 
 %files
-%defattr(-, root, root, -)
 %{?_licensedir:%license NTS/LICENSE}
 %doc %{pecl_docdir}/%{pecl_name}
 %{pecl_xmldir}/%{name}.xml
@@ -263,6 +238,17 @@ fi
 
 
 %changelog
+* Wed Apr  5 2017 Remi Collet <remi@remirepo.net> - 1.14.1-1
+- update to 1.14.0 (stable)
+- always buid with system libzip (bundled lib dropped upstream)
+
+* Wed Mar  1 2017 Remi Collet <remi@fedoraproject.org> - 1.14.0-0.2.20170301dev
+- refresh with pasword support in stream wrapper
+
+* Sun Feb 19 2017 Remi Collet <remi@fedoraproject.org> - 1.14.0-0.1.20170219dev
+- update to 1.4.0-dev with encryption support
+- raise dependency on libzip 1.2.0
+
 * Thu Dec  1 2016 Remi Collet <remi@fedoraproject.org> - 1.13.5-2
 - rebuild with PHP 7.1.0 GA
 
