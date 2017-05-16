@@ -3,7 +3,7 @@
 #
 # Fedora spec file for php-pecl-xdebug
 #
-# Copyright (c) 2010-2016 Remi Collet
+# Copyright (c) 2010-2017 Remi Collet
 # Copyright (c) 2006-2009 Christopher Stone
 #
 # License: MIT
@@ -16,7 +16,7 @@
 
 %global pecl_name   xdebug
 %global with_zts    0%{!?_without_zts:%{?__ztsphp:1}}
-%global gh_commit   150336d1fa29e311636c682db0c1550117762947
+%global gh_commit   48fc95c76a246d3fdc2c5410ee08bdce5f52f228
 %global gh_short    %(c=%{gh_commit}; echo ${c:0:7})
 #global gh_date     20161004
 %global with_tests  0%{?_with_tests:1}
@@ -31,7 +31,7 @@
 
 Name:           %{?scl_prefix}php-pecl-xdebug
 Summary:        PECL package for debugging PHP scripts
-Version:        2.5.0
+Version:        2.5.4
 %if 0%{?gh_date:1}
 Release:        0.5.%{gh_date}git%{gh_short}%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 %else
@@ -45,7 +45,6 @@ Group:          Development/Languages
 URL:            http://xdebug.org/
 Source0:        https://github.com/%{pecl_name}/%{pecl_name}/archive/%{gh_commit}/%{pecl_name}-%{version}%{?prever}-%{gh_short}.tar.gz
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  %{?scl_prefix}php-pear  > 1.9.1
 BuildRequires:  %{?scl_prefix}php-devel > 5.5
 BuildRequires:  libedit-devel
@@ -149,8 +148,17 @@ cd ..
 cp -pr NTS ZTS
 %endif
 
+cat << 'EOF' | tee %{ini_name}
+; Enable xdebug extension module
+zend_extension=%{pecl_name}.so
+
+EOF
+sed -e '1d' NTS/%{pecl_name}.ini >>%{ini_name}
+
 
 %build
+%{?dtsenable}
+
 cd NTS
 %{_bindir}/phpize
 %configure \
@@ -177,7 +185,7 @@ make %{?_smp_mflags}
 
 
 %install
-rm -rf %{buildroot}
+%{?dtsenable}
 
 # install NTS extension
 make -C NTS install INSTALL_ROOT=%{buildroot}
@@ -190,33 +198,13 @@ install -Dpm 755 NTS/debugclient/debugclient \
 install -Dpm 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
 
 # install config file
-install -d %{buildroot}%{php_inidir}
-cat << 'EOF' | tee %{buildroot}%{php_inidir}/%{ini_name}
-; Enable xdebug extension module
-%if "%{php_version}" > "5.5"
-zend_extension=%{pecl_name}.so
-%else
-zend_extension=%{php_extdir}/%{pecl_name}.so
-%endif
-
-; see http://xdebug.org/docs/all_settings
-EOF
+install -Dpm 644 %{ini_name} %{buildroot}%{php_inidir}/%{ini_name}
 
 %if %{with_zts}
 # Install ZTS extension
 make -C ZTS install INSTALL_ROOT=%{buildroot}
 
-install -d %{buildroot}%{php_ztsinidir}
-cat << 'EOF' | tee %{buildroot}%{php_ztsinidir}/%{ini_name}
-; Enable xdebug extension module
-%if "%{php_version}" > "5.5"
-zend_extension=%{pecl_name}.so
-%else
-zend_extension=%{php_ztsextdir}/%{pecl_name}.so
-%endif
-
-; see http://xdebug.org/docs/all_settings
-EOF
+install -Dpm 644 %{ini_name} %{buildroot}%{php_ztsinidir}/%{ini_name}
 %endif
 
 # Documentation
@@ -287,12 +275,7 @@ fi
 %endif
 
 
-%clean
-rm -rf %{buildroot}
-
-
 %files
-%defattr(-,root,root,-)
 %{?_licensedir:%license NTS/LICENSE}
 %doc %{pecl_docdir}/%{pecl_name}
 %{_bindir}/debugclient
@@ -308,6 +291,21 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon May 15 2017 Remi Collet <remi@remirepo.net> - 2.5.4-1
+- update to 2.5.4
+
+* Mon May  1 2017 Remi Collet <remi@remirepo.net> - 2.5.3-2
+- add upstream patch for https://bugs.xdebug.org/view.php?id=1424
+
+* Fri Apr 21 2017 Remi Collet <remi@remirepo.net> - 2.5.3-1
+- update to 2.5.3
+
+* Mon Feb 27 2017 Remi Collet <remi@fedoraproject.org> - 2.5.1-2
+- use uptream provided configuration with all settings
+
+* Sun Feb 26 2017 Remi Collet <remi@fedoraproject.org> - 2.5.1-1
+- Update to 2.5.1
+
 * Mon Dec  5 2016 Remi Collet <remi@fedoraproject.org> - 2.5.0-1
 - update to 2.5.0
 
