@@ -1,8 +1,9 @@
 %global __jar_repack 0
+%global debug_package %{nil}
 %global unifi_prefix /opt/UniFi
 
 Name: unifi-controller
-Version: 5.3.8
+Version: 5.4.16
 Release: 1%{?dist}
 Summary: UniFi wireless AP (UAP), routing (USG), and switching (USW) controller
 Group: System Environment/Daemons
@@ -83,6 +84,10 @@ fi
 
 
 %changelog
+* Tue Jun  6 2017 Matthias Saou <matthias@saou.eu> 5.4.16-1
+- Update to 5.4.16.
+- Disable (empty) debuginfo package creation.
+
 * Mon Jan  9 2017 Matthias Saou <matthias@saou.eu> 5.3.8-1
 - Update to 5.3.8.
 
