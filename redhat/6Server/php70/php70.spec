@@ -14,7 +14,7 @@
 %global pdover      20150127
 # Extension version
 %global fileinfover 1.0.5
-%global oci8ver     2.1.3
+%global oci8ver     2.1.4
 %global zipver      1.13.0
 %global jsonver     1.4.0
 
@@ -120,13 +120,13 @@
 %global db_devel  libdb-devel
 %endif
 
-#global rcver         RC1
-%global rpmrel        1
+%global upver        7.0.19
+#global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 7.0.18
-Release: %{?rcver:0.}%{rpmrel}%{?rcver:.%{rcver}}%{?dist}
+Version: %{upver}%{?rcver:~%{rcver}}
+Release: 1%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -136,7 +136,7 @@ License: PHP and Zend and BSD and MIT and ASL 1.0
 Group: Development/Languages
 URL: http://www.php.net/
 
-Source0: http://www.php.net/distributions/php-%{version}%{?rcver}.tar.xz
+Source0: http://www.php.net/distributions/php-%{upver}%{?rcver}.tar.xz
 Source1: php.conf
 Source2: php.ini
 Source3: macros.php
@@ -189,8 +189,6 @@ Patch300: php-7.0.10-datetests.patch
 Patch301: php-7.0.0-oldpcre.patch
 
 # WIP
-
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: bzip2-devel, curl-devel >= 7.9
 BuildRequires: httpd-devel >= 2.0.46-1, pam-devel
@@ -1002,7 +1000,7 @@ echo CIBLE = %{name}-%{version}-%{release} oci8=%{with_oci8} libzip=%{with_libzi
 # ensure than current httpd use prefork MPM.
 httpd -V  | grep -q 'threaded:.*yes' && exit 1
 
-%setup -q -n php-%{version}%{?rcver}
+%setup -q -n php-%{upver}%{?rcver}
 
 %patch5 -p1 -b .includedir
 %patch6 -p1 -b .embed
@@ -1084,8 +1082,8 @@ sed -e 's/64321/64322/' -i ext/openssl/tests/*.phpt
 
 # Safety check for API version change.
 pver=$(sed -n '/#define PHP_VERSION /{s/.* "//;s/".*$//;p}' main/php_version.h)
-if test "x${pver}" != "x%{version}%{?rcver}"; then
-   : Error: Upstream PHP version is now ${pver}, expecting %{version}%{?rcver}.
+if test "x${pver}" != "x%{upver}%{?rcver}"; then
+   : Error: Upstream PHP version is now ${pver}, expecting %{upver}%{?rcver}.
    : Update the version/rcver macros and rebuild.
    exit 1
 fi
@@ -1733,11 +1731,11 @@ EOF
 %endif
     fi
     cat > files.${mod} <<EOF
-%attr(755,root,root) %{_libdir}/php/modules/${mod}.so
-%config(noreplace) %attr(644,root,root) %{_sysconfdir}/php.d/${ini}
+%{_libdir}/php/modules/${mod}.so
+%config(noreplace) %{_sysconfdir}/php.d/${ini}
 %if %{with_zts}
-%attr(755,root,root) %{_libdir}/php-zts/modules/${mod}.so
-%config(noreplace) %attr(644,root,root) %{_sysconfdir}/php-zts.d/${ini}
+%{_libdir}/php-zts/modules/${mod}.so
+%config(noreplace) %{_sysconfdir}/php-zts.d/${ini}
 %endif
 EOF
 done
@@ -1785,7 +1783,7 @@ sed -e '/blacklist_filename/s/php.d/php-zts.d/' \
 sed -e "s/@PHP_APIVER@/%{apiver}%{isasuffix}/" \
     -e "s/@PHP_ZENDVER@/%{zendver}%{isasuffix}/" \
     -e "s/@PHP_PDOVER@/%{pdover}%{isasuffix}/" \
-    -e "s/@PHP_VERSION@/%{version}/" \
+    -e "s/@PHP_VERSION@/%{upver}/" \
 %if ! %{with_zts}
     -e "/zts/d" \
 %endif
@@ -1879,7 +1877,6 @@ fi
 %{!?_licensedir:%global license %%doc}
 
 %files
-%defattr(-,root,root)
 %{_httpd_moddir}/libphp7.so
 %if %{with_zts}
 %{_httpd_moddir}/libphp7-zts.so
@@ -1894,7 +1891,6 @@ fi
 %{_httpd_contentdir}/icons/php.gif
 
 %files common -f files.common
-%defattr(-,root,root)
 %doc CODING_STANDARDS CREDITS EXTENSIONS NEWS README*
 %license LICENSE TSRM_LICENSE
 %license libmagic_LICENSE
@@ -1920,7 +1916,6 @@ fi
 %dir %{_datadir}/php
 
 %files cli
-%defattr(-,root,root)
 %{_bindir}/php
 %{_bindir}/zts-php
 %{_bindir}/php-cgi
@@ -1938,7 +1933,6 @@ fi
 %doc sapi/cgi/README* sapi/cli/README
 
 %files dbg
-%defattr(-,root,root)
 %{_bindir}/phpdbg
 %{_mandir}/man1/phpdbg.1*
 %if %{with_zts}
@@ -1948,7 +1942,6 @@ fi
 %doc sapi/phpdbg/{README.md,CREDITS}
 
 %files fpm
-%defattr(-,root,root)
 %doc php-fpm.conf.default www.conf.default
 %license fpm_LICENSE
 %attr(0770,root,apache) %dir %{_localstatedir}/lib/php/session
@@ -1984,12 +1977,10 @@ fi
 
 %if %{with_lsws}
 %files litespeed
-%defattr(-,root,root)
 %{_bindir}/lsphp
 %endif
 
 %files devel
-%defattr(-,root,root)
 %{_bindir}/php-config
 %{_includedir}/php
 %{_libdir}/php/build
@@ -2004,7 +1995,6 @@ fi
 %{macrosdir}/macros.php
 
 %files embedded
-%defattr(-,root,root,-)
 %{_libdir}/libphp7.so
 %{_libdir}/libphp7-%{embed_version}.so
 
@@ -2020,7 +2010,6 @@ fi
 %license oniguruma_COPYING
 %license ucgendat_LICENSE
 %files gd -f files.gd
-%defattr(-,root,root,-)
 %if ! %{with_libgd}
 %license libgd_README
 %license libgd_COPYING
@@ -2054,6 +2043,16 @@ fi
 
 
 %changelog
+* Tue May  9 2017 Remi Collet <remi@fedoraproject.org> - 7.0.19-1
+- Update to 7.0.19 - http://www.php.net/releases/7_0_19.php
+
+* Thu Apr 27 2017 Remi Collet <remi@fedoraproject.org> - 7.0.19~RC1-2
+- new sources from new tag
+
+* Tue Apr 25 2017 Remi Collet <remi@fedoraproject.org> - 7.0.19~RC1-1
+- Update to 7.0.19RC1
+- oci8 version is now 2.1.4
+
 * Tue Apr 11 2017 Remi Collet <remi@fedoraproject.org> - 7.0.18-1
 - Update to 7.0.18 - http://www.php.net/releases/7_0_18.php
 
