@@ -120,7 +120,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.0.19
+%global upver        7.0.20
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -181,6 +181,7 @@ Patch91: php-5.6.3-oci8conf.patch
 # Upstream fixes (100+)
 
 # Security fixes (200+)
+Patch200: php-onigurama.patch
 
 # Fixes for tests (300+)
 # Factory is droped from system tzdata
@@ -1026,6 +1027,7 @@ httpd -V  | grep -q 'threaded:.*yes' && exit 1
 # upstream patches
 
 # security patches
+%patch200 -p1 -b .onig
 
 # Fixes for tests
 %if 0%{?fedora} >= 21 || 0%{?rhel} >= 5
@@ -2043,6 +2045,13 @@ fi
 
 
 %changelog
+* Tue Jun  6 2017 Remi Collet <remi@fedoraproject.org> - 7.0.20-1
+- Update to 7.0.20 - http://www.php.net/releases/7_0_20.php
+- add upstream security patches for oniguruma
+
+* Tue May 23 2017 Remi Collet <remi@fedoraproject.org> - 7.0.20~RC1-1
+- Update to 7.0.20RC1
+
 * Tue May  9 2017 Remi Collet <remi@fedoraproject.org> - 7.0.19-1
 - Update to 7.0.19 - http://www.php.net/releases/7_0_19.php
 
