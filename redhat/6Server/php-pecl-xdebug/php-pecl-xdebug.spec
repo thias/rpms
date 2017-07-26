@@ -16,7 +16,7 @@
 
 %global pecl_name   xdebug
 %global with_zts    0%{!?_without_zts:%{?__ztsphp:1}}
-%global gh_commit   48fc95c76a246d3fdc2c5410ee08bdce5f52f228
+%global gh_commit   36b4f952ca3196a2300a1ebac1716523dd84d19b
 %global gh_short    %(c=%{gh_commit}; echo ${c:0:7})
 #global gh_date     20161004
 %global with_tests  0%{?_with_tests:1}
@@ -31,7 +31,7 @@
 
 Name:           %{?scl_prefix}php-pecl-xdebug
 Summary:        PECL package for debugging PHP scripts
-Version:        2.5.4
+Version:        2.5.5
 %if 0%{?gh_date:1}
 Release:        0.5.%{gh_date}git%{gh_short}%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 %else
@@ -291,6 +291,9 @@ fi
 
 
 %changelog
+* Wed Jun 21 2017 Remi Collet <remi@remirepo.net> - 2.5.5-1
+- Update to 2.5.5
+
 * Mon May 15 2017 Remi Collet <remi@remirepo.net> - 2.5.4-1
 - update to 2.5.4
 
