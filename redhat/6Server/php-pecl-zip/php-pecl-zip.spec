@@ -24,8 +24,8 @@
 Summary:      A ZIP archive management extension
 Summary(fr):  Une extension de gestion des ZIP
 Name:         %{?scl_prefix}php-pecl-zip
-Version:      1.14.0
-Release:      1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Version:      1.15.1
+Release:      2%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 License:      PHP
 Group:        Development/Languages
 URL:          http://pecl.php.net/package/zip
@@ -68,6 +68,10 @@ Obsoletes:     php70w-pecl-%{pecl_name} <= %{version}
 %if "%{php_version}" > "7.1"
 Obsoletes:     php71u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php71w-pecl-%{pecl_name} <= %{version}
+%endif
+%if "%{php_version}" > "7.2"
+Obsoletes:     php72u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php72w-pecl-%{pecl_name} <= %{version}
 %endif
 %endif
 
@@ -173,8 +177,7 @@ done
 cd NTS
 : minimal load test of NTS extension
 %{_bindir}/php --no-php-ini \
-    --define extension_dir=modules \
-    --define extension=%{pecl_name}.so \
+    --define extension=%{buildroot}%{php_extdir}/%{pecl_name}.so \
     --modules | grep %{pecl_name}
 
 : upstream test suite for NTS extension
@@ -189,8 +192,7 @@ TEST_PHP_EXECUTABLE=%{_bindir}/php \
 cd ../ZTS
 : minimal load test of ZTS extension
 %{_bindir}/zts-php --no-php-ini \
-    --define extension_dir=modules \
-    --define extension=%{pecl_name}.so \
+    --define extension=%{buildroot}%{php_ztsextdir}/%{pecl_name}.so \
     --modules | grep %{pecl_name}
 
 : upstream test suite for ZTS extension
@@ -238,7 +240,19 @@ fi
 
 
 %changelog
-* Wed Apr  5 2017 Remi Collet <remi@remirepo.net> - 1.14.1-1
+* Tue Jul 18 2017 Remi Collet <remi@remirepo.net> - 1.15.1-2
+- rebuild for PHP 7.2.0beta1 new API
+
+* Tue Jul 11 2017 Remi Collet <remi@remirepo.net> - 1.15.1-1
+- update to 1.15.1 (stable)
+
+* Mon Jul 10 2017 Remi Collet <remi@remirepo.net> - 1.15.0-1
+- update to 1.15.0 (stable)
+
+* Wed Jun 21 2017 Remi Collet <remi@fedoraproject.org> - 1.14.0-2
+- rebuild for 7.2.0alpha2
+
+* Wed Apr  5 2017 Remi Collet <remi@remirepo.net> - 1.14.0-1
 - update to 1.14.0 (stable)
 - always buid with system libzip (bundled lib dropped upstream)
 
