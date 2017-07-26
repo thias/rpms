@@ -20,11 +20,11 @@
 %global metadir %{_localstatedir}/lib/pear
 
 %global getoptver 1.4.1
-%global arctarver 1.4.2
+%global arctarver 1.4.3
 # https://pear.php.net/bugs/bug.php?id=19367
 # Structures_Graph 1.0.4 - incorrect FSF address
 %global structver 1.1.1
-%global xmlutil   1.4.2
+%global xmlutil   1.4.3
 %global manpages  1.10.0
 
 # Tests are only run with rpmbuild --with tests
@@ -39,8 +39,8 @@
 
 Summary: PHP Extension and Application Repository framework
 Name: %{?scl_prefix}php-pear
-Version: 1.10.4
-Release: 1%{?dist}
+Version: 1.10.5
+Release: 2%{?dist}
 Epoch: 1
 # PEAR, PEAR_Manpages, Archive_Tar, XML_Util, Console_Getopt are BSD
 # Structures_Graph is LGPLv3+
@@ -188,17 +188,17 @@ export PHP_PEAR_INSTALL_DIR=%{peardir}
 export PHP_PEAR_CACHE_DIR=${PWD}%{_localstatedir}/cache/php-pear
 export PHP_PEAR_TEMP_DIR=/var/tmp
 
-install -d $RPM_BUILD_ROOT%{peardir} \
-           $RPM_BUILD_ROOT%{_localstatedir}/cache/php-pear \
-           $RPM_BUILD_ROOT%{_localstatedir}/www/html \
-           $RPM_BUILD_ROOT%{_localstatedir}/lib/pear/pkgxml \
+install -d %{buildroot}%{peardir} \
+           %{buildroot}%{_localstatedir}/cache/php-pear \
+           %{buildroot}%{_localstatedir}/www/html \
+           %{buildroot}%{_localstatedir}/lib/pear/pkgxml \
 %if 0%{?fedora} < 24
-           $RPM_BUILD_ROOT%{_docdir}/pecl \
-           $RPM_BUILD_ROOT%{_datadir}/tests/pecl \
+           %{buildroot}%{_docdir}/pecl \
+           %{buildroot}%{_datadir}/tests/pecl \
 %endif
-           $RPM_BUILD_ROOT%{_sysconfdir}/pear
+           %{buildroot}%{_sysconfdir}/pear
 
-export INSTALL_ROOT=$RPM_BUILD_ROOT
+export INSTALL_ROOT=%{buildroot}
 
 %{_bindir}/php --version
 
@@ -218,73 +218,73 @@ export INSTALL_ROOT=$RPM_BUILD_ROOT
                  %{SOURCE0} %{SOURCE21} %{SOURCE22} %{SOURCE23} %{SOURCE24} %{SOURCE25}
 
 # Replace /usr/bin/* with simple scripts:
-install -m 755 %{SOURCE10} $RPM_BUILD_ROOT%{_bindir}/pear
-install -m 755 %{SOURCE11} $RPM_BUILD_ROOT%{_bindir}/pecl
-install -m 755 %{SOURCE12} $RPM_BUILD_ROOT%{_bindir}/peardev
+install -m 755 %{SOURCE10} %{buildroot}%{_bindir}/pear
+install -m 755 %{SOURCE11} %{buildroot}%{_bindir}/pecl
+install -m 755 %{SOURCE12} %{buildroot}%{_bindir}/peardev
 # Fix path in SCL
 for exe in pear pecl peardev; do
     sed -e 's:/usr:%{_prefix}:' \
-        -i $RPM_BUILD_ROOT%{_bindir}/$exe
+        -i %{buildroot}%{_bindir}/$exe
 done
 
 # Sanitize the pear.conf
-%{_bindir}/php %{SOURCE3} $RPM_BUILD_ROOT%{_sysconfdir}/pear.conf %{_datadir}
+%{_bindir}/php %{SOURCE3} %{buildroot}%{_sysconfdir}/pear.conf %{_datadir}
 
 # Display configuration for debug
-%{_bindir}/php -r "print_r(unserialize(substr(file_get_contents('$RPM_BUILD_ROOT%{_sysconfdir}/pear.conf'),17)));"
+%{_bindir}/php -r "print_r(unserialize(substr(file_get_contents('%{buildroot}%{_sysconfdir}/pear.conf'),17)));"
 
 
 install -m 644 -D macros.pear \
-           $RPM_BUILD_ROOT%{macrosdir}/macros.%{?scl_prefix}pear
+           %{buildroot}%{macrosdir}/macros.%{?scl_prefix}pear
 
 # apply patches on installed PEAR tree
-pushd $RPM_BUILD_ROOT%{peardir} 
+pushd %{buildroot}%{peardir}
 : no patch \\o/
 popd
 
 # Why this file here ?
-rm -rf $RPM_BUILD_ROOT/.depdb* $RPM_BUILD_ROOT/.lock $RPM_BUILD_ROOT/.channels $RPM_BUILD_ROOT/.filemap
+rm -rf %{buildroot}/.depdb* $RPM_BUILD_ROOT/.lock $RPM_BUILD_ROOT/.channels $RPM_BUILD_ROOT/.filemap
 
 # Need for re-registrying XML_Util
-install -pm 644 *.xml $RPM_BUILD_ROOT%{_localstatedir}/lib/pear/pkgxml
+install -pm 644 *.xml %{buildroot}%{_localstatedir}/lib/pear/pkgxml
 
 # make the cli commands available in standard root for SCL build
 %if 0%{?scl:1}
-install -m 755 -d $RPM_BUILD_ROOT%{_root_bindir}
-ln -s %{_bindir}/pear      $RPM_BUILD_ROOT%{_root_bindir}/%{scl_prefix}pear
+install -m 755 -d %{buildroot}%{_root_bindir}
+ln -s %{_bindir}/pear      %{buildroot}%{_root_bindir}/%{scl_prefix}pear
 %endif
 
 
 %check
 # Check that no bogus paths are left in the configuration, or in
 # the generated registry files.
-grep $RPM_BUILD_ROOT $RPM_BUILD_ROOT%{_sysconfdir}/pear.conf && exit 1
-grep %{_libdir} $RPM_BUILD_ROOT%{_sysconfdir}/pear.conf && exit 1
-grep '"/tmp"' $RPM_BUILD_ROOT%{_sysconfdir}/pear.conf && exit 1
-grep /usr/local $RPM_BUILD_ROOT%{_sysconfdir}/pear.conf && exit 1
-grep -rl $RPM_BUILD_ROOT $RPM_BUILD_ROOT && exit 1
+grep %{buildroot} $RPM_BUILD_ROOT%{_sysconfdir}/pear.conf && exit 1
+grep %{_libdir} %{buildroot}%{_sysconfdir}/pear.conf && exit 1
+grep '"/tmp"' %{buildroot}%{_sysconfdir}/pear.conf && exit 1
+grep /usr/local %{buildroot}%{_sysconfdir}/pear.conf && exit 1
+grep -rl %{buildroot} $RPM_BUILD_ROOT && exit 1
 
 
 %if %{with_tests}
 cp /etc/php.ini .
-echo "include_path=.:$RPM_BUILD_ROOT%{peardir}:/usr/share/php" >>php.ini
+echo "include_path=.:%{buildroot}%{peardir}:/usr/share/php" >>php.ini
 export PHPRC=$PWD/php.ini
 LOG=$PWD/rpmlog
 ret=0
 
-cd $RPM_BUILD_ROOT%{_datadir}/tests/pear/Structures_Graph/tests
+cd %{buildroot}%{_datadir}/tests/pear/Structures_Graph/tests
 phpunit \
    AllTests || ret=1
 
-cd $RPM_BUILD_ROOT%{_datadir}/tests/pear/XML_Util/tests
+cd %{buildroot}%{_datadir}/tests/pear/XML_Util/tests
 %{_bindir}/php \
-   $RPM_BUILD_ROOT/usr/share/pear/pearcmd.php \
+   %{buildroot}/usr/share/pear/pearcmd.php \
    run-tests \
    | tee $LOG
 
-cd $RPM_BUILD_ROOT%{_datadir}/tests/pear/Console_Getopt/tests
+cd %{buildroot}%{_datadir}/tests/pear/Console_Getopt/tests
 %{_bindir}/php \
-   $RPM_BUILD_ROOT/usr/share/pear/pearcmd.php \
+   %{buildroot}/usr/share/pear/pearcmd.php \
    run-tests \
    | tee -a $LOG
 
@@ -418,6 +418,15 @@ fi
 
 
 %changelog
+* Thu Jun 29 2017 Remi Collet <remi@remirepo.net> - 1:1.10.5-2
+- update XML_Util to 1.4.3 (no change)
+
+* Tue Jun 27 2017 Remi Collet <remi@remirepo.net> - 1:1.10.5-1
+- Update to 1.10.5 (no change)
+
+* Mon Jun 12 2017 Remi Collet <remi@remirepo.net> 1:1.10.4-2
+- update Archive_Tar to 1.4.3
+
 * Thu Apr 27 2017 Remi Collet <remi@fedoraproject.org> 1:1.10.4-1
 - update PEAR to 1.10.4
 
