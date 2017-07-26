@@ -27,18 +27,18 @@
 # after 40-igbinary
 %global ini_name    50-%{pecl_name}.ini
 %endif
-#global prever      RC2
+%global upstream_version 3.1.3
+#global upstream_prever  RC2
 
 Summary:       Extension for communicating with the Redis key-value store
 Name:          %{?sub_prefix}php-pecl-redis
-Version:       3.1.2
-Release:       1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
-Source0:       http://pecl.php.net/get/%{pecl_name}-%{version}%{?prever}.tgz
+Version:       %{upstream_version}%{?upstream_prever:~%{upstream_prever}}
+Release:       2%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Source0:       http://pecl.php.net/get/%{pecl_name}-%{upstream_version}%{?upstream_prever}.tgz
 License:       PHP
 Group:         Development/Languages
 URL:           http://pecl.php.net/package/redis
 
-BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: %{?scl_prefix}php-devel
 BuildRequires: %{?scl_prefix}php-pear
 %if %{with_igbin}
@@ -88,6 +88,10 @@ Obsoletes:     php70w-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php71u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php71w-pecl-%{pecl_name} <= %{version}
 %endif
+%if "%{php_version}" > "7.2"
+Obsoletes:     php72u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php72w-pecl-%{pecl_name} <= %{version}
+%endif
 %endif
 
 %if 0%{?fedora} < 20 && 0%{?rhel} < 7
@@ -111,7 +115,7 @@ Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSIO
 %prep
 %setup -q -c
 # rename source folder
-mv %{pecl_name}-%{version}%{?prever} NTS
+mv %{pecl_name}-%{upstream_version}%{?upstream_prever} NTS
 
 # Don't install/register tests
 sed -e 's/role="test"/role="src"/' \
@@ -122,8 +126,8 @@ cd NTS
 
 # Sanity check, really often broken
 extver=$(sed -n '/#define PHP_REDIS_VERSION/{s/.* "//;s/".*$//;p}' php_redis.h)
-if test "x${extver}" != "x%{version}%{?gh_date:-dev}%{?prever}"; then
-   : Error: Upstream extension version is ${extver}, expecting %{version}%{?gh_date:-dev}%{?prever}.
+if test "x${extver}" != "x%{upstream_version}%{?upstream_prever}"; then
+   : Error: Upstream extension version is ${extver}, expecting %{upstream_version}%{?upstream_prever}.
    exit 1
 fi
 cd ..
@@ -190,7 +194,6 @@ make %{?_smp_mflags}
 
 
 %install
-rm -rf %{buildroot}
 %{?dtsenable}
 
 # Install the NTS stuff
@@ -288,12 +291,7 @@ fi
 %endif
 
 
-%clean
-rm -rf %{buildroot}
-
-
 %files
-%defattr(-,root,root,-)
 %{?_licensedir:%license NTS/COPYING}
 %doc %{pecl_docdir}/%{pecl_name}
 %{pecl_xmldir}/%{name}.xml
@@ -308,6 +306,21 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Jul 18 2017 Remi Collet <remi@remirepo.net> - 3.1.3-2
+- rebuild for PHP 7.2.0beta1 new API
+
+* Mon Jul 17 2017 Remi Collet <remi@remirepo.net> - 3.1.3-1
+- update to 3.1.3 (stable)
+
+* Tue Jun 27 2017 Remi Collet <remi@remirepo.net> - 3.1.3~RC2-1
+- update to 3.1.3RC2 (beta)
+
+* Wed Jun 21 2017 Remi Collet <remi@remirepo.net> - 3.1.3~RC1-2
+- rebuild for 7.2.0alpha2
+
+* Thu Jun  1 2017 Remi Collet <remi@remirepo.net> - 3.1.3~RC1-1
+- update to 3.1.3RC1 (beta)
+
 * Sat Mar 25 2017 Remi Collet <remi@remirepo.net> - 3.1.2-1
 - Update to 3.1.2 (stable)
 
