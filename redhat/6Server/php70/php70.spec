@@ -14,7 +14,7 @@
 %global pdover      20150127
 # Extension version
 %global fileinfover 1.0.5
-%global oci8ver     2.1.5
+%global oci8ver     2.1.6
 %global zipver      1.13.0
 %global jsonver     1.4.0
 
@@ -120,13 +120,13 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.0.21
+%global upver        7.0.22
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{rcver}}
-Release: 1%{?dist}
+Release: 2%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -162,6 +162,7 @@ Patch6: php-5.6.3-embed.patch
 Patch7: php-5.3.0-recode.patch
 Patch8: php-7.0.2-libdb.patch
 Patch9: php-7.0.7-curl.patch
+Patch10: php-sqlite3.patch
 
 # Functional changes
 Patch40: php-7.0.17-dlopen.patch
@@ -1009,6 +1010,7 @@ httpd -V  | grep -q 'threaded:.*yes' && exit 1
 %if 0%{?rhel}
 %patch9 -p1 -b .curltls
 %endif
+%patch10 -p1 -b .errstr
 
 %patch40 -p1 -b .dlopen
 %if 0%{?fedora} >= 24 || 0%{?rhel} >= 5
@@ -2043,6 +2045,16 @@ fi
 
 
 %changelog
+* Wed Aug  2 2017 Remi Collet <remi@fedoraproject.org> - 7.0.22-2
+- add patch for EL-6, fix undefined symbol: sqlite3_errstr
+
+* Wed Aug  2 2017 Remi Collet <remi@fedoraproject.org> - 7.0.22-1
+- Update to 7.0.22 - http://www.php.net/releases/7_0_22.php
+
+* Tue Jul 18 2017 Remi Collet <remi@fedoraproject.org> - 7.0.22~RC1-1
+- Update to 7.0.22RC1
+- oci8 version is now 2.1.6
+
 * Tue Jul  4 2017 Remi Collet <remi@fedoraproject.org> - 7.0.21-1
 - Update to 7.0.21 - http://www.php.net/releases/7_0_21.php
 
