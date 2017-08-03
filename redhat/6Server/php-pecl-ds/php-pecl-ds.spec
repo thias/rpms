@@ -29,8 +29,8 @@
 
 Summary:        Data Structures for PHP
 Name:           %{?sub_prefix}php-pecl-%{pecl_name}
-Version:        1.1.10
-Release:        2%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Version:        1.2.1
+Release:        1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 License:        MIT
 Group:          Development/Languages
 URL:            http://pecl.php.net/package/%{pecl_name}
@@ -233,6 +233,12 @@ cd ..
 
 
 %changelog
+* Thu Aug  3 2017 Remi Collet <remi@remirepo.net> - 1.2.1-1
+- Update to 1.2.1
+
+* Tue Aug  1 2017 Remi Collet <remi@remirepo.net> - 1.2.0-1
+- Update to 1.2.0
+
 * Tue Jul 18 2017 Remi Collet <remi@remirepo.net> - 1.1.10-2
 - rebuild for PHP 7.2.0beta1 new API
 
