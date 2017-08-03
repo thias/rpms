@@ -23,7 +23,7 @@
 %{!?runselftest: %global runselftest 1}
 
 Name:           memcached
-Version:        1.4.36
+Version:        1.4.39
 Release:        1%{?dist}
 Epoch:          0
 Summary:        High Performance, Distributed Memory Object Cache
@@ -41,12 +41,7 @@ Source3:        memcached.service
 
 Patch1:         memcached-unit.patch
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-%if "%{?vendor}" == "Remi Collet"
-BuildRequires:  libevent-devel > 2
-%else
-BuildRequires:  libevent-devel
-%endif
+BuildRequires:  pkgconfig(libevent) >= 2
 %if 0%{?fedora} > 22
 BuildRequires:  perl-generators
 %endif
@@ -108,18 +103,13 @@ sed -i 's/-Werror / /' Makefile
 make %{?_smp_mflags}
 
 
-%check
 %if %runselftest
-%if 0%{?rhel} == 5
-rm t/chunked-items.t
-%endif
-
+%check
 make test
 %endif
 
 
 %install
-rm -rf %{buildroot}
 make install DESTDIR=%{buildroot} INSTALL="%{__install} -p"
 # remove memcached-debug
 rm -f %{buildroot}/%{_bindir}/memcached-debug
@@ -162,10 +152,6 @@ touch -r %{SOURCE1} %{buildroot}/%{_sysconfdir}/sysconfig/%{name}
 %else
 install -Dp -m0644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/sysconfig/%{name}
 %endif
-
-
-%clean
-rm -rf %{buildroot}
 
 
 %pre
@@ -230,7 +216,6 @@ fi
 
 
 %files
-%defattr(-,root,root,-)
 %{!?_licensedir:%global license %%doc}
 %license COPYING
 %doc AUTHORS ChangeLog NEWS README.md doc/CONTRIBUTORS doc/*.txt
@@ -248,11 +233,20 @@ fi
 
 
 %files devel
-%defattr(-,root,root,-)
 %{_includedir}/memcached/*
 
 
 %changelog
+* Wed Jul  5 2017 Remi Collet <remi@remirepo.net> - 0:1.4.39-1
+- Update to 1.4.39 (security)
+
+* Mon Jun 26 2017 Remi Collet <remi@remirepo.net> - 0:1.4.38-1
+- Update to 1.4.38
+
+* Tue Jun  6 2017 Remi Collet <remi@remirepo.net> - 0:1.4.37-1
+- Update to 1.4.37
+- ensure we use libevent2 on EL-6
+
 * Wed Mar 22 2017 Remi Collet <remi@remirepo.net> - 0:1.4.36-1
 - Update to 1.4.36
 
