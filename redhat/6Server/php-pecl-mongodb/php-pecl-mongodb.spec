@@ -32,6 +32,7 @@
 %global with_tests   0%{?_with_tests:1}
 %endif
 
+%global libver  1.5.5
 %if 0%{?fedora} >= 26
 %global with_syslib 1
 %else
@@ -40,7 +41,7 @@
 
 Summary:        MongoDB driver for PHP
 Name:           %{?sub_prefix}php-pecl-%{pecl_name}
-Version:        1.2.9
+Version:        1.2.10
 Release:        1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 License:        ASL 2.0
 Group:          Development/Languages
@@ -53,12 +54,14 @@ BuildRequires:  %{?scl_prefix}php-json
 BuildRequires:  cyrus-sasl-devel
 BuildRequires:  openssl-devel
 %if %{with_syslib}
-BuildRequires:  pkgconfig(libbson-1.0)    >= 1.6
-BuildRequires:  pkgconfig(libmongoc-1.0)  >= 1.6
+BuildRequires:  pkgconfig(libbson-1.0)    >= %{libver}
+BuildRequires:  pkgconfig(libmongoc-1.0)  >= %{libver}
 %else
-Provides:       bundled(libbson) = 1.6.1
-Provides:       bundled(mongo-c-driver) = 1.6.1
+Provides:       bundled(libbson) = %{libver}
+Provides:       bundled(mongo-c-driver) = %{libver}
 %endif
+BuildRequires:  snappy-devel
+BuildRequires:  zlib-devel
 %if %{with_tests}
 BuildRequires:  mongodb-server
 %endif
@@ -331,6 +334,18 @@ exit $ret
 
 
 %changelog
+* Thu Sep  7 2017 Remi Collet <remi@remirepo.net> - 1.2.10-1
+- Update to 1.2.10
+
+* Tue Jul 18 2017 Remi Collet <remi@remirepo.net> - 1.2.9-4
+- rebuild for PHP 7.2.0beta1 new API
+
+* Wed Jun 21 2017 Remi Collet <remi@remirepo.net> - 1.2.9-3
+- rebuild for 7.2.0alpha2
+
+* Tue May 30 2017 Remi Collet <remi@remirepo.net> - 1.2.9-2
+- rebuild (for 7.2)
+
 * Thu May  4 2017 Remi Collet <remi@remirepo.net> - 1.2.9-1
 - Update to 1.2.9
 
