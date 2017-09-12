@@ -14,7 +14,7 @@
 %global pdover      20150127
 # Extension version
 %global fileinfover 1.0.5
-%global oci8ver     2.1.6
+%global oci8ver     2.1.7
 %global zipver      1.13.0
 %global jsonver     1.4.0
 
@@ -52,11 +52,7 @@
 %global with_libpcre  0
 %endif
 
-%if 0%{?fedora} >= 11 || 0%{?rhel} >= 6
 %global with_sqlite3  1
-%else
-%global with_sqlite3  0
-%endif
 
 # Build ZTS extension or only NTS
 %global with_zts      1
@@ -100,17 +96,8 @@
 %global with_nginx     0
 %endif
 
-%if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
-%global with_dtrace 1
-%else
-%global with_dtrace 0
-%endif
-%if 0%{?fedora} < 14 && 0%{?rhel} < 5
-%global with_libgd   0
-%else
+%global with_dtrace  1
 %global with_libgd   1
-%endif
-
 %global with_libzip  1
 %global with_zip     0
 
@@ -120,7 +107,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.0.22
+%global upver        7.0.23
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -162,7 +149,6 @@ Patch6: php-5.6.3-embed.patch
 Patch7: php-5.3.0-recode.patch
 Patch8: php-7.0.2-libdb.patch
 Patch9: php-7.0.7-curl.patch
-Patch10: php-sqlite3.patch
 
 # Functional changes
 Patch40: php-7.0.17-dlopen.patch
@@ -180,6 +166,7 @@ Patch47: php-5.6.3-phpinfo.patch
 Patch91: php-5.6.3-oci8conf.patch
 
 # Upstream fixes (100+)
+Patch100: php-upstream.patch
 
 # Security fixes (200+)
 
@@ -1010,10 +997,9 @@ httpd -V  | grep -q 'threaded:.*yes' && exit 1
 %if 0%{?rhel}
 %patch9 -p1 -b .curltls
 %endif
-%patch10 -p1 -b .errstr
 
 %patch40 -p1 -b .dlopen
-%if 0%{?fedora} >= 24 || 0%{?rhel} >= 5
+%if 0%{?fedora} >= 25 || 0%{?rhel} >= 6
 %patch42 -p1 -b .systzdata
 %endif
 %patch43 -p1 -b .headers
@@ -1026,6 +1012,7 @@ httpd -V  | grep -q 'threaded:.*yes' && exit 1
 %patch91 -p1 -b .remi-oci8
 
 # upstream patches
+%patch100 -p1 -b .up
 
 # security patches
 
@@ -1254,7 +1241,7 @@ ln -sf ../configure
     --with-layout=GNU \
     --with-kerberos \
     --with-libxml-dir=%{_prefix} \
-%if 0%{?fedora} >= 24 || 0%{?rhel} >= 5
+%if 0%{?fedora} >= 25 || 0%{?rhel} >= 6
     --with-system-tzdata \
 %endif
     --with-mhash \
@@ -1808,7 +1795,7 @@ rm -f README.{Zeus,QNX,CVS-RULES}
 
 
 %pre common
-%if %{?fedora}%{!?fedora:99} < 24
+%if %{?fedora}%{!?fedora:99} < 25
 echo -e "WARNING : Fedora %{fedora} is now EOL :"
 echo -e "You should consider upgrading to a supported release.\n"
 %endif
@@ -2045,6 +2032,16 @@ fi
 
 
 %changelog
+* Thu Aug 31 2017 Remi Collet <remi@fedoraproject.org> - 7.0.23-2
+- add patch for EL-6, fix undefined symbol: sqlite3_errstr
+
+* Tue Aug 29 2017 Remi Collet <remi@fedoraproject.org> - 7.0.23-1
+- Update to 7.0.23 - http://www.php.net/releases/7_0_23.php
+
+* Tue Aug 15 2017 Remi Collet <remi@fedoraproject.org> - 7.0.23~RC1-1
+- Update to 7.0.23RC1
+- oci8 version is now 2.1.7
+
 * Wed Aug  2 2017 Remi Collet <remi@fedoraproject.org> - 7.0.22-2
 - add patch for EL-6, fix undefined symbol: sqlite3_errstr
 
