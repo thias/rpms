@@ -7,21 +7,24 @@
 # Please, preserve the changelog entries
 #
 %global libname      librdkafka
-%global gh_commit    0d540ab4e78a3e3661fe07ee328e2f61fb77f2c3
+%global gh_commit    2df048ba8118cba73d0551564b7a15eeb65cd5b8
 %global gh_short     %(c=%{gh_commit}; echo ${c:0:7})
 %global gh_owner     edenhill
 %global gh_project   %{libname}
 
+%global upstream_version 0.11.0
+#global upstream_prever  RC2
+
 Name:    %{libname}
-Version: 0.9.5
+Version: %{upstream_version}%{?upstream_prever:~%{upstream_prever}}
 Release: 1%{?dist}
 Group:   System Environment/Libraries
 Summary: Apache Kafka C/C++ client library
 
-# librdkafka is BSD-2, pycrc is MIT, snappy is BSD-3
+# librdkafka is BSD-2, pycrc is MIT, snappy/crc32 are BSD-3
 License: BSD and MIT
 URL:     https://github.com/%{gh_owner}/%{gh_project}
-Source0: https://github.com/%{gh_owner}/%{gh_project}/archive/%{gh_commit}/%{gh_project}-%{version}%{?prever}-%{gh_short}.tar.gz
+Source0: https://github.com/%{gh_owner}/%{gh_project}/archive/%{gh_commit}/%{gh_project}-%{upstream_version}%{?upstream_prever}-%{gh_short}.tar.gz
 
 BuildRequires:  openssl-devel
 BuildRequires:  cyrus-sasl-devel
@@ -53,6 +56,7 @@ developing applications that use %{name}.
 
 %prep
 %setup -qn %{gh_project}-%{gh_commit}
+# no backup to avoid old version inclusion
 
 mkdir rpmdocs
 cp -pr examples rpmdocs/examples
@@ -94,6 +98,18 @@ rm %{buildroot}%{_libdir}/*.a
 
 
 %changelog
+* Tue Aug  1 2017 Remi Collet <remi@remirepo.net> - 0.11.0-1
+- update to 0.11.0
+
+* Thu Jun 29 2017 Remi Collet <remi@remirepo.net> - 0.11.0~RC2-1
+- update to 0.11.0-RC2
+
+* Thu Jun 29 2017 Remi Collet <remi@remirepo.net> - 0.11.0~RC1-1
+- update to 0.11.0-RC1
+- open https://github.com/edenhill/librdkafka/issues/1290
+  broken build on 32-bit architecture
+- add upstream for i686 build
+
 * Fri Apr 21 2017 Remi Collet <remi@remirepo.net> - 0.9.5-1
 - update to 0.9.5 (no change since RC2)
 
