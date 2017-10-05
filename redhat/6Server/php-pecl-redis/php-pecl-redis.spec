@@ -27,13 +27,13 @@
 # after 40-igbinary
 %global ini_name    50-%{pecl_name}.ini
 %endif
-%global upstream_version 3.1.3
-#global upstream_prever  RC2
+%global upstream_version 3.1.4
+#global upstream_prever  RC3
 
 Summary:       Extension for communicating with the Redis key-value store
 Name:          %{?sub_prefix}php-pecl-redis
 Version:       %{upstream_version}%{?upstream_prever:~%{upstream_prever}}
-Release:       2%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Release:       1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 Source0:       http://pecl.php.net/get/%{pecl_name}-%{upstream_version}%{?upstream_prever}.tgz
 License:       PHP
 Group:         Development/Languages
@@ -56,7 +56,7 @@ Requires:      %{?sub_prefix}php-pecl(igbinary)%{?_isa}
 %endif
 %{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
 
-Obsoletes:     %{?scl_prefix}php-%{pecl_name}               < %{version}
+Obsoletes:     %{?scl_prefix}php-%{pecl_name}               < 3
 Provides:      %{?scl_prefix}php-%{pecl_name}               = %{version}
 Provides:      %{?scl_prefix}php-%{pecl_name}%{?_isa}       = %{version}
 Provides:      %{?scl_prefix}php-pecl(%{pecl_name})         = %{version}
@@ -306,6 +306,20 @@ fi
 
 
 %changelog
+* Wed Sep 27 2017 Remi Collet <remi@remirepo.net> - 3.1.4-1
+- update to 3.1.4 (stable)
+
+* Wed Sep 13 2017 Remi Collet <remi@remirepo.net> - 3.1.4~RC3-1
+- update to 3.1.4RC3 (beta)
+
+* Wed Sep 13 2017 Remi Collet <remi@remirepo.net> - 3.1.4~RC2-1
+- update to 3.1.4RC2 (beta)
+- open https://github.com/phpredis/phpredis/issues/1236
+  unwanted noise (warning) not even using the extension
+
+* Mon Sep  4 2017 Remi Collet <remi@remirepo.net> - 3.1.4~RC1-1
+- update to 3.1.4RC1 (beta)
+
 * Tue Jul 18 2017 Remi Collet <remi@remirepo.net> - 3.1.3-2
 - rebuild for PHP 7.2.0beta1 new API
 
