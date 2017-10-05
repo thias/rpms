@@ -107,13 +107,13 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.0.23
+%global upver        7.0.24
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{rcver}}
-Release: 2%{?dist}
+Release: 1%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -166,7 +166,6 @@ Patch47: php-5.6.3-phpinfo.patch
 Patch91: php-5.6.3-oci8conf.patch
 
 # Upstream fixes (100+)
-Patch100: php-upstream.patch
 
 # Security fixes (200+)
 
@@ -1012,7 +1011,6 @@ httpd -V  | grep -q 'threaded:.*yes' && exit 1
 %patch91 -p1 -b .remi-oci8
 
 # upstream patches
-%patch100 -p1 -b .up
 
 # security patches
 
@@ -2032,6 +2030,15 @@ fi
 
 
 %changelog
+* Tue Sep 26 2017 Remi Collet <remi@remirepo.net> - 7.0.24-1
+- Update to 7.0.24 - http://www.php.net/releases/7_0_24.php
+
+* Thu Sep 14 2017 Remi Collet <remi@remirepo.net> - 7.0.24~RC1-2
+- update builder from RHEL 7.3 to RHEL 7.4
+
+* Tue Sep 12 2017 Remi Collet <remi@fedoraproject.org> - 7.0.24~RC1-1
+- Update to 7.0.24RC1
+
 * Thu Aug 31 2017 Remi Collet <remi@fedoraproject.org> - 7.0.23-2
 - add patch for EL-6, fix undefined symbol: sqlite3_errstr
 
