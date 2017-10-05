@@ -21,7 +21,7 @@
 %global ini_name     40-%{pecl_name}.ini
 
 # For test suite, see https://github.com/php-ds/tests/commits/master
-%global gh_commit    419dcb9984a5158969233dfe6bc1525bcf2f83b1
+%global gh_commit    6c2da5d3789b7d0251007eb94e097de9601627d2
 %global gh_short     %(c=%{gh_commit}; echo ${c:0:7})
 %global gh_owner     php-ds
 %global gh_project   tests
@@ -29,8 +29,8 @@
 
 Summary:        Data Structures for PHP
 Name:           %{?sub_prefix}php-pecl-%{pecl_name}
-Version:        1.2.1
-Release:        1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Version:        1.2.3
+Release:        2%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 License:        MIT
 Group:          Development/Languages
 URL:            http://pecl.php.net/package/%{pecl_name}
@@ -233,6 +233,16 @@ cd ..
 
 
 %changelog
+* Wed Aug 16 2017 Remi Collet <remi@remirepo.net> - 1.2.3-2
+- Update to 1.2.3
+- drop patch merged upstream
+
+* Wed Aug  9 2017 Remi Collet <remi@remirepo.net> - 1.2.2-2
+- add patch for bigendian
+
+* Mon Aug  7 2017 Remi Collet <remi@remirepo.net> - 1.2.2-1
+- Update to 1.2.2
+
 * Thu Aug  3 2017 Remi Collet <remi@remirepo.net> - 1.2.1-1
 - Update to 1.2.1
 
