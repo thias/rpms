@@ -23,7 +23,7 @@
 %global with_tests   %{?_with_tests:1}%{!?_with_tests:0}
 
 Name:           memcached
-Version:        1.5.0
+Version:        1.5.2
 Release:        1%{?dist}
 Epoch:          0
 Summary:        High Performance, Distributed Memory Object Cache
@@ -239,6 +239,12 @@ fi
 
 
 %changelog
+* Mon Oct  2 2017 Remi Collet <remi@remirepo.net> - 0:1.5.2-1
+- Update to 1.5.2
+
+* Fri Aug 25 2017 Remi Collet <remi@remirepo.net> - 0:1.5.1-1
+- Update to 1.5.1
+
 * Tue Aug  1 2017 Remi Collet <remi@remirepo.net> - 0:1.5.0-1
 - Update to 1.5.0
 - skip test suite which is unreliable on build system (see fedora)
