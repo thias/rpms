@@ -7,13 +7,13 @@
 # Please, preserve the changelog entries
 #
 %global libname      librdkafka
-%global gh_commit    2df048ba8118cba73d0551564b7a15eeb65cd5b8
+%global gh_commit    261371dc0edef4cea9e58a076c8e8aa7dc50d452
 %global gh_short     %(c=%{gh_commit}; echo ${c:0:7})
 %global gh_owner     edenhill
 %global gh_project   %{libname}
 
-%global upstream_version 0.11.0
-#global upstream_prever  RC2
+%global upstream_version 0.11.1
+#global upstream_prever  RC1
 
 Name:    %{libname}
 Version: %{upstream_version}%{?upstream_prever:~%{upstream_prever}}
@@ -98,6 +98,12 @@ rm %{buildroot}%{_libdir}/*.a
 
 
 %changelog
+* Wed Oct 18 2017 Remi Collet <remi@remirepo.net> - 0.11.1-1
+- update to 0.11.1
+
+* Thu Oct  5 2017 Remi Collet <remi@remirepo.net> - 0.11.1~RC1-1
+- update to 0.11.1-RC1
+
 * Tue Aug  1 2017 Remi Collet <remi@remirepo.net> - 0.11.0-1
 - update to 0.11.0
 
