@@ -4,7 +4,7 @@
 #
 
 # This gets the version string from the .spec file, so change it there first
-VERSION="$(grep "^%define ghscommit" safebrowsing.spec | awk '{print $3}')"
+VERSION="$(grep "^%global ghscommit" safebrowsing.spec | awk '{print $3}')"
 
 rm -rf safebrowsing-*
 
@@ -26,6 +26,7 @@ export GOPATH="${PWD}"
 go get github.com/golang/protobuf
 go get github.com/rakyll/statik
 go get golang.org/x/net
+go get golang.org/x/text/unicode/norm
 
 find . -type d -name .git | xargs rm -rf
 rm -rf pkg

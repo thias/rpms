@@ -1,10 +1,10 @@
-%global ghlcommit c2df0f33af31470035c6adf857e60670d582374c
-%global ghscommit c2df0f3
+%global ghlcommit ce39ae7e50e719c4518fcac8a81032c2f43046aa
+%global ghscommit ce39ae7
 %global daemon_name sbserver
 
 Name:		safebrowsing
 Version:	0
-Release:	1.%{ghscommit}%{?dist}
+Release:	3.%{ghscommit}%{?dist}
 Summary:	Google Safe Browsing Proxy Server and CLI Lookup
 
 Group:		Applications/Internet
@@ -78,10 +78,16 @@ getent passwd %{daemon_name} >/dev/null || \
 %config(noreplace) %attr(0640,root,%{daemon_name}) %{_sysconfdir}/sysconfig/%{daemon_name}
 %{_bindir}/sbserver
 %{_bindir}/sblookup
-%attr(0770,root,%{daemon_name}) /var/lib/%{daemon_name}
+%attr(0775,root,%{daemon_name}) /var/lib/%{daemon_name}
 
 
 %changelog
+* Tue Oct 24 2017 Matthias Saou <matthias@saou.eu> 0-3.ce39ae7
+- Relax permissions of the data directory, nothing critical there.
+
+* Mon Nov  7 2016 Matthias Saou <matthias@saou.eu> 0-2.20160823
+- Relax permissions of the data directory, nothing critical there.
+
 * Tue Oct  4 2016 Matthias Saou <matthias@saou.eu> 0-1.20160823
 - Initial RPM release.
 
