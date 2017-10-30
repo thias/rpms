@@ -14,7 +14,7 @@
 %global pdover      20150127
 # Extension version
 %global fileinfover 1.0.5
-%global oci8ver     2.1.7
+%global oci8ver     2.1.8
 %global zipver      1.13.0
 %global jsonver     1.4.0
 
@@ -107,7 +107,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.0.24
+%global upver        7.0.25
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -2030,6 +2030,13 @@ fi
 
 
 %changelog
+* Tue Oct 24 2017 Remi Collet <remi@remirepo.net> - 7.0.25-1
+- Update to 7.0.25 - http://www.php.net/releases/7_0_25.php
+
+* Tue Oct 10 2017 Remi Collet <remi@remirepo.net> - 7.0.25~RC1-1
+- Update to 7.0.25RC1
+- oci8 version is now 2.1.8
+
 * Tue Sep 26 2017 Remi Collet <remi@remirepo.net> - 7.0.24-1
 - Update to 7.0.24 - http://www.php.net/releases/7_0_24.php
 
