@@ -31,7 +31,7 @@
 %ifarch ppc ppc64
 %global oraclever 10.2.0.2
 %else
-%global oraclever 12.1
+%global oraclever 12.2
 %endif
 
 # Build for LiteSpeed Web Server (LSAPI)
@@ -148,7 +148,7 @@
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 5.6.30
+Version: 5.6.32
 %if 0%{?rcver:1}
 Release: 0.%{rpmrel}.%{rcver}%{?dist}
 %else
@@ -157,7 +157,9 @@ Release: %{rpmrel}%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
-License: PHP and Zend and BSD
+# main/snprintf.c, main/spprintf.c and main/rfc1867.c are ASL 1.0
+# ext/date/lib is MIT
+License: PHP and Zend and BSD and MIT and ASL 1.0
 Group: Development/Languages
 URL: http://www.php.net/
 
@@ -193,6 +195,7 @@ Patch9: php-5.5.30-curl.patch
 
 # Functional changes
 Patch40: php-5.4.0-dlopen.patch
+Patch41: php-5.6.30-dtrace.patch
 Patch42: php-5.6.13-systzdata-v12.patch
 # See http://bugs.php.net/53436
 Patch43: php-5.4.0-phpize.patch
@@ -207,14 +210,14 @@ Patch47: php-5.6.3-phpinfo.patch
 Patch91: php-5.6.3-oci8conf.patch
 
 # Upstream fixes (100+)
-Patch100: php-upstream.patch
+Patch100: php-5.6.31-oci.patch
 
 # Security fixes (200+)
 
 # Fixes for tests (300+)
 # Factory is droped from system tzdata
 # Relax some tests with erratic results with system tzdata
-Patch300: php-5.6.24-datetests.patch
+Patch300: php-5.6.30-datetests.patch
 # Revert changes for pcre < 8.34
 Patch301: php-5.6.0-oldpcre.patch
 
@@ -322,10 +325,6 @@ The php-dbg package contains the interactive PHP debugger.
 %package fpm
 Group: Development/Languages
 Summary: PHP FastCGI Process Manager
-# All files licensed under PHP version 3.01, except
-# Zend is licensed under Zend
-# TSRM and fpm are licensed under BSD
-License: PHP and Zend and BSD
 BuildRequires: libacl-devel
 Requires: php-common%{?_isa} = %{version}-%{release}
 Requires(pre): /usr/sbin/useradd
@@ -385,8 +384,7 @@ Summary: Common files for PHP
 # All files licensed under PHP version 3.01, except
 # fileinfo is licensed under PHP version 3.0
 # regex, libmagic are licensed under BSD
-# main/snprintf.c, main/spprintf.c and main/rfc1867.c are ASL 1.0
-License: PHP and BSD and ASL 1.0
+License: PHP and BSD
 # ABI/API check - Arch specific
 Provides: php(api) = %{apiver}%{isasuffix}
 Provides: php(zend-abi) = %{zendver}%{isasuffix}
@@ -957,6 +955,7 @@ httpd -V  | grep -q 'threaded:.*yes' && exit 1
 %endif
 
 %patch40 -p1 -b .dlopen
+%patch41 -p1 -b .dtrace
 %if 0%{?fedora} >= 24 || 0%{?rhel} >= 5
 %patch42 -p1 -b .systzdata
 %endif
@@ -970,7 +969,7 @@ httpd -V  | grep -q 'threaded:.*yes' && exit 1
 %patch91 -p1 -b .remi-oci8
 
 # upstream patches
-%patch100 -p1 -b .upstream
+%patch100 -p1 -b .pdo_oci
 
 # security patches
 
@@ -1000,6 +999,7 @@ cp ext/mbstring/ucgendat/OPENLDAP_LICENSE ucgendat_LICENSE
 cp ext/fileinfo/libmagic/LICENSE libmagic_LICENSE
 cp ext/phar/LICENSE phar_LICENSE
 cp ext/bcmath/libbcmath/COPYING.LIB libbcmath_COPYING
+cp ext/date/lib/LICENSE.rst timelib_LICENSE
 
 # Multiple builds for multiple SAPIs
 mkdir build-cgi build-apache build-embedded \
@@ -1849,9 +1849,10 @@ fi
 %files common -f files.common
 %defattr(-,root,root)
 %doc CODING_STANDARDS CREDITS EXTENSIONS NEWS README*
-%license LICENSE Zend/ZEND_* TSRM_LICENSE regex_COPYRIGHT
+%license LICENSE TSRM_LICENSE regex_COPYRIGHT
 %license libmagic_LICENSE
 %license phar_LICENSE
+%license timelib_LICENSE
 %doc php.ini-*
 %config(noreplace) %{_sysconfdir}/php.ini
 %dir %{_sysconfdir}/php.d
@@ -1999,6 +2000,20 @@ fi
 
 
 %changelog
+* Wed Oct 25 2017 Remi Collet <remi@fedoraproject.org> 5.6.32-1
+- Update to 5.6.32 - http://www.php.net/releases/5_6_32.php
+
+* Thu Jul  6 2017 Remi Collet <remi@fedoraproject.org> 5.6.31-1
+- Update to 5.6.31 - http://www.php.net/releases/5_6_31.php
+- use oracle instant client version 12.2
+
+* Tue Mar 21 2017 Remi Collet <remi@remirepo.net> - 5.6.30-3
+- add patch for tests with tzdata 2017.1
+
+* Fri Jan 20 2017 Remi Collet <remi@fedoraproject.org> 5.6.30-2
+- disable dtrace by default, this may be enabled again using
+  environment variable USE_ZEND_DTRACE=1, backported from PHP 7
+
 * Thu Jan 19 2017 Remi Collet <remi@fedoraproject.org> 5.6.30-1
 - Update to 5.6.30 - http://www.php.net/releases/5_6_30.php
 
