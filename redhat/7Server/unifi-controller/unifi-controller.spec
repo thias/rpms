@@ -3,7 +3,7 @@
 %global unifi_prefix /opt/UniFi
 
 Name: unifi-controller
-Version: 5.6.19
+Version: 5.6.20
 Release: 1%{?dist}
 Summary: UniFi wireless AP (UAP), routing (USG), and switching (USW) controller
 Group: System Environment/Daemons
@@ -54,6 +54,12 @@ sed -e "s|@UNIFI_PREFIX@|%{unifi_prefix}|" %{SOURCE1} > \
   %{buildroot}%{_unitdir}/unifi.service
 
 
+%check
+# The source is always UniFi.unix.zip, so check we used the right version
+echo -n "Checking installed version... "
+grep -E ^%{version} %{buildroot}%{unifi_prefix}/webapps/ROOT/app-unifi/.version
+
+
 %pre
 /usr/bin/getent group ubnt >/dev/null || /usr/sbin/groupadd -r ubnt
 if ! /usr/bin/getent passwd ubnt >/dev/null; then
@@ -84,6 +90,10 @@ fi
 
 
 %changelog
+* Tue Oct 31 2017 Matthias Saou <matthias@saou.eu> 5.6.20-1
+- Update to 5.6.20.
+- Add %%check to verify the proper source was used.
+
 * Tue Oct 24 2017 Matthias Saou <matthias@saou.eu> 5.6.19-1
 - Update to 5.6.19.
 
