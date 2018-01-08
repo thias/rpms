@@ -107,7 +107,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.0.26
+%global upver        7.0.27
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -144,6 +144,7 @@ Source52: 20-oci8.ini
 Source99: php-fpm.init
 
 # Build fixes
+Patch1: php-7.1.7-httpd.patch
 Patch5: php-7.0.0-includedir.patch
 Patch6: php-5.6.3-embed.patch
 Patch7: php-5.3.0-recode.patch
@@ -983,12 +984,9 @@ support for JavaScript Object Notation (JSON) to PHP.
 
 %prep
 echo CIBLE = %{name}-%{version}-%{release} oci8=%{with_oci8} libzip=%{with_libzip}
-
-# ensure than current httpd use prefork MPM.
-httpd -V  | grep -q 'threaded:.*yes' && exit 1
-
 %setup -q -n php-%{upver}%{?rcver}
 
+%patch1 -p1 -b .mpmcheck
 %patch5 -p1 -b .includedir
 %patch6 -p1 -b .embed
 %patch7 -p1 -b .recode
@@ -1159,6 +1157,9 @@ cp %{SOURCE52} 20-oci8.ini
 if [ ! -f Zend/zend_language_parser.c ]; then
   ./genfiles
 fi
+
+# For doc
+cat %{SOURCE1} %{SOURCE12} >httpd-php.conf
 
 
 %build
@@ -1929,7 +1930,7 @@ fi
 %doc sapi/phpdbg/{README.md,CREDITS}
 
 %files fpm
-%doc php-fpm.conf.default www.conf.default
+%doc php-fpm.conf.default www.conf.default httpd-php.conf
 %license fpm_LICENSE
 %attr(0770,root,apache) %dir %{_localstatedir}/lib/php/session
 %attr(0770,root,apache) %dir %{_localstatedir}/lib/php/wsdlcache
@@ -2030,6 +2031,12 @@ fi
 
 
 %changelog
+* Tue Jan  2 2018 Remi Collet <remi@remirepo.net> - 7.0.27-1
+- Update to 7.0.27 - http://www.php.net/releases/7_0_27.php
+
+* Tue Dec  5 2017 Remi Collet <remi@remirepo.net> - 7.0.27~RC1-1
+- Update to 7.0.27RC1
+
 * Tue Nov 21 2017 Remi Collet <remi@remirepo.net> - 7.0.26-1
 - Update to 7.0.26 - http://www.php.net/releases/7_0_26.php
 
