@@ -3,7 +3,7 @@
 #
 # Fedora spec file for php-pecl-apcu
 #
-# Copyright (c) 2013-2017 Remi Collet
+# Copyright (c) 2013-2018 Remi Collet
 # License: CC-BY-SA
 # http://creativecommons.org/licenses/by-sa/4.0/
 #
@@ -26,9 +26,9 @@
 
 Name:           %{?sub_prefix}php-pecl-apcu
 Summary:        APC User Cache
-Version:        5.1.8
+Version:        5.1.9
 %if 0%{?gh_date:1}
-Release:        0.1.%{gh_date}git%{gh_short}%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Release:        0.2.%{gh_date}git%{gh_short}%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 Source0:        https://github.com/%{gh_owner}/%{gh_project}/archive/%{gh_commit}/%{pecl_name}-%{version}-%{gh_short}.tar.gz
 %else
 Release:        1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
@@ -50,8 +50,10 @@ Requires:       %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:       %{?scl_prefix}php(api) = %{php_core_api}
 %{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
 %if ! %{bootstrap}
+%if "%{php_version}" < "7.2"
 # For user experience
 Requires:       %{?scl_prefix}php-pecl-apcu-bc%{?_isa}
+%endif
 %endif
 
 Obsoletes:      %{?scl_prefix}php-apcu               < 4.0.0-1
@@ -79,6 +81,10 @@ Obsoletes:     php70w-pecl-%{pecl_name} <= %{version}
 %if "%{php_version}" > "7.1"
 Obsoletes:     php71u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php71w-pecl-%{pecl_name} <= %{version}
+%endif
+%if "%{php_version}" > "7.2"
+Obsoletes:     php72u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php72w-pecl-%{pecl_name} <= %{version}
 %endif
 %endif
 
@@ -175,6 +181,8 @@ sed -e '/"apc.php"/s/role="src"/role="doc"/' -i package.xml
 %endif
 
 %build
+%{?dtsenable}
+
 cd NTS
 %{_bindir}/phpize
 %configure \
@@ -193,6 +201,8 @@ make %{?_smp_mflags}
 
 
 %install
+%{?dtsenable}
+
 # Install the NTS stuff
 make -C NTS install INSTALL_ROOT=%{buildroot}
 install -D -m 644 %{SOURCE1} %{buildroot}%{php_inidir}/%{ini_name}
@@ -313,6 +323,18 @@ fi
 
 
 %changelog
+* Tue Jan  2 2018 Remi Collet <remi@fedoraproject.org> - 5.1.9-1
+- Update to 5.1.9 (php 7, stable)
+
+* Tue Jul 18 2017 Remi Collet <remi@remirepo.net> - 5.1.8-4
+- rebuild for PHP 7.2.0beta1 new API
+
+* Wed Jun 21 2017 Remi Collet <remi@fedoraproject.org> - 5.1.8-3
+- rebuild for 7.2.0alpha2
+
+* Thu Apr 13 2017 Remi Collet <remi@fedoraproject.org> - 5.1.8-2
+- drop dependency on apcu-bc with PHP 7.2
+
 * Mon Jan 16 2017 Remi Collet <remi@fedoraproject.org> - 5.1.8-1
 - Update to 5.1.8 (php 7, stable)
 
