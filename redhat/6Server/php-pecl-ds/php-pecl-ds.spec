@@ -21,7 +21,7 @@
 %global ini_name     40-%{pecl_name}.ini
 
 # For test suite, see https://github.com/php-ds/tests/commits/master
-%global gh_commit    6c2da5d3789b7d0251007eb94e097de9601627d2
+%global gh_commit    cca728734beec20b8c2ba52db3c1eb8fe0ce4a1c
 %global gh_short     %(c=%{gh_commit}; echo ${c:0:7})
 %global gh_owner     php-ds
 %global gh_project   tests
@@ -29,8 +29,8 @@
 
 Summary:        Data Structures for PHP
 Name:           %{?sub_prefix}php-pecl-%{pecl_name}
-Version:        1.2.3
-Release:        2%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Version:        1.2.4
+Release:        1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 License:        MIT
 Group:          Development/Languages
 URL:            http://pecl.php.net/package/%{pecl_name}
@@ -43,7 +43,7 @@ BuildRequires:  %{?scl_prefix}php-devel >= 7
 BuildRequires:  %{?scl_prefix}php-pear
 BuildRequires:  %{?scl_prefix}php-json
 %if %{with_tests}
-BuildRequires:  %{_bindir}/phpunit
+BuildRequires:  %{_bindir}/phpunit6
 BuildRequires:  %{_bindir}/phpab
 %endif
 
@@ -82,7 +82,9 @@ Obsoletes:     php72w-pecl-%{pecl_name} <= %{version}
 
 
 %description
-%{summary}.
+An extension providing specialized data structures as efficient alternatives
+to the PHP array.
+
 Package built for PHP %(%{__php} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')%{?scl: as Software Collection (%{scl} by %{?scl_vendor}%{!?scl_vendor:rh})}.
 
 
@@ -212,7 +214,7 @@ cd ..
 : Run upstream test suite
 %{_bindir}/php \
    -d extension=%{buildroot}%{php_extdir}/%{pecl_name}.so \
-   %{_bindir}/phpunit \
+   %{_bindir}/phpunit6 \
       --bootstrap tests/autoload.php \
       tests
 %endif
@@ -233,6 +235,10 @@ cd ..
 
 
 %changelog
+* Wed Nov 29 2017 Remi Collet <remi@remirepo.net> - 1.2.4-1
+- Update to 1.2.4
+- switch to phpunit 6
+
 * Wed Aug 16 2017 Remi Collet <remi@remirepo.net> - 1.2.3-2
 - Update to 1.2.3
 - drop patch merged upstream
