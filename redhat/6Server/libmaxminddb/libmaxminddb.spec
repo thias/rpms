@@ -1,5 +1,5 @@
 Name:       libmaxminddb
-Version:    1.2.1
+Version:    1.3.1
 Release:    1%{?dist}
 Summary:    Library for the MaxMind DB file format
 Group:      System Environment/Libraries
@@ -65,6 +65,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Jan  9 2018 Matthias Saou <matthias@saou.eu> 1.3.1-1
+- Update to 1.3.1.
+
 * Tue May 16 2017 Matthias Saou <matthias@saou.eu> 1.2.1-1
 - Update to 1.2.1.
 
