@@ -148,7 +148,7 @@
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 5.6.32
+Version: 5.6.33
 %if 0%{?rcver:1}
 Release: 0.%{rpmrel}.%{rcver}%{?dist}
 %else
@@ -187,6 +187,7 @@ Source51: opcache-default.blacklist
 Source99: php-fpm.init
 
 # Build fixes
+Patch1: php-7.1.7-httpd.patch
 Patch5: php-5.6.3-includedir.patch
 Patch6: php-5.6.3-embed.patch
 Patch7: php-5.3.0-recode.patch
@@ -941,11 +942,9 @@ support for using the enchant library to PHP.
 %prep
 echo CIBLE = %{name}-%{version}-%{release} oci8=%{with_oci8} libzip=%{with_libzip}
 
-# ensure than current httpd use prefork MPM.
-httpd -V  | grep -q 'threaded:.*yes' && exit 1
-
 %setup -q -n php-%{version}%{?rcver}
 
+%patch1 -p1 -b .mpmcheck
 %patch5 -p1 -b .includedir
 %patch6 -p1 -b .embed
 %patch7 -p1 -b .recode
@@ -2000,6 +1999,9 @@ fi
 
 
 %changelog
+* Wed Jan  3 2018 Remi Collet <remi@fedoraproject.org> 5.6.33-1
+- Update to 5.6.33 - http://www.php.net/releases/5_6_33.php
+
 * Wed Oct 25 2017 Remi Collet <remi@fedoraproject.org> 5.6.32-1
 - Update to 5.6.32 - http://www.php.net/releases/5_6_32.php
 
