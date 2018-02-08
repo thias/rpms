@@ -111,7 +111,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.2.1
+%global upver        7.2.2
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -164,7 +164,7 @@ Patch43: php-5.4.0-phpize.patch
 # Use -lldap_r for OpenLDAP
 Patch45: php-5.6.3-ldap_r.patch
 # Make php_config.h constant across builds
-Patch46: php-7.2.0-fixheader.patch
+Patch46: php-7.2.2-fixheader.patch
 # drop "Configure command" from phpinfo output
 Patch47: php-5.6.3-phpinfo.patch
 
@@ -298,11 +298,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 Requires(pre): /usr/sbin/useradd
 %if %{with_systemd}
 BuildRequires: systemd-devel
-BuildRequires: systemd-units
-Requires: systemd-units
-Requires(post): systemd-units
-Requires(preun): systemd-units
-Requires(postun): systemd-units
+%{?systemd_requires}
 # This is actually needed for the %%triggerun script but Requires(triggerun)
 # is not valid.  We can use %%post because this particular %%triggerun script
 # should fire just after this package is installed.
@@ -1226,6 +1222,9 @@ fi
 %build
 %{?dtsenable}
 
+# Set build date from https://reproducible-builds.org/specs/source-date-epoch/
+export SOURCE_DATE_EPOCH=$(date +%s -r NEWS)
+
 # aclocal workaround - to be improved
 cat $(aclocal --print-ac-dir)/{libtool,ltoptions,ltsugar,ltversion,lt~obsolete}.m4 >>aclocal.m4
 
@@ -2123,6 +2122,20 @@ fi
 
 
 %changelog
+* Tue Jan 30 2018 Remi Collet <remi@remirepo.net> - 7.2.2-1
+- Update to 7.2.2 - http://www.php.net/releases/7_2_2.php
+
+* Tue Jan 16 2018 Remi Collet <remi@remirepo.net> - 7.2.2~RC1-2
+- dba: revert drop gdbm support
+
+* Tue Jan 16 2018 Remi Collet <remi@remirepo.net> - 7.2.2~RC1-1
+- update to 7.2.2RC1
+- define SOURCE_DATE_EPOCH for reproducible build
+- dba: drop gdbm support
+
+* Wed Jan 10 2018 Remi Collet <remi@remirepo.net> - 7.2.1-2
+- rebuild for gdbm 1.14 BC break (see rhbz#1532997)
+
 * Wed Jan  3 2018 Remi Collet <remi@remirepo.net> - 7.2.1-1
 - Update to 7.2.1 - http://www.php.net/releases/7_2_1.php
 
