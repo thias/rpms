@@ -112,7 +112,7 @@
 # Make long macros shorter
 %global sameevr   %{epoch}:%{version}-%{release}
 %global compatver 10.0
-%global bugfixver 25
+%global bugfixver 34
 
 Name:             mariadb
 Version:          %{compatver}.%{bugfixver}
@@ -195,6 +195,8 @@ BuildRequires:    perl(Time::HiRes)
 # for running some openssl tests rhbz#1189180
 BuildRequires:    openssl
 %{?with_init_systemd:BuildRequires: systemd}
+BuildRequires:    checkpolicy
+BuildRequires:    policycoreutils-python
 
 Requires:         bash
 Requires:         fileutils
@@ -490,7 +492,7 @@ MariaDB is a community developed branch of MySQL.
 %setup -q -n mariadb-%{version}
 
 %patch1 -p1
-%patch2 -p1
+#patch2 -p1
 %patch3 -p1
 %patch4 -p1
 %patch5 -p1
@@ -499,10 +501,10 @@ MariaDB is a community developed branch of MySQL.
 %patch9 -p1
 %patch12 -p1
 %patch30 -p1
-%patch31 -p1
+#patch31 -p1
 %patch32 -p1
-%patch34 -p1
-%patch36 -p1
+#patch34 -p1
+#patch36 -p1
 %patch37 -p1
 
 # removing bundled cmd-line-utils is now disabled
@@ -656,6 +658,7 @@ install -p -m 0755 scripts/mysql_config_multilib %{buildroot}%{_bindir}/mysql_co
 install -p -m 644 Docs/INFO_SRC %{buildroot}%{_libdir}/mysql/
 install -p -m 644 Docs/INFO_BIN %{buildroot}%{_libdir}/mysql/
 rm -rf %{buildroot}%{_pkgdocdir}/MariaDB-server-%{version}/
+rm -rf %{buildroot}%{_datadir}/doc/mariadb/MariaDB-server-%{version}/
 
 mkdir -p %{buildroot}%{logfiledir}
 chmod 0750 %{buildroot}%{logfiledir}
@@ -953,7 +956,7 @@ fi
 
 %if %{with common}
 %files common
-%doc README COPYING COPYING.LESSER README.mysql-license README.mysql-docs
+%doc README COPYING README.mysql-license README.mysql-docs
 %doc storage/innobase/COPYING.Percona storage/innobase/COPYING.Google
 %dir %{_libdir}/mysql
 %dir %{_libdir}/mysql/plugin
@@ -1015,6 +1018,7 @@ fi
 %{_bindir}/mysqldumpslow
 %{_bindir}/mysqld_multi
 %{_bindir}/mysqld_safe
+%{_bindir}/mysqld_safe_helper
 %{_bindir}/mysqlhotcopy
 %{_bindir}/mysqltest
 %{_bindir}/innochecksum
@@ -1149,6 +1153,9 @@ fi
 %endif
 
 %changelog
+* Mon Feb 12 2018 Matthias Saou <matthias@saou.eu> 1:10.0.34-1
+- Update to 10.0.34.
+
 * Thu Jul 21 2016 Jakub Dorňák <jdornak@redhat.com> - 1:10.0.25-3
 - use uname -n instead of hostname
   Resolves: #1317907
