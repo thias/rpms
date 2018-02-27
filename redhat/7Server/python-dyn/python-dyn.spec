@@ -1,11 +1,11 @@
 Name:       python-dyn
-Version:    1.8.0
+Version:    1.8.1
 Release:    1%{?dist}
 Summary:    Dyn API Python SDK
 
 License:    BSD
 URL:        https://pypi.python.org/pypi/dyn
-Source0:    https://pypi.python.org/packages/source/d/dyn/dyn-%{version}.tar.gz
+Source0:    https://pypi.python.org/packages/34/8d/03f940f2d41ab33b3e908b8c3e44c91e1c13f295905cbdd409d42d431454/dyn-%{version}.tar.gz
 
 BuildArch:          noarch
 BuildRequires:      python-setuptools
@@ -31,6 +31,9 @@ python2 setup.py install --skip-build --root %{buildroot}
 %{python_sitelib}/dyn-*.egg-info
 
 %changelog
+* Mon Feb 26 2018 Matthias Saou <matthias@saou.eu> 1.8.1-1
+- Update to 1.8.1.
+
 * Mon Nov  6 2017 Matthias Saou <matthias@saou.eu> 1.8.0-1
 - Update to 1.8.0.
 
