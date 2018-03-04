@@ -17,13 +17,19 @@
 %global with_systemd 0
 %endif
 
+%if %{__isa_bits} == 64
+%global with_extstore 1
+%else
+%global with_extstore 0
+%endif
+
 %global with_sasl    1
 
 # disable testing as it is unreliable on build systems
 %global with_tests   %{?_with_tests:1}%{!?_with_tests:0}
 
 Name:           memcached
-Version:        1.5.2
+Version:        1.5.4
 Release:        1%{?dist}
 Epoch:          0
 Summary:        High Performance, Distributed Memory Object Cache
@@ -95,6 +101,9 @@ export CFLAGS="%{optflags} -pie -fpie"
 export LDFLAGS="-Wl,-z,relro,-z,now"
 
 %configure \
+%if %{with_extstore}
+   --enable-extstore \
+%endif
 %if %{with_sasl}
    --enable-sasl
 %endif
@@ -239,6 +248,15 @@ fi
 
 
 %changelog
+* Tue Dec 26 2017 Remi Collet <remi@remirepo.net> - 0:1.5.4-1
+- Update to 1.5.4
+- enable extstore feature on 64-bit
+- open https://github.com/memcached/memcached/issues/319
+  extstore broken build on 32-bit
+
+* Mon Nov  6 2017 Remi Collet <remi@remirepo.net> - 0:1.5.3-1
+- Update to 1.5.3
+
 * Mon Oct  2 2017 Remi Collet <remi@remirepo.net> - 0:1.5.2-1
 - Update to 1.5.2
 
