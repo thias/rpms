@@ -29,7 +29,7 @@
 %global with_tests   %{?_with_tests:1}%{!?_with_tests:0}
 
 Name:           memcached
-Version:        1.5.4
+Version:        1.5.6
 Release:        1%{?dist}
 Epoch:          0
 Summary:        High Performance, Distributed Memory Object Cache
@@ -48,7 +48,10 @@ Source3:        memcached.service
 Patch1:         memcached-unit.patch
 
 BuildRequires:  pkgconfig(libevent) >= 2
-%if 0%{?fedora} > 22
+%if %{with_systemd}
+BuildRequires:  systemd
+%endif
+%if 0%{?fedora} >= 23 || 0%{?rhel} >= 8
 BuildRequires:  perl-generators
 %endif
 BuildRequires:  perl(Test::More), perl(Test::Harness)
@@ -57,9 +60,7 @@ BuildRequires:  cyrus-sasl-devel
 %endif
 
 %if %{with_systemd}
-Requires(post): systemd
-Requires(preun): systemd
-Requires(postun): systemd
+%{?systemd_requires}
 # For triggerun
 Requires(post): systemd-sysv
 %else
@@ -131,13 +132,22 @@ install -Dp -m0644 scripts/memcached-tool.1 \
         %{buildroot}%{_mandir}/man1/memcached-tool.1
 
 %if %{with_systemd}
+
 # Unit file
-%if 0%{?fedora} < 25
+%if 0%{?fedora} < 25 && 0%{?rhel} < 8
 install -Dp -m0644 %{SOURCE3} %{buildroot}%{_unitdir}/memcached.service
 %else
-install -Dp -m0644 scripts/memcached.service \
-        %{buildroot}%{_unitdir}/memcached.service
+install -Dp -m0644 scripts/%{name}.service   %{buildroot}%{_unitdir}/%{name}.service
 %endif
+install -Dp -m0644 scripts/%{name}@.service  %{buildroot}%{_unitdir}/%{name}@.service
+
+# Safer config
+%if 0%{?fedora} < 26 && 0%{?rhel} < 8
+sed -e 's/^##safer##/#/g' -i %{buildroot}%{_unitdir}/%{name}*service
+%else
+sed -e 's/^##safer##//g'  -i %{buildroot}%{_unitdir}/%{name}*service
+%endif
+
 %else
 # Init script
 install -Dp -m0755 %{SOURCE2} %{buildroot}%{_initrddir}/memcached
@@ -148,7 +158,7 @@ mkdir -p %{buildroot}/%{_localstatedir}/run/memcached
 
 
 # Default configs
-%if 0%{?fedora} < 25
+%if 0%{?fedora} < 25 && 0%{?rhel} < 8
 mkdir -p %{buildroot}/%{_sysconfdir}/sysconfig
 cat <<EOF >%{buildroot}/%{_sysconfdir}/sysconfig/%{name}
 PORT="11211"
@@ -237,6 +247,7 @@ fi
 %{_mandir}/man1/memcached.1*
 %if %{with_systemd}
 %{_unitdir}/memcached.service
+%{_unitdir}/memcached@.service
 %else
 %{_initrddir}/memcached
 %dir %attr(755,%{username},%{groupname}) %{_localstatedir}/run/memcached
@@ -248,6 +259,17 @@ fi
 
 
 %changelog
+* Wed Feb 28 2018 Remi Collet <remi@remirepo.net> - 0:1.5.6-1
+- Update to 1.5.6
+- add systemd instancing support
+
+* Tue Feb 13 2018 Remi Collet <remi@remirepo.net> - 0:1.5.5-1
+- Update to 1.5.5
+
+* Tue Jan 30 2018 Miroslav Lichvar <mlichvar@redhat.com> - 0:1.5.4-2
+- fix building with new gcc
+- use macro for systemd scriptlet dependencies
+
 * Tue Dec 26 2017 Remi Collet <remi@remirepo.net> - 0:1.5.4-1
 - Update to 1.5.4
 - enable extstore feature on 64-bit

@@ -1,7 +1,18 @@
-diff -up memcached-1.4.28/scripts/memcached.service.unit memcached-1.4.28/scripts/memcached.service
---- memcached-1.4.28/scripts/memcached.service.unit	2016-07-02 03:14:25.000000000 +0200
-+++ memcached-1.4.28/scripts/memcached.service	2016-07-12 13:54:54.275782170 +0200
+diff -up memcached-1.5.6/scripts/memcached.service.unit memcached-1.5.6/scripts/memcached.service
+--- memcached-1.5.6/scripts/memcached.service.unit	2018-02-27 20:19:52.000000000 +0100
++++ memcached-1.5.6/scripts/memcached.service	2018-02-28 16:28:49.265509810 +0100
 @@ -11,6 +11,7 @@
+ 
+ [Unit]
+ Description=memcached daemon
++Before=httpd.service
+ After=network.target
+ 
+ [Service]
+diff -up memcached-1.5.6/scripts/memcached@.service.unit memcached-1.5.6/scripts/memcached@.service
+--- memcached-1.5.6/scripts/memcached@.service.unit	2018-02-28 16:29:17.820655918 +0100
++++ memcached-1.5.6/scripts/memcached@.service	2018-02-28 16:29:24.882692052 +0100
+@@ -15,6 +15,7 @@
  
  [Unit]
  Description=memcached daemon
