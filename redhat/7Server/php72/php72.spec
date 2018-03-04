@@ -111,13 +111,13 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.2.2
+%global upver        7.2.3
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{rcver}}
-Release: 1%{?dist}
+Release: 2%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -158,13 +158,13 @@ Patch9: php-7.0.7-curl.patch
 
 # Functional changes
 Patch40: php-7.1.3-dlopen.patch
-Patch42: php-7.2.0-systzdata-v15.patch
+Patch42: php-7.2.3-systzdata-v16.patch
 # See http://bugs.php.net/53436
 Patch43: php-5.4.0-phpize.patch
 # Use -lldap_r for OpenLDAP
-Patch45: php-5.6.3-ldap_r.patch
+Patch45: php-7.2.3-ldap_r.patch
 # Make php_config.h constant across builds
-Patch46: php-7.2.2-fixheader.patch
+Patch46: php-7.2.3-fixheader.patch
 # drop "Configure command" from phpinfo output
 Patch47: php-5.6.3-phpinfo.patch
 
@@ -204,7 +204,13 @@ BuildRequires: zlib-devel, smtpdaemon, libedit-devel
 %if %{with_libpcre}
 BuildRequires: pcre-devel >= 8.20
 %endif
-BuildRequires: bzip2, perl, libtool >= 1.4.3, %{?dtsprefix}gcc-c++
+BuildRequires: bzip2
+BuildRequires: perl
+BuildRequires: autoconf
+BuildRequires: automake
+BuildRequires: %{?dtsprefix}gcc
+BuildRequires: %{?dtsprefix}gcc-c++
+BuildRequires: libtool
 BuildRequires: libtool-ltdl-devel
 %if %{with_dtrace}
 BuildRequires: %{?dtsprefix}systemtap-sdt-devel
@@ -407,7 +413,13 @@ package and the php-cli package.
 %package devel
 Group: Development/Libraries
 Summary: Files needed for building PHP extensions
-Requires: php-cli%{?_isa} = %{version}-%{release}, autoconf, automake
+Requires: php-cli%{?_isa} = %{version}-%{release}
+# always needed to build extension
+Requires: autoconf
+Requires: automake
+Requires: gcc
+Requires: gcc-c++
+Requires: libtool
 %if %{with_libpcre}
 Requires: pcre-devel%{?_isa}
 %endif
@@ -1713,8 +1725,6 @@ install -m 755 -d $RPM_BUILD_ROOT/run/php-fpm
 install -m 755 -d $RPM_BUILD_ROOT%{_prefix}/lib/tmpfiles.d
 install -m 644 php-fpm.tmpfiles $RPM_BUILD_ROOT%{_prefix}/lib/tmpfiles.d/php-fpm.conf
 # install systemd unit files and scripts for handling server startup
-sed -e 's/^pid/;pid/' \
-    -i $RPM_BUILD_ROOT%{_sysconfdir}/php-fpm.conf
 # this folder requires systemd >= 204
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/php-fpm.service.d
 install -Dm 644 %{SOURCE6}  $RPM_BUILD_ROOT%{_unitdir}/php-fpm.service
@@ -1943,8 +1953,11 @@ if [ -f /etc/rc.d/init.d/php-fpm ]; then
 fi
 %endif
 
-%post embedded -p /sbin/ldconfig
+
+%if 0%{?fedora} < 28 && 0%{?rhel} < 8
+%post   embedded -p /sbin/ldconfig
 %postun embedded -p /sbin/ldconfig
+%endif
 
 
 %{!?_licensedir:%global license %%doc}
@@ -2122,6 +2135,23 @@ fi
 
 
 %changelog
+* Fri Mar  2 2018 Remi Collet <remi@remirepo.net> - 7.2.3-2
+- devel: drop dependency on devtoolset
+
+* Wed Feb 28 2018 Remi Collet <remi@remirepo.net> - 7.2.3-1
+- Update to 7.2.3 - http://www.php.net/releases/7_2_3.php
+- FPM: revert pid file removal
+- improve devel dependencies
+
+* Wed Feb 14 2018 Remi Collet <remi@remirepo.net> - 7.2.3~RC1-2
+- rebuild for new tag and drop patch merged upstream
+- drop ldconfig scriptlets on F28
+
+* Wed Feb 14 2018 Remi Collet <remi@remirepo.net> - 7.2.3~RC1-1
+- update to 7.2.3RC1
+- adapt systzdata, fixheader and ldap_r patches
+- apply upstream patch for date ext
+
 * Tue Jan 30 2018 Remi Collet <remi@remirepo.net> - 7.2.2-1
 - Update to 7.2.2 - http://www.php.net/releases/7_2_2.php
 
