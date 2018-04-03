@@ -1,5 +1,5 @@
 # remirepo spec file for memcached
-# lastest version with SASL support enabled, from:
+# lastest version with SASL and extstore support enabled, from:
 #
 # Fedora spec file for memcached
 #
@@ -29,15 +29,15 @@
 %global with_tests   %{?_with_tests:1}%{!?_with_tests:0}
 
 Name:           memcached
-Version:        1.5.6
+Version:        1.5.7
 Release:        1%{?dist}
 Epoch:          0
 Summary:        High Performance, Distributed Memory Object Cache
 
 Group:          System Environment/Daemons
 License:        BSD
-URL:            http://www.memcached.org/
-Source0:        http://www.memcached.org/files/%{name}-%{version}.tar.gz
+URL:            https://www.memcached.org/
+Source0:        https://www.memcached.org/files/%{name}-%{version}.tar.gz
 Source1:        memcached.sysconfig
 
 # custom init script
@@ -259,6 +259,9 @@ fi
 
 
 %changelog
+* Thu Mar 29 2018 Remi Collet <remi@remirepo.net> - 0:1.5.7-1
+- Update to 1.5.7
+
 * Wed Feb 28 2018 Remi Collet <remi@remirepo.net> - 0:1.5.6-1
 - Update to 1.5.6
 - add systemd instancing support
