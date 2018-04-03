@@ -107,7 +107,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.0.27
+%global upver        7.0.28
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -2031,6 +2031,9 @@ fi
 
 
 %changelog
+* Tue Feb 27 2018 Remi Collet <remi@remirepo.net> - 7.0.28-1
+- Update to 7.0.28 - http://www.php.net/releases/7_0_28.php
+
 * Tue Jan  2 2018 Remi Collet <remi@remirepo.net> - 7.0.27-1
 - Update to 7.0.27 - http://www.php.net/releases/7_0_27.php
 
