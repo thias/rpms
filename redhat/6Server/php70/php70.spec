@@ -107,7 +107,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.0.28
+%global upver        7.0.29
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -2031,6 +2031,10 @@ fi
 
 
 %changelog
+* Wed Mar 28 2018 Remi Collet <remi@remirepo.net> - 7.0.29-1
+- Update to 7.0.29 - http://www.php.net/releases/7_0_29.php
+- FPM: update default pool configuration for process.dumpable
+
 * Tue Feb 27 2018 Remi Collet <remi@remirepo.net> - 7.0.28-1
 - Update to 7.0.28 - http://www.php.net/releases/7_0_28.php
 
