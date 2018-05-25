@@ -111,13 +111,13 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.2.3
+%global upver        7.2.6
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{rcver}}
-Release: 2%{?dist}
+Release: 1%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -157,14 +157,14 @@ Patch8: php-7.2.0-libdb.patch
 Patch9: php-7.0.7-curl.patch
 
 # Functional changes
-Patch40: php-7.1.3-dlopen.patch
+Patch40: php-7.2.4-dlopen.patch
 Patch42: php-7.2.3-systzdata-v16.patch
 # See http://bugs.php.net/53436
 Patch43: php-5.4.0-phpize.patch
 # Use -lldap_r for OpenLDAP
 Patch45: php-7.2.3-ldap_r.patch
 # Make php_config.h constant across builds
-Patch46: php-7.2.3-fixheader.patch
+Patch46: php-7.2.4-fixheader.patch
 # drop "Configure command" from phpinfo output
 Patch47: php-5.6.3-phpinfo.patch
 
@@ -1041,7 +1041,7 @@ Group: System Environment/Libraries
 BuildRequires:  pkgconfig(libsodium) >= 1.0.13
 
 Requires: php-common%{?_isa} = %{version}-%{release}
-Obsoletes: php-pecl-libsodium2 < 7
+Obsoletes: php-pecl-libsodium2 < 3
 Provides:  php-pecl(libsodium)         = %{version}
 Provides:  php-pecl(libsodium)%{?_isa} = %{version}
 %if 0%{?rhel}
@@ -1205,9 +1205,6 @@ rm -f TSRM/tsrm_win32.h \
 # Fix some bogus permissions
 find . -name \*.[ch] -exec chmod 644 {} \;
 chmod 644 README.*
-
-# php-fpm configuration files for tmpfiles.d
-echo "d /run/php-fpm 755 root root" >php-fpm.tmpfiles
 
 # Some extensions have their own configuration file
 cp %{SOURCE50} 10-opcache.ini
@@ -1721,9 +1718,6 @@ install -m 644 %{SOURCE8} $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/php-fpm
 
 %if %{with_systemd}
 install -m 755 -d $RPM_BUILD_ROOT/run/php-fpm
-# tmpfiles.d
-install -m 755 -d $RPM_BUILD_ROOT%{_prefix}/lib/tmpfiles.d
-install -m 644 php-fpm.tmpfiles $RPM_BUILD_ROOT%{_prefix}/lib/tmpfiles.d/php-fpm.conf
 # install systemd unit files and scripts for handling server startup
 # this folder requires systemd >= 204
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/php-fpm.service.d
@@ -1927,6 +1921,7 @@ if [ $1 = 0 ]; then
 fi
 %endif
 
+%if 0%{?fedora} < 27 && 0%{?rhel} < 8
 %postun fpm
 %if %{with_systemd}
 %systemd_postun_with_restart php-fpm.service
@@ -1934,6 +1929,13 @@ fi
 if [ $1 -ge 1 ]; then
     /sbin/service php-fpm condrestart >/dev/null 2>&1 || :
 fi
+%endif
+%endif
+
+%if 0%{?fedora} >= 27 || 0%{?rhel} >= 8
+# Raised by new pool installation or new extension installation
+%transfiletriggerin fpm -- %{_sysconfdir}/php-fpm.d %{_sysconfdir}/php.d
+systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 %endif
 
 # Handle upgrading from SysV initscript to native systemd unit.
@@ -2047,14 +2049,13 @@ fi
 %config(noreplace) %{_sysconfdir}/nginx/default.d/php.conf
 %endif
 %if %{with_systemd}
-%{_prefix}/lib/tmpfiles.d/php-fpm.conf
 %{_unitdir}/php-fpm.service
 %if 0%{?fedora} >= 27
 %{_unitdir}/httpd.service.d/%{?scl_prefix}php-fpm.conf
 %{_unitdir}/nginx.service.d/%{?scl_prefix}php-fpm.conf
 %endif
 %dir %{_sysconfdir}/systemd/system/php-fpm.service.d
-%dir /run/php-fpm
+%dir %ghost /run/php-fpm
 %else
 %{_initrddir}/php-fpm
 %dir %{_localstatedir}/run/php-fpm
@@ -2135,6 +2136,38 @@ fi
 
 
 %changelog
+* Wed May 23 2018 Remi Collet <remi@remirepo.net> - 7.2.6-1
+- Update to 7.2.6 - http://www.php.net/releases/7_2_6.php
+
+* Mon May 14 2018 Remi Collet <remi@remirepo.net> - 7.2.6~RC1-2
+- rebuild against EL 7.5
+
+* Sun May 13 2018 Remi Collet <remi@remirepo.net> - 7.2.6~RC1-1
+- update to 7.2.6RC1
+
+* Tue Apr 24 2018 Remi Collet <remi@remirepo.net> - 7.2.5-1
+- Update to 7.2.5 - http://www.php.net/releases/7_2_5.php
+
+* Wed Apr 11 2018 Remi Collet <remi@remirepo.net> - 7.2.5~RC1-1
+- update to 7.2.5RC1
+
+* Tue Apr  3 2018 Remi Collet <remi@remirepo.net> - 7.2.4-2
+- add upstream patch for oniguruma 6.8.1, FTBFS #1562583
+
+* Tue Mar 27 2018 Remi Collet <remi@remirepo.net> - 7.2.4-1
+- Update to 7.2.4 - http://www.php.net/releases/7_2_4.php
+- FPM: update default pool configuration for process.dumpable
+
+* Wed Mar 21 2018 Remi Collet <remi@remirepo.net> - 7.2.4~RC1-3
+- use systemd RuntimeDirectory instead of /etc/tmpfiles.d
+
+* Thu Mar 15 2018 Remi Collet <remi@remirepo.net> - 7.2.4~RC1-2
+- add file trigger to restart the php-fpm service
+  when new pool or new extension installed (F27+)
+
+* Tue Mar 13 2018 Remi Collet <remi@remirepo.net> - 7.2.4~RC1-1
+- update to 7.2.4RC1
+
 * Fri Mar  2 2018 Remi Collet <remi@remirepo.net> - 7.2.3-2
 - devel: drop dependency on devtoolset
 
