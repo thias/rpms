@@ -3,7 +3,7 @@
 #
 # Fedora spec file for php-pecl-xdebug
 #
-# Copyright (c) 2010-2017 Remi Collet
+# Copyright (c) 2010-2018 Remi Collet
 # Copyright (c) 2006-2009 Christopher Stone
 #
 # License: MIT
@@ -12,30 +12,33 @@
 # Please, preserve the changelog entries
 #
 
+# we don't want -z defs linker flag
+%undefine _strict_symbol_defs_build
+
 %{?scl:          %scl_package         php-pecl-xdebug}
 
 %global pecl_name   xdebug
 %global with_zts    0%{!?_without_zts:%{?__ztsphp:1}}
-%global gh_commit   36b4f952ca3196a2300a1ebac1716523dd84d19b
+%global gh_commit   61690fbc6e7991f12c6a36bc72db9e0a145406e0
 %global gh_short    %(c=%{gh_commit}; echo ${c:0:7})
-#global gh_date     20161004
-%global with_tests  0%{?_with_tests:1}
-#global prever      rc1
+#global gh_date     20171202
+%global with_tests  0%{!?_without_tests:1}
+#global prever      RC2
 
 # XDebug should be loaded after opcache
-%if "%{php_version}" < "5.6"
-%global ini_name  %{pecl_name}.ini
-%else
 %global ini_name  15-%{pecl_name}.ini
-%endif
 
 Name:           %{?scl_prefix}php-pecl-xdebug
 Summary:        PECL package for debugging PHP scripts
-Version:        2.5.5
+Version:        2.6.0
+%if 0%{?prever:1}
+Release:        0.12.%{prever}%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+%else
 %if 0%{?gh_date:1}
-Release:        0.5.%{gh_date}git%{gh_short}%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+Release:        0.8.%{gh_date}.%{gh_short}%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 %else
 Release:        1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
+%endif
 %endif
 
 # The Xdebug License, version 1.01
@@ -45,8 +48,9 @@ Group:          Development/Languages
 URL:            http://xdebug.org/
 Source0:        https://github.com/%{pecl_name}/%{pecl_name}/archive/%{gh_commit}/%{pecl_name}-%{version}%{?prever}-%{gh_short}.tar.gz
 
-BuildRequires:  %{?scl_prefix}php-pear  > 1.9.1
-BuildRequires:  %{?scl_prefix}php-devel > 5.5
+BuildRequires:  %{?scl_prefix}php-devel > 7
+BuildRequires:  %{?scl_prefix}php-pear
+BuildRequires:  %{?scl_prefix}php-simplexml
 BuildRequires:  libedit-devel
 BuildRequires:  libtool
 %if %{with_tests}
@@ -68,21 +72,19 @@ Obsoletes:     php53-pecl-%{pecl_name}  <= %{version}
 Obsoletes:     php53u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php54-pecl-%{pecl_name}  <= %{version}
 Obsoletes:     php54w-pecl-%{pecl_name} <= %{version}
-%if "%{php_version}" > "5.5"
 Obsoletes:     php55u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php55w-pecl-%{pecl_name} <= %{version}
-%endif
-%if "%{php_version}" > "5.6"
 Obsoletes:     php56u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php56w-pecl-%{pecl_name} <= %{version}
-%endif
-%if "%{php_version}" > "7.0"
 Obsoletes:     php70u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php70w-pecl-%{pecl_name} <= %{version}
-%endif
 %if "%{php_version}" > "7.1"
 Obsoletes:     php71u-pecl-%{pecl_name} <= %{version}
 Obsoletes:     php71w-pecl-%{pecl_name} <= %{version}
+%endif
+%if "%{php_version}" > "7.2"
+Obsoletes:     php72u-pecl-%{pecl_name} <= %{version}
+Obsoletes:     php72w-pecl-%{pecl_name} <= %{version}
 %endif
 %endif
 
@@ -133,7 +135,6 @@ mv NTS/package.xml .
 %{?_licensedir:sed -e '/LICENSE/s/role="doc"/role="src"/' -i package.xml}
 
 cd NTS
-
 # Check extension version
 ver=$(sed -n '/XDEBUG_VERSION/{s/.* "//;s/".*$//;p}' php_xdebug.h)
 if test "$ver" != "%{version}%{?prever}%{?gh_date:-dev}"; then
@@ -216,6 +217,14 @@ done
 
 
 %check
+# Shared needed extensions
+modules=""
+for mod in simplexml; do
+  if [ -f %{php_extdir}/${mod}.so ]; then
+    modules="$modules -d extension=${mod}.so"
+  fi
+done
+
 # only check if build extension can be loaded
 %{_bindir}/php \
     --no-php-ini \
@@ -231,22 +240,11 @@ done
 
 %if %{with_tests}
 cd NTS
-# ignore kwown failed tests
-#rm tests/bug00623.phpt
-#rm tests/bug00687.phpt
-#rm tests/bug00778.phpt
-#rm tests/bug00806.phpt
-#rm tests/bug00840.phpt
-#rm tests/bug00886.phpt
-#rm tests/bug00913.phpt
-#rm tests/bug01059.phpt
-#rm tests/bug01104.phpt
-#rm tests/dbgp-context-get.phpt
-#rm tests/dbgp-property-get-constants.phpt
-
 : Upstream test suite NTS extension
+# bug00886 is marked as slow as it uses a lot of disk space
+SKIP_SLOW_TESTS=1 \
 TEST_PHP_EXECUTABLE=%{_bindir}/php \
-TEST_PHP_ARGS="-n -d extension=soap.so -d zend_extension=%{buildroot}%{php_extdir}/%{pecl_name}.so" \
+TEST_PHP_ARGS="-n $modules -d zend_extension=%{buildroot}%{php_extdir}/%{pecl_name}.so -d xdebug.auto_trace=0" \
 NO_INTERACTION=1 \
 REPORT_EXIT_STATUS=1 \
 %{__php} -n run-tests.php --show-diff
@@ -291,8 +289,47 @@ fi
 
 
 %changelog
-* Wed Jun 21 2017 Remi Collet <remi@remirepo.net> - 2.5.5-1
-- Update to 2.5.5
+* Tue Jan 30 2018 Remi Collet <remi@remirepo.net> - 2.6.0-1
+- update to 2.6.0 (stable)
+
+* Mon Jan 29 2018 Remi Collet <remi@remirepo.net> - 2.6.0-0.12.RC2
+- Add upstream patch for bigendian
+
+* Tue Jan 23 2018 Remi Collet <remi@remirepo.net> - 2.6.0-0.11.RC2
+- update to 2.6.0RC2
+
+* Fri Dec 29 2017 Remi Collet <remi@remirepo.net> - 2.6.0-0.10.beta1
+- update to 2.6.0beta1
+
+* Sun Dec  3 2017 Remi Collet <remi@remirepo.net> - 2.6.0-0.9.alpha1
+- update to 2.6.0alpha1
+
+* Mon Nov 13 2017 Remi Collet <remi@remirepo.net> - 2.6.0-0.8.20171112.f7a08bc
+- refresh
+
+* Wed Oct 18 2017 Remi Collet <remi@remirepo.net> - 2.6.0-0.7.20171018.33ed33d
+- refresh with upstream fix for big endian
+
+* Wed Oct 18 2017 Remi Collet <remi@remirepo.net> - 2.6.0-0.6.20171017.89ea903
+- refresh and fix test suite
+- enable test suite
+
+* Mon Oct  2 2017 Remi Collet <remi@remirepo.net> - 2.6.0-0.5.20170925.9da805c
+- rebuild
+
+* Tue Jul 18 2017 Remi Collet <remi@remirepo.net> - 2.6.0-0.4.20170601.d82879d
+- rebuild for PHP 7.2.0beta1 new API
+
+* Wed Jun 21 2017 Remi Collet <remi@remirepo.net> - 2.6.0-0.3.20170601.d82879d
+- add patch for 7.2.0alpha3 from
+  https://github.com/xdebug/xdebug/pull/359
+
+* Wed Jun 21 2017 Remi Collet <remi@remirepo.net> - 2.6.0-0.2.20170601.d82879d
+- rebuild for 7.2.0alpha2
+
+* Thu Jun 15 2017 Remi Collet <remi@remirepo.net> - 2.6.0-0.1.20170601.d82879d
+- update to 2.6.0-dev for PHP 7.2
+- raise dependency on PHP 7
 
 * Mon May 15 2017 Remi Collet <remi@remirepo.net> - 2.5.4-1
 - update to 2.5.4
@@ -355,7 +392,7 @@ fi
 - add 1 upstream patch (segfault in code coverage)
   http://bugs.xdebug.org/view.php?id=1195
 
-* Thu Nov 5 2015 Remi Collet <remi@fedoraproject.org> - 2.4.0-0.1.beta1
+* Thu Nov  5 2015 Remi Collet <remi@fedoraproject.org> - 2.4.0-0.1.beta1
 - update to 2.4.0beta1
 
 * Fri Jun 19 2015 Remi Collet <remi@fedoraproject.org> - 2.3.3-1
