@@ -2,12 +2,12 @@
 
 Summary: LSI MegaRAID StorCLI
 Name: storcli
-Version: 1.16.06
-Release: 2
+Version: 7.6
+Release: 1
 License: Proprietary
 Group: System Environment/Base
-URL: http://www.lsi.com/
-Source0: http://docs.avagotech.com/docs-and-downloads/raid-controllers/raid-controllers-common-files/MR_SAS_StorCLI_1-16-06.zip
+URL: https://www.broadcom.com/
+Source0: https://docs.broadcom.com/docs-and-downloads/raid-controllers/raid-controllers-common-files/007.0606.0000.0000_Unified_StorCLI.zip
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Buildrequires: dos2unix
 ExclusiveArch: %{ix86} x86_64
@@ -18,17 +18,18 @@ LSI (Avago) MegaRAID StorCLI.
 
 %prep
 %setup -q -c
-# We have rpms inside a zip inside a zip...
-unzip storcli_all_os.zip
+# We have rpms inside a zip inside a zip inside a zip...
+unzip MR_SAS_Unified_StorCLI_%{version}-*.zip
+unzip versionChangeSet/univ_viva_cli_rel/Unified_storcli_all_os.zip
 # Convert from iso8859-1/dos to utf-8/unix
-for txt in %{version}_StorCLI.txt storcli_all_os/Linux/*.txt; do
+for txt in *_StorCLI.txt Unified_storcli_all_os/Linux/*.txt; do
   iconv -f iso8859-1 -t utf-8 -o tmp ${txt}
   dos2unix tmp
   touch -r ${txt} tmp
   mv tmp ${txt}
 done
 # Extract the 'noarch' rpm
-rpm2cpio storcli_all_os/Linux/storcli-%{version}-1.noarch.rpm | cpio -dim
+rpm2cpio Unified_storcli_all_os/Linux/storcli-*.noarch.rpm | cpio -dim
 
 
 %build
@@ -36,7 +37,6 @@ rpm2cpio storcli_all_os/Linux/storcli-%{version}-1.noarch.rpm | cpio -dim
 
 %install
 rm -rf %{buildroot}
-# No idea what the libstorelibir-2.so.14.07-0 64bit shared lib is for, so skip
 %ifarch %{ix86}
 install -p -D -m 0755 opt/MegaRAID/storcli/storcli \
   %{buildroot}%{_sbindir}/storcli
@@ -53,11 +53,15 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%doc %{version}_StorCLI.txt storcli_all_os/Linux/*.txt
+%license Unified_storcli_all_os/Linux/license.txt
+%doc *_StorCLI.txt Unified_storcli_all_os/Linux/LINUX_Readme.txt
 %{_sbindir}/storcli
 
 
 %changelog
+* Thu Jun  7 2018 Matthias Saou <matthias@saou.eu> 7.6-1
+- Update to 7.6.
+
 * Tue Sep 29 2015 Matthias Saou <matthias@saou.eu> 1.16.06-2
 - Initial RPM release.
 
