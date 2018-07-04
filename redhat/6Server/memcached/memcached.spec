@@ -17,11 +17,7 @@
 %global with_systemd 0
 %endif
 
-%if %{__isa_bits} == 64
 %global with_extstore 1
-%else
-%global with_extstore 0
-%endif
 
 %global with_sasl    1
 
@@ -29,7 +25,7 @@
 %global with_tests   %{?_with_tests:1}%{!?_with_tests:0}
 
 Name:           memcached
-Version:        1.5.7
+Version:        1.5.8
 Release:        1%{?dist}
 Epoch:          0
 Summary:        High Performance, Distributed Memory Object Cache
@@ -259,6 +255,10 @@ fi
 
 
 %changelog
+* Fri May 25 2018 Remi Collet <remi@remirepo.net> - 0:1.5.8-1
+- Update to 1.5.8
+- enable extstore feature on 32-bit
+
 * Thu Mar 29 2018 Remi Collet <remi@remirepo.net> - 0:1.5.7-1
 - Update to 1.5.7
 
