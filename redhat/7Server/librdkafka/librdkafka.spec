@@ -7,12 +7,12 @@
 # Please, preserve the changelog entries
 #
 %global libname      librdkafka
-%global gh_commit    261371dc0edef4cea9e58a076c8e8aa7dc50d452
+%global gh_commit    44242a464c43e09c685f47a7f3dca2963b10e2a9
 %global gh_short     %(c=%{gh_commit}; echo ${c:0:7})
 %global gh_owner     edenhill
 %global gh_project   %{libname}
 
-%global upstream_version 0.11.1
+%global upstream_version 0.11.5
 #global upstream_prever  RC1
 
 Name:    %{libname}
@@ -75,10 +75,13 @@ make %{?_smp_mflags}
 make install DESTDIR=%{buildroot}
 
 rm %{buildroot}%{_libdir}/*.a
+rm %{buildroot}%{_libdir}/pkgconfig/*static.pc
 
 
-%post -p /sbin/ldconfig
+%if 0%{?fedora} < 28 && 0%{?rhel} < 8
+%post   -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
+%endif
 
 
 %files
@@ -97,7 +100,18 @@ rm %{buildroot}%{_libdir}/*.a
 %{_libdir}/pkgconfig/rdkafka++.pc
 
 
+### NOTICE: available in EPEL-7 so not in remi
+
 %changelog
+* Thu Jul 19 2018 Remi Collet <remi@remirepo.net> - 0.11.5-1
+- update to 0.11.5
+
+* Thu Mar 29 2018 Remi Collet <remi@remirepo.net> - 1.11.4-1
+- update to 1.11.4
+
+* Wed Dec  6 2017 Remi Collet <remi@remirepo.net> - 0.11.3-1
+- update to 0.11.3
+
 * Wed Oct 18 2017 Remi Collet <remi@remirepo.net> - 0.11.1-1
 - update to 0.11.1
 
