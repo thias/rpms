@@ -107,7 +107,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.0.29
+%global upver        7.0.31
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -1134,9 +1134,6 @@ rm -f TSRM/tsrm_win32.h \
 find . -name \*.[ch] -exec chmod 644 {} \;
 chmod 644 README.*
 
-# php-fpm configuration files for tmpfiles.d
-echo "d /run/php-fpm 755 root root" >php-fpm.tmpfiles
-
 # Some extensions have their own configuration file
 cp %{SOURCE50} 10-opcache.ini
 %if 0%{?rhel} != 6
@@ -1635,9 +1632,6 @@ install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 install -m 644 %{SOURCE8} $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/php-fpm
 %if %{with_systemd}
 install -m 755 -d $RPM_BUILD_ROOT/run/php-fpm
-# tmpfiles.d
-install -m 755 -d $RPM_BUILD_ROOT%{_prefix}/lib/tmpfiles.d
-install -m 644 php-fpm.tmpfiles $RPM_BUILD_ROOT%{_prefix}/lib/tmpfiles.d/php-fpm.conf
 # install systemd unit files and scripts for handling server startup
 # this folder requires systemd >= 204
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/php-fpm.service.d
@@ -1947,10 +1941,9 @@ fi
 %config(noreplace) %{_sysconfdir}/nginx/default.d/php.conf
 %endif
 %if %{with_systemd}
-%{_prefix}/lib/tmpfiles.d/php-fpm.conf
 %{_unitdir}/php-fpm.service
 %dir %{_sysconfdir}/systemd/system/php-fpm.service.d
-%dir /run/php-fpm
+%dir %ghost /run/php-fpm
 %else
 %{_initrddir}/php-fpm
 %dir %{_localstatedir}/run/php-fpm
@@ -2031,6 +2024,13 @@ fi
 
 
 %changelog
+* Tue Jul 17 2018 Remi Collet <remi@remirepo.net> - 7.0.31-1
+- Update to 7.0.31 - http://www.php.net/releases/7_0_31.php
+
+* Tue Apr 24 2018 Remi Collet <remi@remirepo.net> - 7.0.30-1
+- Update to 7.0.30 - http://www.php.net/releases/7_0_30.php
+- use systemd RuntimeDirectory instead of /etc/tmpfiles.d
+
 * Wed Mar 28 2018 Remi Collet <remi@remirepo.net> - 7.0.29-1
 - Update to 7.0.29 - http://www.php.net/releases/7_0_29.php
 - FPM: update default pool configuration for process.dumpable
