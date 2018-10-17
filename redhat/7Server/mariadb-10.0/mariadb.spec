@@ -112,7 +112,7 @@
 # Make long macros shorter
 %global sameevr   %{epoch}:%{version}-%{release}
 %global compatver 10.0
-%global bugfixver 34
+%global bugfixver 36
 
 Name:             mariadb
 Version:          %{compatver}.%{bugfixver}
@@ -1153,6 +1153,9 @@ fi
 %endif
 
 %changelog
+* Wed Oct 17 2018 Matthias Saou <matthias@saou.eu> 1:10.0.36-1
+- Update to 10.0.36.
+
 * Mon Feb 12 2018 Matthias Saou <matthias@saou.eu> 1:10.0.34-1
 - Update to 10.0.34.
 
