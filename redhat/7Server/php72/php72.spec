@@ -28,7 +28,7 @@
 %ifarch ppc ppc64
 %global oraclever 10.2.0.2
 %else
-%global oraclever 12.2
+%global oraclever 18.3
 %endif
 
 # Build for LiteSpeed Web Server (LSAPI)
@@ -111,7 +111,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.2.8
+%global upver        7.2.12
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -123,7 +123,8 @@ Release: 1%{?dist}
 # TSRM is licensed under BSD
 # main/snprintf.c, main/spprintf.c and main/rfc1867.c are ASL 1.0
 # ext/date/lib is MIT
-License: PHP and Zend and BSD and MIT and ASL 1.0
+# Zend/zend_sort is NCSA
+License: PHP and Zend and BSD and MIT and ASL 1.0 and NCSA
 Group: Development/Languages
 URL: http://www.php.net/
 
@@ -160,7 +161,7 @@ Patch9: php-7.0.7-curl.patch
 Patch40: php-7.2.4-dlopen.patch
 Patch42: php-7.2.3-systzdata-v16.patch
 # See http://bugs.php.net/53436
-Patch43: php-5.4.0-phpize.patch
+Patch43: php-7.2.12-phpize.patch
 # Use -lldap_r for OpenLDAP
 Patch45: php-7.2.3-ldap_r.patch
 # Make php_config.h constant across builds
@@ -273,6 +274,8 @@ which adds support for the PHP language to Apache HTTP Server.
 %package cli
 Group: Development/Languages
 Summary: Command-line interface for PHP
+# sapi/cli/ps_title.c is PostgreSQL
+License:  PHP and Zend and BSD and MIT and ASL 1.0 and NCSA and PostgreSQL
 Requires: php-common%{?_isa} = %{version}-%{release}
 Provides: php-cgi = %{version}-%{release}, php-cgi%{?_isa} = %{version}-%{release}
 Provides: php-pcntl, php-pcntl%{?_isa}
@@ -1135,6 +1138,8 @@ rm ext/sockets/tests/mcast_ipv?_recv.phpt
 # cause stack exhausion
 rm Zend/tests/bug54268.phpt
 rm Zend/tests/bug68412.phpt
+# slow and erratic result
+rm sapi/cli/tests/upload_2G.phpt
 # avoid issue when 2 builds run simultaneously
 %ifarch x86_64
 sed -e 's/64321/64322/' -i ext/openssl/tests/*.phpt
@@ -1250,9 +1255,10 @@ touch configure.ac
 %if %{with_debug}
 LDFLAGS="-fsanitize=address"
 export LDFLAGS
-CFLAGS="$RPM_OPT_FLAGS -fno-strict-aliasing -Wno-pointer-sign -fsanitize=address -ggdb"
+CFLAGS=$(echo $RPM_OPT_FLAGS -fno-strict-aliasing -Wno-pointer-sign  -fsanitize=address -ggdb | sed 's/-mstackrealign//')
 %else
 CFLAGS="$RPM_OPT_FLAGS -fno-strict-aliasing -Wno-pointer-sign"
+CFLAGS=$(echo $RPM_OPT_FLAGS -fno-strict-aliasing -Wno-pointer-sign | sed 's/-mstackrealign//')
 %endif
 export CFLAGS
 
@@ -2139,6 +2145,31 @@ fi
 
 
 %changelog
+* Tue Nov  6 2018 Remi Collet <remi@remirepo.net> - 7.2.12-1
+- Update to 7.2.12 - http://www.php.net/releases/7_2_12.php
+
+* Tue Oct 23 2018 Remi Collet <remi@remirepo.net> - 7.2.12~RC1-1
+- update to 7.2.12RC1
+
+* Wed Oct 10 2018 Remi Collet <remi@remirepo.net> - 7.2.11-1
+- Update to 7.2.11 - http://www.php.net/releases/7_2_11.php
+
+* Wed Sep 26 2018 Remi Collet <remi@remirepo.net> - 7.2.11~RC1-1
+- update to 7.2.11RC1
+- use oracle client library version 18.3
+
+* Tue Sep 11 2018 Remi Collet <remi@remirepo.net> - 7.2.10-1
+- Update to 7.2.10 - http://www.php.net/releases/7_2_10.php
+
+* Tue Aug 28 2018 Remi Collet <remi@remirepo.net> - 7.2.10~RC1-1
+- update to 7.2.10RC1
+
+* Wed Aug 22 2018 Remi Collet <remi@remirepo.net> - 7.2.9-2
+- drop -mstackrealign option, workaround to #1593144
+
+* Wed Aug 15 2018 Remi Collet <remi@remirepo.net> - 7.2.9-1
+- Update to 7.2.9 - http://www.php.net/releases/7_2_9.php
+
 * Tue Jul 17 2018 Remi Collet <remi@remirepo.net> - 7.2.8-1
 - Update to 7.2.8 - http://www.php.net/releases/7_2_8.php
 
