@@ -7,12 +7,12 @@
 # Please, preserve the changelog entries
 #
 %global libname      librdkafka
-%global gh_commit    44242a464c43e09c685f47a7f3dca2963b10e2a9
+%global gh_commit    849c066b559950b02e37a69256f0cb7b04381d0e
 %global gh_short     %(c=%{gh_commit}; echo ${c:0:7})
 %global gh_owner     edenhill
 %global gh_project   %{libname}
 
-%global upstream_version 0.11.5
+%global upstream_version 0.11.6
 #global upstream_prever  RC1
 
 Name:    %{libname}
@@ -103,6 +103,9 @@ rm %{buildroot}%{_libdir}/pkgconfig/*static.pc
 ### NOTICE: available in EPEL-7 so not in remi
 
 %changelog
+* Fri Oct 19 2018 Remi Collet <remi@remirepo.net> - 0.11.6-1
+- update to 0.11.6
+
 * Thu Jul 19 2018 Remi Collet <remi@remirepo.net> - 0.11.5-1
 - update to 0.11.5
 
