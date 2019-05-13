@@ -13,7 +13,7 @@
 %global pdover      20170320
 # Extension version
 %global fileinfover 1.0.5
-%global oci8ver     2.1.8
+%global oci8ver     2.2.0
 %global zipver      1.13.0
 %global jsonver     1.7.0
 
@@ -50,11 +50,7 @@
 %else
 %global with_libpcre  0
 %endif
-%if 0%{?fedora} >= 28
 %global with_onig     1
-%else
-%global with_onig     0
-%endif
 
 %global with_sqlite3  1
 
@@ -118,9 +114,9 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.3.0
-#global rcver        RC6
-#global lower        rc6
+%global upver        7.3.5
+#global rcver        RC1
+#global lower        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
@@ -167,7 +163,7 @@ Patch9: php-7.0.7-curl.patch
 
 # Functional changes
 Patch40: php-7.2.4-dlopen.patch
-Patch42: php-7.2.3-systzdata-v16.patch
+Patch42: php-7.3.3-systzdata-v18.patch
 # See http://bugs.php.net/53436
 Patch43: php-7.3.0-phpize.patch
 # Use -lldap_r for OpenLDAP
@@ -176,6 +172,8 @@ Patch45: php-7.2.3-ldap_r.patch
 Patch46: php-7.2.4-fixheader.patch
 # drop "Configure command" from phpinfo output
 Patch47: php-5.6.3-phpinfo.patch
+# backport PDOStatement::getColumnMeta from 7.4
+Patch48: php-7.3.3-pdooci.patch
 
 # RC Patch
 Patch91: php-7.2.0-oci8conf.patch
@@ -226,6 +224,7 @@ BuildRequires: %{?dtsprefix}systemtap-sdt-devel
 %endif
 BuildRequires: libargon2-devel
 #BuildRequires: bison
+# used for tests
 BuildRequires: /bin/ps
 
 %if 0%{?rhel}
@@ -437,9 +436,16 @@ Requires: automake
 Requires: gcc
 Requires: gcc-c++
 Requires: libtool
+# see "php-config --libs"
+Requires: krb5-devel%{?_isa}
+Requires: libargon2-devel%{?_isa}
+Requires: libedit-devel%{?_isa}
+Requires: libxml2-devel%{?_isa}
+Requires: openssl-devel%{?_isa}
 %if %{with_libpcre}
 Requires: pcre2-devel%{?_isa}
 %endif
+Requires: zlib-devel%{?_isa}
 Obsoletes: php-pecl-pdo-devel
 Obsoletes: php-pecl-json-devel  < %{jsonver}
 Obsoletes: php-pecl-jsonc-devel < %{jsonver}
@@ -700,11 +706,13 @@ License:        PHP
 BuildRequires:  oracle-instantclient-devel >= %{oraclever}
 Requires:       php-pdo%{?_isa} = %{version}-%{release}
 Provides:       php_database
-Provides:       php-pdo_oci, php-pdo_oci%{?_isa}
-Obsoletes:      php-pecl-oci8 <  %{oci8ver}
-Conflicts:      php-pecl-oci8 >= %{oci8ver}
-Provides:       php-pecl(oci8) = %{oci8ver}, php-pecl(oci8)%{?_isa} = %{oci8ver}
-# Should requires libclntsh.so.12.1, but it's not provided by Oracle RPM.
+Provides:       php-pdo_oci
+Provides:       php-pdo_oci%{?_isa}
+Obsoletes:      php-pecl-oci8         <= %{oci8ver}
+Conflicts:      php-pecl-oci8         >  %{oci8ver}
+Provides:       php-pecl(oci8)         = %{oci8ver}
+Provides:       php-pecl(oci8)%{?_isa} = %{oci8ver}
+# Should requires libclntsh.so.18.3, but it's not provided by Oracle RPM.
 AutoReq:        0
 %if 0%{?rhel}
 Obsoletes:      php53-oci8, php53u-oci8, php54-oci8, php54w-oci8, php55u-oci8, php55w-oci8, php56u-oci8, php56w-oci8
@@ -801,7 +809,8 @@ Group: Development/Languages
 # ucgendat is licensed under OpenLDAP
 License: PHP and LGPLv2 and BSD and OpenLDAP
 %if %{with_onig}
-BuildRequires: oniguruma-devel
+# ensure we have soname 5
+BuildRequires: oniguruma-devel >= 6.8
 %else
 Provides: bundled(oniguruma) = 6.9.0
 %endif
@@ -1002,7 +1011,7 @@ Group: System Environment/Libraries
 # All files licensed under PHP version 3.01
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
-# Upstream requires 4.0, we require 50 to ensure use of libicu-last
+# Upstream requires 4.0, we require 50 to ensure use of libicu-last / libicu62
 BuildRequires: libicu-devel >= 50
 %if 0%{?rhel}
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
@@ -1072,6 +1081,7 @@ Provides:  php-pecl-json          = %{jsonver}
 Provides:  php-pecl-json%{?_isa}  = %{jsonver}
 %if 0%{?rhel}
 Obsoletes: php53-json, php53u-json, php54-json, php54w-json, php55u-json, php55w-json, php56u-json, php56w-json
+Obsoletes: php55u-pecl-jsonc, php56u-pecl-jsonc
 Obsoletes: php70u-json, php70w-json, php71u-json, php71w-json, php72u-json, php72w-json
 Obsoletes: php73u-json, php73w-json
 %endif
@@ -1118,7 +1128,7 @@ low-level PHP extension for the libsodium cryptographic library.
 %endif
 
 %patch40 -p1 -b .dlopen
-%if 0%{?fedora} >= 25 || 0%{?rhel} >= 6
+%if 0%{?fedora} >= 28 || 0%{?rhel} >= 6
 %patch42 -p1 -b .systzdata
 %endif
 %patch43 -p1 -b .headers
@@ -1127,6 +1137,7 @@ low-level PHP extension for the libsodium cryptographic library.
 %endif
 %patch46 -p1 -b .fixheader
 %patch47 -p1 -b .phpinfo
+%patch48 -p1 -b .pdooci
 
 %patch91 -p1 -b .remi-oci8
 
@@ -1168,6 +1179,12 @@ mkdir build-cgi build-apache build-embedded \
 rm ext/date/tests/timezone_location_get.phpt
 rm ext/date/tests/timezone_version_get.phpt
 rm ext/date/tests/timezone_version_get_basic1.phpt
+%if 0%{?fedora} < 28
+# need tzdata 2018i
+rm ext/date/tests/bug33414-1.phpt
+rm ext/date/tests/bug33415-2.phpt
+rm ext/date/tests/date_modify-1.phpt
+%endif
 # Should be skipped but fails sometime
 rm ext/standard/tests/file/file_get_contents_error001.phpt
 # fails sometime
@@ -1351,7 +1368,7 @@ ln -sf ../configure
     --with-layout=GNU \
     --with-kerberos \
     --with-libxml-dir=%{_prefix} \
-%if 0%{?fedora} >= 25 || 0%{?rhel} >= 6
+%if 0%{?fedora} >= 28 || 0%{?rhel} >= 6
     --with-system-tzdata \
 %endif
     --with-mhash \
@@ -1721,7 +1738,7 @@ cat %{SOURCE1} >>$RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
 %else
 # Dual config file with httpd >= 2.4 (fedora >= 18)
 install -D -m 644 %{SOURCE9} $RPM_BUILD_ROOT%{_httpd_modconfdir}/15-php.conf
-%if %{with_zts}
+%if %{with_zts} && 0%{?fedora} < 27 && 0%{?rhel} < 8
 cat %{SOURCE10} >>$RPM_BUILD_ROOT%{_httpd_modconfdir}/15-php.conf
 %endif
 install -D -m 644 %{SOURCE1} $RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
@@ -1847,7 +1864,9 @@ for mod in pgsql odbc ldap snmp xmlrpc imap json \
     # some extensions have their own config file
     if [ -f ${ini} ]; then
       cp -p ${ini} $RPM_BUILD_ROOT%{_sysconfdir}/php.d/${ini}
+      %if %{with_zts}
       cp -p ${ini} $RPM_BUILD_ROOT%{_sysconfdir}/php-zts.d/${ini}
+      %endif
     else
       cat > $RPM_BUILD_ROOT%{_sysconfdir}/php.d/${ini} <<EOF
 ; Enable ${mod} extension module
@@ -1907,9 +1926,11 @@ cat files.curl files.phar files.fileinfo \
 
 # The default Zend OPcache blacklist file
 install -m 644 %{SOURCE51} $RPM_BUILD_ROOT%{_sysconfdir}/php.d/opcache-default.blacklist
+%if %{with_zts}
 install -m 644 %{SOURCE51} $RPM_BUILD_ROOT%{_sysconfdir}/php-zts.d/opcache-default.blacklist
 sed -e '/blacklist_filename/s/php.d/php-zts.d/' \
     -i $RPM_BUILD_ROOT%{_sysconfdir}/php-zts.d/10-opcache.ini
+%endif
 
 # Install the macros file:
 sed -e "s/@PHP_APIVER@/%{apiver}%{isasuffix}/" \
@@ -1938,7 +1959,7 @@ rm -f README.{Zeus,QNX,CVS-RULES}
 
 
 %pre common
-%if %{?fedora}%{!?fedora:99} < 25
+%if %{?fedora}%{!?fedora:99} < 28
 echo -e "WARNING : Fedora %{fedora} is now EOL :"
 echo -e "You should consider upgrading to a supported release.\n"
 %endif
@@ -2192,6 +2213,55 @@ fi
 
 
 %changelog
+* Wed May  1 2019 Remi Collet <remi@remirepo.net> - 7.3.5-1
+- Update to 7.3.5 - http://www.php.net/releases/7_3_5.php
+
+* Tue Apr 16 2019 Remi Collet <remi@remirepo.net> - 7.3.5~RC1-1
+- update to 7.3.5RC1
+
+* Fri Apr  5 2019 Remi Collet <remi@remirepo.net> - 7.3.4-2
+- build with system oniguruma5
+
+* Tue Apr  2 2019 Remi Collet <remi@remirepo.net> - 7.3.4-1
+- Update to 7.3.4 - http://www.php.net/releases/7_3_4.php
+
+* Thu Mar 21 2019 Remi Collet <remi@remirepo.net> - 7.3.4~RC1-2
+- update to 7.3.4RC1 new tag
+- add upstream patches for failed tests
+
+* Tue Mar 19 2019 Remi Collet <remi@remirepo.net> - 7.3.4~RC1-1
+- update to 7.3.4RC1
+
+* Tue Mar  5 2019 Remi Collet <remi@remirepo.net> - 7.3.3-1
+- Update to 7.3.3 - http://www.php.net/releases/7_3_3.php
+- add upstream patch for OpenSSL 1.1.1b
+
+* Fri Feb 22 2019 Remi Collet <remi@remirepo.net> - 7.3.3~RC1-2
+- php-devel: drop dependency on libicu-devel
+
+* Tue Feb 19 2019 Remi Collet <remi@remirepo.net> - 7.3.3~RC1-1
+- update to 7.3.3RC1
+- adapt systzdata patch (v18)
+
+* Mon Feb 18 2019 Remi Collet <remi@remirepo.net> - 7.3.2-2
+- pdo_oci: backport PDOStatement::getColumnMeta from 7.4
+- rebuild using libicu62
+- drop configuration for ZTS mod_php (Fedora >= 27)
+
+* Wed Feb  6 2019 Remi Collet <remi@remirepo.net> - 7.3.2-1
+- Update to 7.3.2 - http://www.php.net/releases/7_3_2.php
+
+* Tue Jan 22 2019 Remi Collet <remi@remirepo.net> - 7.3.2~RC1-1
+- update to 7.3.2RC1
+- update system tzdata patch for timelib 2018.01
+
+* Tue Jan  8 2019 Remi Collet <remi@remirepo.net> - 7.3.1-1
+- Update to 7.3.1 - http://www.php.net/releases/7_3_1.php
+
+* Tue Dec 18 2018 Remi Collet <remi@remirepo.net> - 7.3.1~RC1-1
+- update to 7.3.1RC1
+- oci8 version is now 2.1.8
+
 * Tue Dec  4 2018 Remi Collet <remi@remirepo.net> - 7.3.0-1
 - update to 7.3.0 GA
 - update FPM configuration from upstream
