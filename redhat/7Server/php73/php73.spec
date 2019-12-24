@@ -25,10 +25,12 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%ifarch ppc ppc64
-%global oraclever 10.2.0.2
-%else
+%if 0%{?rhel} == 6
 %global oraclever 18.3
+%global oraclelib 18.1
+%else
+%global oraclever 19.3
+%global oraclelib 19.1
 %endif
 
 # Build for LiteSpeed Web Server (LSAPI)
@@ -114,7 +116,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.3.5
+%global upver        7.3.8
 #global rcver        RC1
 #global lower        RC1
 
@@ -229,7 +231,7 @@ BuildRequires: /bin/ps
 
 %if 0%{?rhel}
 Obsoletes: php53, php53u, php54w, php55u, php55w, php56u, php56w, mod_php70u, php70w, mod_php71u, mod_php71w, mod_php72u, mod_php72w
-Obsoletes: mod_php73u, mod_php73w
+Obsoletes: mod_php73, mod_php73w
 %endif
 # Avoid obsoleting php54 from RHSCL
 Obsoletes: php54 > 5.4
@@ -254,7 +256,13 @@ Requires(pre): httpd
 Provides: php(httpd)
 %if 0%{?fedora} >= 27 || 0%{?rhel} >= 8
 # httpd have threaded MPM by default
-Recommends: php-fpm%{?_isa} = %{version}-%{release}
+Recommends: php-fpm%{?_isa}      = %{version}-%{release}
+# as "php" is now mostly a meta-package, commonly used extensions
+Recommends: php-json%{?_isa}     = %{version}-%{release}
+Recommends: php-mbstring%{?_isa} = %{version}-%{release}
+Recommends: php-opcache%{?_isa}  = %{version}-%{release}
+Recommends: php-pdo%{?_isa}      = %{version}-%{release}
+Recommends: php-xml%{?_isa}      = %{version}-%{release}
 %endif
 
 %if 0%{?fedora} < 20 && 0%{?rhel} < 7
@@ -289,7 +297,7 @@ Provides: php-readline, php-readline%{?_isa}
 %if 0%{?rhel}
 Obsoletes: php53-cli, php53u-cli, php54-cli, php54w-cli, php55u-cli, php55w-cli, php56u-cli, php56w-cli
 Obsoletes: php70u-cli, php70w-cli, php71u-cli, php71w-cli, php72u-cli, php72w-cli
-Obsoletes: php73u-cli, php73w-cli
+Obsoletes: php73-cli, php73w-cli
 %endif
 
 %description cli
@@ -303,7 +311,7 @@ Summary: The interactive PHP debugger
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel}
 Obsoletes: php56u-dbg, php56w-dbg, php70u-dbg, php70w-phpdbg, php71u-dbg, php71w-phpdbg, php72u-dbg, php72w-phpdbg
-Obsoletes: php73u-dbg, php73w-phpdbg
+Obsoletes: php73-dbg, php73w-phpdbg
 %endif
 %description dbg
 The php-dbg package contains the interactive PHP debugger.
@@ -343,7 +351,7 @@ Requires: nginx-filesystem
 %if 0%{?rhel}
 Obsoletes: php53-fpm, php53u-fpm, php54-fpm, php54w-fpm, php55u-fpm, php55w-fpm, php56u-fpm, php56w-fpm
 Obsoletes: php70u-fpm, php70w-fpm, php71u-fpm, php71w-fpm, php72u-fpm, php72w-fpm
-Obsoletes: php73u-fpm, php73w-fpm
+Obsoletes: php73-fpm, php73w-fpm
 %endif
 
 %description fpm
@@ -359,7 +367,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel}
 Obsoletes: php53-litespeed, php53u-litespeed, php54-litespeed, php54w-litespeed, php55u-litespeed, php55w-litespeed, php56u-litespeed, php56w-litespeed
 Obsoletes: php70u-litespeed, php70w-litespeed, php71u-litespeed, php71w-litespeed, php72u-litespeed, php72w-litespeed
-Obsoletes: php73u-litespeed, php73w-litespeed
+Obsoletes: php73-litespeed, php73w-litespeed
 %endif
 
 %description litespeed
@@ -419,7 +427,7 @@ Obsoletes: php-mhash < 5.3.0
 Obsoletes: php53-mhash, php53u-mhash
 Obsoletes: php53-common, php53u-common, php54-common, php54w-common, php55u-common, php55w-common, php56u-common, php56w-common
 Obsoletes: php70u-common, php70w-common, php71u-common, php71w-common, php72u-common, php72w-common
-Obsoletes: php73u-common, php73w-common
+Obsoletes: php73-common, php73w-common
 %endif
 
 %description common
@@ -456,7 +464,7 @@ Provides: php-zts-devel%{?_isa} = %{version}-%{release}
 %if 0%{?rhel}
 Obsoletes: php53-devel, php53u-devel, php54-devel, php54w-devel, php55u-devel, php55w-devel, php56u-devel, php56w-devel
 Obsoletes: php70u-devel, php70w-devel, php71u-devel, php71w-devel, php72u-devel, php72w-devel
-Obsoletes: php73u-devel, php73w-devel
+Obsoletes: php73-devel, php73w-devel
 %endif
 
 %description devel
@@ -477,7 +485,7 @@ Provides:  php-pecl(opcache)%{?_isa} = %{version}
 %if 0%{?rhel}
 Obsoletes: php55u-opcache, php55w-opcache, php56u-opcache, php56w-opcache
 Obsoletes: php70u-opcache, php70w-opcache, php71u-opcache, php71w-opcache, php72u-opcache, php72w-opcache
-Obsoletes: php73u-opcache, php73w-opcache
+Obsoletes: php73-opcache, php73w-opcache
 %endif
 
 %description opcache
@@ -498,7 +506,7 @@ BuildRequires: krb5-devel, openssl-devel, libc-client-devel
 %if 0%{?rhel}
 Obsoletes: php53-imap, php53u-imap, php54-imap, php54w-imap, php55u-imap, php55w-imap, php56u-imap, php56w-imap
 Obsoletes: php70u-imap, php70w-imap, php71u-imap, php71w-imap, php72u-imap, php72w-imap
-Obsoletes: php73u-imap, php73w-imap
+Obsoletes: php73-imap, php73w-imap
 %endif
 
 %description imap
@@ -516,7 +524,7 @@ BuildRequires: cyrus-sasl-devel, openldap-devel, openssl-devel
 %if 0%{?rhel}
 Obsoletes: php53-ldap, php53u-ldap, php54-ldap, php54w-ldap, php55u-ldap, php55w-ldap, php56u-ldap, php56w-ldap
 Obsoletes: php70u-ldap, php70w-ldap, php71u-ldap, php71w-ldap, php72u-ldap, php72w-ldap
-Obsoletes: php73u-ldap, php73w-ldap
+Obsoletes: php73-ldap, php73w-ldap
 %endif
 
 %description ldap
@@ -541,7 +549,7 @@ Provides: php-pdo_sqlite, php-pdo_sqlite%{?_isa}
 %if 0%{?rhel}
 Obsoletes: php53-pdo, php53u-pdo, php54-pdo, php54w-pdo, php55u-pdo, php55w-pdo, php56u-pdo, php56w-pdo
 Obsoletes: php70u-pdo, php70w-pdo, php71u-pdo, php71w-pdo, php72u-pdo, php72w-pdo
-Obsoletes: php73u-pdo, php73w-pdo
+Obsoletes: php73-pdo, php73w-pdo
 %endif
 
 %description pdo
@@ -564,10 +572,10 @@ Obsoletes: php-mysql < %{version}-%{release}
 %if 0%{?rhel}
 Obsoletes: php53-mysqlnd, php53u-mysqlnd, php54-mysqlnd, php54w-mysqlnd, php55u-mysqlnd, php55w-mysqlnd, php56u-mysqlnd, php56w-mysqlnd
 Obsoletes: php70u-mysqlnd, php70w-mysqlnd, php71u-mysqlnd, php71w-mysqlnd, php72u-mysqlnd, php72w-mysqlnd
-Obsoletes: php73u-mysqlnd, php73w-mysqlnd
+Obsoletes: php73-mysqlnd, php73w-mysqlnd
 Obsoletes: php53-mysql, php53u-mysql, php54-mysql, php54w-mysql, php55u-mysql, php55w-mysql, php56u-mysql, php56w-mysql
 Obsoletes: php70u-mysql, php70w-mysql, php71u-mysql, php71w-mysql, php72u-mysql, php72w-mysql
-Obsoletes: php73u-mysql, php73w-mysql
+Obsoletes: php73-mysql, php73w-mysql
 %endif
 
 %description mysqlnd
@@ -591,7 +599,7 @@ BuildRequires: krb5-devel, openssl-devel, postgresql-devel
 %if 0%{?rhel}
 Obsoletes: php53-pgsql, php53u-pgsql, php54-pgsql, php54w-pgsql, php55u-pgsql, php55w-pgsql, php56u-pgsql, php56w-pgsql
 Obsoletes: php70u-pgsql, php70w-pgsql, php71u-pgsql, php71w-pgsql, php72u-pgsql, php72w-pgsql
-Obsoletes: php73u-pgsql, php73w-pgsql
+Obsoletes: php73-pgsql, php73w-pgsql
 %endif
 
 %description pgsql
@@ -616,7 +624,7 @@ Provides: php-sysvmsg, php-sysvmsg%{?_isa}
 %if 0%{?rhel}
 Obsoletes: php53-process, php53u-process, php54-process, php54w-process, php55u-process, php55w-process, php56u-process, php56w-process
 Obsoletes: php70u-process, php70w-process, php71u-process, php71w-process, php72u-process, php72w-process
-Obsoletes: php73u-process, php73w-process
+Obsoletes: php73-process, php73w-process
 %endif
 
 %description process
@@ -637,7 +645,7 @@ BuildRequires: unixODBC-devel
 %if 0%{?rhel}
 Obsoletes: php53-odbc, php53u-odbc, php54-odbc, php54w-odbc, php55u-odbc, php55w-odbc, php56u-odbc, php56w-odbc
 Obsoletes: php70u-odbc, php70w-odbc, php71u-odbc, php71w-odbc, php72u-odbc, php72w-odbc
-Obsoletes: php73u-odbc, php73w-odbc
+Obsoletes: php73-odbc, php73w-odbc
 %endif
 
 %description odbc
@@ -659,7 +667,7 @@ BuildRequires: libxml2-devel
 %if 0%{?rhel}
 Obsoletes: php53-soap, php53u-soap, php54-soap, php54w-soap, php55u-soap, php55w-soap, php56u-soap, php56w-soap
 Obsoletes: php70u-soap, php70w-soap, php71u-soap, php71w-soap, php72u-soap, php72w-soap
-Obsoletes: php73u-soap, php73w-soap
+Obsoletes: php73-soap, php73w-soap
 %endif
 
 %description soap
@@ -680,7 +688,7 @@ Provides: php-pdo_firebird, php-pdo_firebird%{?_isa}
 %if 0%{?rhel}
 Obsoletes: php53-interbase, php53u-interbase, php54-interbase, php54w-interbase, php55u-interbase, php55w-interbase, php56u-interbase, php56w-interbase
 Obsoletes: php70u-interbase, php70w-interbase, php71u-interbase, php71w-interbase, php72u-interbase, php72w-interbase
-Obsoletes: php73u-interbase, php73w-interbase
+Obsoletes: php73-interbase, php73w-interbase
 %endif
 
 %description interbase
@@ -717,7 +725,7 @@ AutoReq:        0
 %if 0%{?rhel}
 Obsoletes:      php53-oci8, php53u-oci8, php54-oci8, php54w-oci8, php55u-oci8, php55w-oci8, php56u-oci8, php56w-oci8
 Obsoletes:      php70u-oci8, php70w-oci8, php71u-oci8, php71w-oci8, php72u-oci8, php72w-oci8
-Obsoletes:      php73u-oci8, php73w-oci8
+Obsoletes:      php73-oci8, php73w-oci8
 %endif
 
 %description oci8
@@ -728,7 +736,7 @@ The extension is linked with Oracle client libraries %{oraclever}
 (Oracle Instant Client).  For details, see Oracle's note
 "Oracle Client / Server Interoperability Support" (ID 207303.1).
 
-You must install libclntsh.so.%{oraclever} to use this package, provided
+You must install libclntsh.so.%{oraclelib} to use this package, provided
 in the database installation, or in the free Oracle Instant Client
 available from Oracle.
 
@@ -749,7 +757,7 @@ BuildRequires: net-snmp-devel
 %if 0%{?rhel}
 Obsoletes: php53-snmp, php53u-snmp, php54-snmp, php54w-snmp, php55u-snmp, php55w-snmp, php56u-snmp, php56w-snmp
 Obsoletes: php70u-snmp, php70w-snmp, php71u-snmp, php71w-snmp, php72u-snmp, php72w-snmp
-Obsoletes: php73u-snmp, php73w-snmp
+Obsoletes: php73-snmp, php73w-snmp
 %endif
 
 %description snmp
@@ -775,7 +783,7 @@ BuildRequires: libxslt-devel >= 1.0.18-1, libxml2-devel >= 2.4.14-1
 %if 0%{?rhel}
 Obsoletes: php53-xml, php53u-xml, php54-xml, php54w-xml, php55u-xml, php55w-xml, php56u-xml, php56w-xml
 Obsoletes: php70u-xml, php70w-xml, php71u-xml, php71w-xml, php72u-xml, php72w-xml
-Obsoletes: php73u-xml, php73w-xml
+Obsoletes: php73-xml, php73w-xml
 %endif
 
 %description xml
@@ -793,7 +801,7 @@ Requires: php-xml%{?_isa} = %{version}-%{release}
 %if 0%{?rhel}
 Obsoletes: php53-xmlrpc, php53u-xmlrpc, php54-xmlrpc, php54w-xmlrpc, php55u-xmlrpc, php55w-xmlrpc, php56u-xmlrpc, php56w-xmlrpc
 Obsoletes: php70u-xmlrpc, php70w-xmlrpc, php71u-xmlrpc, php71w-xmlrpc, php72u-xmlrpc, php72w-xmlrpc
-Obsoletes: php73u-xmlrpc, php73w-xmlrpc
+Obsoletes: php73-xmlrpc, php73w-xmlrpc
 %endif
 
 %description xmlrpc
@@ -819,7 +827,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel}
 Obsoletes: php53-mbstring, php53u-mbstring, php54-mbstring, php54w-mbstring, php55u-mbstring, php55w-mbstring, php56u-mbstring, php56w-mbstring
 Obsoletes: php70u-mbstring, php70w-mbstring, php71u-mbstring, php71w-mbstring, php72u-mbstring, php72w-mbstring
-Obsoletes: php73u-mbstring, php73w-mbstring
+Obsoletes: php73-mbstring, php73w-mbstring
 %endif
 
 %description mbstring
@@ -856,7 +864,7 @@ Provides: bundled(gd) = 2.0.35
 %if 0%{?rhel}
 Obsoletes: php53-gd, php53u-gd, php54-gd, php54w-gd, php55u-gd, php55w-gd, php56u-gd, php56w-gd
 Obsoletes: php70u-gd, php70w-gd, php71u-gd, php71w-gd, php72u-gd, php72w-gd
-Obsoletes: php73u-gd, php73w-gd
+Obsoletes: php73-gd, php73w-gd
 %endif
 
 %description gd
@@ -873,7 +881,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel}
 Obsoletes: php53-bcmath, php53u-bcmath, php54-bcmath, php54w-bcmath, php55u-bcmath, php55w-bcmath, php56u-bcmath, php56w-bcmath
 Obsoletes: php70u-bcmath, php70w-bcmath, php71u-bcmath, php71w-bcmath, php72u-bcmath, php72w-bcmath
-Obsoletes: php73u-bcmath, php73w-bcmath
+Obsoletes: php73-bcmath, php73w-bcmath
 %endif
 Provides: bundled(libbcmath)
 
@@ -891,7 +899,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel}
 Obsoletes: php53-gmp, php53u-gmp, php54-gmp, php54w-gmp, php55u-gmp, php55w-gmp, php56u-gmp, php56w-gmp
 Obsoletes: php70u-gmp, php70w-gmp, php71u-gmp, php71w-gmp, php72u-gmp, php72w-gmp
-Obsoletes: php73u-gmp, php73w-gmp
+Obsoletes: php73-gmp, php73w-gmp
 %endif
 
 %description gmp
@@ -911,7 +919,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel}
 Obsoletes: php53-dba, php53u-dba, php54-dba, php54w-dba, php55u-dba, php55w-dba, php56u-dba, php56w-dba
 Obsoletes: php70u-dba, php70w-dba, php71u-dba, php71w-dba, php72u-dba, php72w-dba
-Obsoletes: php73u-dba, php73w-dba
+Obsoletes: php73-dba, php73w-dba
 %endif
 
 %description dba
@@ -928,7 +936,7 @@ BuildRequires: libtidy-devel
 %if 0%{?rhel}
 Obsoletes: php53-tidy, php53u-tidy, php54-tidy, php54w-tidy, php55u-tidy, php55w-tidy, php56u-tidy, php56w-tidy
 Obsoletes: php70u-tidy, php70w-tidy, php71u-tidy, php71w-tidy, php72u-tidy, php72w-tidy
-Obsoletes: php73u-tidy, php73w-tidy
+Obsoletes: php73-tidy, php73w-tidy
 %endif
 
 %description tidy
@@ -946,13 +954,13 @@ Obsoletes: php-mssql < %{version}-%{release}
 %if 0%{?rhel}
 Obsoletes: php53-mssql, php53u-mssql, php54-mssql, php54w-mssql, php55u-mssql, php55w-mssql, php56u-mssql, php56w-mssql
 Obsoletes: php70u-pdo-dblib, php70w-pdo_dblib, php71u-pdo-dblib, php71w-pdo_dblib, php72u-pdo-dblib, php72w-pdo_dblib
-Obsoletes: php73u-pdo-dblib, php73w-pdo_dblib
+Obsoletes: php73-pdo-dblib, php73w-pdo_dblib
 %endif
 
 %description pdo-dblib
 The php-pdo-dblib package contains a dynamic shared object
 that implements the PHP Data Objects (PDO) interface to enable access from
-PHP to Microsoft SQL Server and Sybase databases through the FreeTDS libary.
+PHP to Microsoft SQL Server and Sybase databases through the FreeTDS library.
 
 %package embedded
 Summary: PHP library for embedding in applications
@@ -964,7 +972,7 @@ Provides: php-embedded-devel%{?_isa} = %{version}-%{release}
 %if 0%{?rhel}
 Obsoletes: php53-embedded, php53u-embedded, php54-embedded, php54w-embedded, php55u-embedded, php55w-embedded, php56u-embedded, php56w-embedded
 Obsoletes: php70u-embedded, php70w-embedded, php71u-embedded, php71w-embedded, php72u-embedded, php72w-embedded
-Obsoletes: php73u-embedded, php73w-embedded
+Obsoletes: php73-embedded, php73w-embedded
 %endif
 
 %description embedded
@@ -981,7 +989,7 @@ BuildRequires: aspell-devel >= 0.50.0
 %if 0%{?rhel}
 Obsoletes: php53-pspell, php53u-pspell, php54-pspell, php54w-pspell, php55u-pspell, php55w-pspell, php56u-pspell, php56w-pspell
 Obsoletes: php70u-pspell, php70w-pspell, php71u-pspell, php71w-pspell, php72u-pspell, php72w-pspell
-Obsoletes: php73u-pspell, php73w-pspell
+Obsoletes: php73-pspell, php73w-pspell
 %endif
 
 %description pspell
@@ -998,7 +1006,7 @@ BuildRequires: recode-devel
 %if 0%{?rhel}
 Obsoletes: php53-recode, php53u-recode, php54-recode, php54w-recode, php55u-recode, php55w-recode, php56u-recode, php56w-recode
 Obsoletes: php70u-recode, php70w-recode, php71u-recode, php71w-recode, php72u-recode, php72w-recode
-Obsoletes: php73u-recode, php73w-recode
+Obsoletes: php73-recode, php73w-recode
 %endif
 
 %description recode
@@ -1016,7 +1024,7 @@ BuildRequires: libicu-devel >= 50
 %if 0%{?rhel}
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
 Obsoletes: php70u-intl, php70w-intl, php71u-intl, php71w-intl, php72u-intl, php72w-intl
-Obsoletes: php73u-intl, php73w-intl
+Obsoletes: php73-intl, php73w-intl
 %endif
 
 %description intl
@@ -1033,7 +1041,7 @@ BuildRequires: enchant-devel >= 1.2.4
 %if 0%{?rhel}
 Obsoletes: php53-enchant, php53u-enchant, php54-enchant, php54w-enchant, php55u-enchant, php55w-enchant, php56u-enchant, php56w-enchant
 Obsoletes: php70u-enchant, php70w-enchant, php71u-enchant, php71w-enchant, php72u-enchant, php72w-enchant
-Obsoletes: php73u-enchant, php73w-enchant
+Obsoletes: php73-enchant, php73w-enchant
 %endif
 
 %description enchant
@@ -1055,7 +1063,7 @@ Provides:  php-pecl-zip%{?_isa}  = %{zipver}
 %if 0%{?rhel}
 Obsoletes: php53-zip, php53u-zip, php54-zip, php54w-zip, php55u-zip, php55w-zip, php56u-zip, php56w-zip
 Obsoletes: php70u-zip, php70w-zip, php71u-zip, php71w-zip, php72u-zip, php72w-zip
-Obsoletes: php73u-zip, php73w-zip
+Obsoletes: php73-zip, php73w-zip
 %endif
 %if %{with_libzip}
 # 0.11.1 required, but 1.0.1 is bundled
@@ -1083,7 +1091,7 @@ Provides:  php-pecl-json%{?_isa}  = %{jsonver}
 Obsoletes: php53-json, php53u-json, php54-json, php54w-json, php55u-json, php55w-json, php56u-json, php56w-json
 Obsoletes: php55u-pecl-jsonc, php56u-pecl-jsonc
 Obsoletes: php70u-json, php70w-json, php71u-json, php71w-json, php72u-json, php72w-json
-Obsoletes: php73u-json, php73w-json
+Obsoletes: php73-json, php73w-json
 %endif
 
 %description json
@@ -1105,7 +1113,7 @@ Provides:  php-pecl(libsodium)         = %{version}
 Provides:  php-pecl(libsodium)%{?_isa} = %{version}
 %if 0%{?rhel}
 Obsoletes: php72u-sodium, php72w-sodium
-Obsoletes: php73u-sodium, php73w-sodium
+Obsoletes: php73-sodium, php73w-sodium
 %endif
 
 %description sodium
@@ -1279,9 +1287,6 @@ cat << EOF >>10-opcache.ini
 ; This should improve performance, but requires appropriate OS configuration.
 opcache.huge_code_pages=0
 EOF
-%ifarch x86_64
-sed -e '/opcache.huge_code_pages/s/0/1/' -i 10-opcache.ini
-%endif
 %endif
 cp %{SOURCE52} 20-oci8.ini
 
@@ -1745,6 +1750,17 @@ install -D -m 644 %{SOURCE1} $RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
 %endif
 %if %{with_httpd2410}
 cat %{SOURCE11} >>$RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
+%else
+mkdir _fpmdoc
+cat %{SOURCE1} %{SOURCE11} >_fpmdoc/httpd-php.conf
+cat << 'EOF' >_fpmdoc/README
+To use FPM with Apache HTTP server:
+- copy the httpd-php.conf to %{_httpd_confdir}/php.conf
+
+To use FPM with NGINX web server:
+- copy the nginx-fpm.conf to %{_sysconfdir}/nginx/conf.d/php-fpm.conf
+- copy the nginx-php.conf to %{_sysconfdir}/nginx/default.d/php.conf
+EOF
 %endif
 
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/php.d
@@ -1824,6 +1840,9 @@ sed -e 's@127.0.0.1:9000@unix:/run/php-fpm/www.sock@' \
 # Apache
 sed -e 's@proxy:fcgi://127.0.0.1:9000@proxy:unix:/run/php-fpm/www.sock|fcgi://localhost@' \
     -i $RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
+%else
+install -D -m 644 %{SOURCE13} _fpmdoc/nginx-fpm.conf
+install -D -m 644 %{SOURCE14} _fpmdoc/nginx-php.conf
 %endif
 
 # Generate files lists and stub .ini files for each subpackage
@@ -2112,6 +2131,8 @@ fi
 %attr(0770,root,apache) %dir %{_localstatedir}/lib/php/opcache
 %if %{with_httpd2410}
 %config(noreplace) %{_httpd_confdir}/php.conf
+%else
+%doc _fpmdoc/*
 %endif
 %config(noreplace) %{_sysconfdir}/php-fpm.conf
 %config(noreplace) %{_sysconfdir}/php-fpm.d/www.conf
@@ -2213,6 +2234,50 @@ fi
 
 
 %changelog
+* Tue Jul 30 2019 Remi Collet <remi@remirepo.net> - 7.3.8-1
+- Update to 7.3.8 - http://www.php.net/releases/7_3_8.php
+
+* Tue Jul 16 2019 Remi Collet <remi@remirepo.net> - 7.3.8~RC1-1
+- update to 7.3.8RC1
+- add upstream patch for #78297
+- main package now recommends commonly used extensions
+  (json, mbstring, opcache, pdo, xml)
+
+* Wed Jul  3 2019 Remi Collet <remi@remirepo.net> - 7.3.7-3
+- rebuild 7.3.7 (new tag)
+
+* Wed Jul  3 2019 Remi Collet <remi@remirepo.net> - 7.3.7-2
+- add upstream patch for https://bugs.php.net/78230
+  segfault with opcache enabled
+
+* Tue Jul  2 2019 Remi Collet <remi@remirepo.net> - 7.3.7-1
+- Update to 7.3.7 - http://www.php.net/releases/7_3_7.php
+- disable opcache.huge_code_pages in default configuration
+
+* Thu Jun 20 2019 Remi Collet <remi@remirepo.net> - 7.3.7~RC3-1
+- update to 7.3.7RC3
+
+* Tue Jun 18 2019 Remi Collet <remi@remirepo.net> - 7.3.7~RC2-1
+- update to 7.3.7RC2
+
+* Mon Jun 17 2019 Remi Collet <remi@remirepo.net> - 7.3.7~RC1-2
+- use oracle client library version 19.3
+
+* Tue Jun 11 2019 Remi Collet <remi@remirepo.net> - 7.3.7~RC1-1
+- update to 7.3.7RC1
+
+* Tue May 28 2019 Remi Collet <remi@remirepo.net> - 7.3.6-3
+- Update to 7.3.6 - http://www.php.net/releases/7_3_6.php
+
+* Thu May 16 2019 Remi Collet <remi@remirepo.net> - 7.3.6~RC1-3
+- add httpd and nginx configuration files for FPM in documentation
+
+* Wed May 15 2019 Remi Collet <remi@remirepo.net> - 7.3.6~RC1-2
+- update to 7.3.6RC1 (new tag)
+
+* Tue May 14 2019 Remi Collet <remi@remirepo.net> - 7.3.6~RC1-1
+- update to 7.3.6RC1
+
 * Wed May  1 2019 Remi Collet <remi@remirepo.net> - 7.3.5-1
 - Update to 7.3.5 - http://www.php.net/releases/7_3_5.php
 
