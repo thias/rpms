@@ -1,0 +1,36 @@
+diff --git a/pip/utils/outdated.py b/pip/utils/outdated.py
+index 2164cc3..c71539f 100644
+--- a/pip/utils/outdated.py
++++ b/pip/utils/outdated.py
+@@ -92,6 +92,21 @@ def load_selfcheck_statefile():
+         return GlobalSelfCheckState()
+ 
+ 
++def pip_installed_by_pip():
++    """Checks whether pip was installed by pip
++
++    This is used not to display the upgrade message when pip is in fact
++    installed by system package manager, such as dnf on Fedora.
++    """
++    import pkg_resources
++    try:
++        dist = pkg_resources.get_distribution('pip')
++        return (dist.has_metadata('INSTALLER') and
++                'pip' in dist.get_metadata_lines('INSTALLER'))
++    except pkg_resources.DistributionNotFound:
++        return False
++
++
+ def pip_version_check(session):
+     """Check for an update for pip.
+ 
+@@ -141,7 +156,8 @@ def pip_version_check(session):
+ 
+         # Determine if our pypi_version is older
+         if (pip_version < remote_version and
+-                pip_version.base_version != remote_version.base_version):
++                pip_version.base_version != remote_version.base_version and
++                pip_installed_by_pip()):
+             # Advise "python -m pip" on Windows to avoid issues
+             # with overwriting pip.exe.
+             if WINDOWS:

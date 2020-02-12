@@ -1,0 +1,15 @@
+diff --git a/pip/_vendor/certifi/core.py b/pip/_vendor/certifi/core.py
+index eab9d1d..9614a88 100644
+--- a/pip/_vendor/certifi/core.py
++++ b/pip/_vendor/certifi/core.py
+@@ -19,9 +19,7 @@ class DeprecatedBundleWarning(DeprecationWarning):
+ 
+ 
+ def where():
+-    f = os.path.dirname(__file__)
+-
+-    return os.path.join(f, 'cacert.pem')
++    return '/etc/pki/tls/certs/ca-bundle.crt'
+ 
+ 
+ def old_where():

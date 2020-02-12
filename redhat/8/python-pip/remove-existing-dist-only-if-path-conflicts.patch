@@ -1,0 +1,97 @@
+diff --git a/pip/req/req_install.py b/pip/req/req_install.py
+index 6911fba..8524932 100644
+--- a/pip/req/req_install.py
++++ b/pip/req/req_install.py
+@@ -34,7 +34,7 @@ from pip.locations import (
+ )
+ from pip.utils import (
+     display_path, rmtree, ask_path_exists, backup_dir, is_installable_dir,
+-    dist_in_usersite, dist_in_site_packages, egg_link_path,
++    dist_in_usersite, dist_in_site_packages, dist_in_install_path, egg_link_path,
+     call_subprocess, read_text_file, FakeFile, _make_build_dir, ensure_dir,
+     get_installed_version, normalize_path, dist_is_local,
+ )
+@@ -1049,7 +1049,7 @@ class InstallRequirement(object):
+                         "lack sys.path precedence to %s in %s" %
+                         (existing_dist.project_name, existing_dist.location)
+                     )
+-            else:
++            elif dist_in_install_path(existing_dist):
+                 self.conflicts_with = existing_dist
+         return True
+ 
+diff --git a/pip/req/req_set.py b/pip/req/req_set.py
+index 76aec06..b93304a 100644
+--- a/pip/req/req_set.py
++++ b/pip/req/req_set.py
+@@ -18,7 +18,8 @@ from pip.exceptions import (InstallationError, BestVersionAlreadyInstalled,
+                             UnsupportedPythonVersion)
+ from pip.req.req_install import InstallRequirement
+ from pip.utils import (
+-    display_path, dist_in_usersite, ensure_dir, normalize_path)
++    display_path, dist_in_usersite, dist_in_install_path, ensure_dir,
++    normalize_path)
+ from pip.utils.hashes import MissingHashes
+ from pip.utils.logging import indent_log
+ from pip.utils.packaging import check_dist_requires_python
+@@ -437,10 +438,12 @@ class RequirementSet(object):
+ 
+                 if not best_installed:
+                     # don't uninstall conflict if user install and
+-                    # conflict is not user install
++                    # conflict is not user install or conflict lives
++                    # in a different path (/usr/lib vs /usr/local/lib/)
+                     if not (self.use_user_site and not
+-                            dist_in_usersite(req_to_install.satisfied_by)):
+-                        req_to_install.conflicts_with = \
++                            dist_in_usersite(req_to_install.satisfied_by) or not
++                            dist_in_install_path(req_to_install.satisfied_by)):
++                        req_to_install.conflicts_with = \
+                             req_to_install.satisfied_by
+                     req_to_install.satisfied_by = None
+ 
+@@ -644,10 +647,12 @@ class RequirementSet(object):
+                 if req_to_install.satisfied_by:
+                     if self.upgrade or self.ignore_installed:
+                         # don't uninstall conflict if user install and
+-                        # conflict is not user install
++                        # conflict is not user install or conflict lives
++                        # in a different path (/usr/lib vs /usr/local/lib/)
+                         if not (self.use_user_site and not
+                                 dist_in_usersite(
+-                                    req_to_install.satisfied_by)):
++                                    req_to_install.satisfied_by) or not
++                                dist_in_install_path(req_to_install.satisfied_by)):
+                             req_to_install.conflicts_with = \
+                                 req_to_install.satisfied_by
+                         req_to_install.satisfied_by = None
+diff --git a/pip/utils/__init__.py b/pip/utils/__init__.py
+index 815bd33..0ed59f7 100644
+--- a/pip/utils/__init__.py
++++ b/pip/utils/__init__.py
+@@ -22,7 +22,7 @@ from pip.exceptions import InstallationError
+ from pip.compat import console_to_str, expanduser, stdlib_pkgs
+ from pip.locations import (
+     site_packages, user_site, running_under_virtualenv, virtualenv_no_global,
+-    write_delete_marker_file,
++    write_delete_marker_file, distutils_scheme,
+ )
+ from pip._vendor import pkg_resources
+ from pip._vendor.six.moves import input
+@@ -315,6 +315,16 @@ def dist_in_site_packages(dist):
+     ).startswith(normalize_path(site_packages))
+ 
+ 
++def dist_in_install_path(dist):
++    """
++    Return True if given Distribution is installed in
++    path matching distutils_scheme layout.
++    """
++    norm_path = normalize_path(dist_location(dist))
++    return norm_path.startswith(normalize_path(
++        distutils_scheme("")['purelib'].split('python')[0]))
++
++
+ def dist_is_editable(dist):
+     """Is distribution an editable install?"""
+     for path_item in sys.path:

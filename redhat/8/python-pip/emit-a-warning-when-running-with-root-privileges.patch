@@ -1,0 +1,44 @@
+From 18a617e9e0f64b727938422d4f941dfddfbf5d00 Mon Sep 17 00:00:00 2001
+From: Tomas Orsava <torsava@redhat.com>
+Date: Tue, 14 Feb 2017 17:10:09 +0100
+Subject: [PATCH] Emit a warning when running with root privileges.
+
+---
+ pip/commands/install.py | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/pip/commands/install.py b/pip/commands/install.py
+index 227c526..277a3d1 100644
+--- a/pip/commands/install.py
++++ b/pip/commands/install.py
+@@ -6,6 +6,8 @@ import os
+ import tempfile
+ import shutil
+ import warnings
++import sys
++from os import path
+ try:
+     import wheel
+ except ImportError:
+@@ -193,6 +195,18 @@ class InstallCommand(RequirementCommand):
+         cmdoptions.resolve_wheel_no_use_binary(options)
+         cmdoptions.check_install_build_global(options)
+ 
++        def is_venv():
++            return hasattr(sys, 'real_prefix') or \
++                    (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)
++
++        # Check whether we have root privileges and aren't in venv/virtualenv
++        if os.getuid() == 0 and not is_venv():
++            logger.warning(
++                "WARNING: Running pip install with root privileges is "
++                "generally not a good idea. Try `%s install --user` instead."
++                        % path.basename(sys.argv[0])
++            )
++
+         if options.as_egg:
+             warnings.warn(
+                 "--egg has been deprecated and will be removed in the future. "
+-- 
+2.11.0
+
