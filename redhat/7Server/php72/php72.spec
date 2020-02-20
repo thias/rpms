@@ -88,16 +88,23 @@
 %global with_systemd 0
 %endif
 # httpd 2.4.10 with httpd-filesystem and sethandler support
-%if 0%{?fedora} >= 21
+%if 0%{?fedora} >= 21 || 0%{?rhel} >= 8
 %global with_httpd2410 1
 %else
 %global with_httpd2410 0
 %endif
 # nginx 1.6 with nginx-filesystem
-%if 0%{?fedora} >= 21
+%if 0%{?fedora} >= 21 || 0%{?rhel} >= 8
 %global with_nginx     1
 %else
 %global with_nginx     0
+%endif
+
+# until firebird available in EPEL
+%if 0%{?rhel} == 8
+%global with_firebird  0
+%else
+%global with_firebird  1
 %endif
 
 %global with_dtrace  1
@@ -111,13 +118,13 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.2.12
+%global upver        7.2.13
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{rcver}}
-Release: 1%{?dist}
+Release: 2%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -177,6 +184,7 @@ Patch91: php-7.2.0-oci8conf.patch
 # Upstream fixes (100+)
 
 # Security fixes (200+)
+Patch200: php-imap.patch
 
 # Fixes for tests (300+)
 # Factory is droped from system tzdata
@@ -246,7 +254,7 @@ Requires(pre): httpd
 %endif
 # php engine for Apache httpd webserver
 Provides: php(httpd)
-%if 0%{?fedora} >= 27
+%if 0%{?fedora} >= 27 || 0%{?rhel} >= 8
 # httpd have threaded MPM by default
 Recommends: php-fpm%{?_isa} = %{version}-%{release}
 %endif
@@ -637,6 +645,7 @@ Obsoletes: php70u-soap, php70w-soap, php71u-soap, php71w-soap, php72u-soap, php7
 The php-soap package contains a dynamic shared object that will add
 support to PHP for using the SOAP web services protocol.
 
+%if %{with_firebird}
 %package interbase
 Summary: A module for PHP applications that use Interbase/Firebird databases
 Group: Development/Languages
@@ -664,6 +673,7 @@ technical advisors and supporters developing and enhancing a multi-platform
 relational database management system based on the source code released by
 Inprise Corp (now known as Borland Software Corp) under the InterBase Public
 License.
+%endif
 
 %if %{with_oci8}
 %package oci8
@@ -1089,6 +1099,7 @@ low-level PHP extension for the libsodium cryptographic library.
 # upstream patches
 
 # security patches
+%patch200 -p1 -b .imap
 
 # Fixes for tests
 %if 0%{?fedora} >= 25 || 0%{?rhel} >= 6
@@ -1386,8 +1397,10 @@ build --libdir=%{_libdir}/php \
       --with-pdo-oci=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever} \
 %endif
 %endif
+%if %{with_firebird}
       --with-interbase=shared \
       --with-pdo-firebird=shared \
+%endif
       --enable-dom=shared \
       --with-pgsql=shared \
       --enable-simplexml=shared \
@@ -1539,8 +1552,10 @@ build --includedir=%{_includedir}/php-zts \
       --with-pdo-oci=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever} \
 %endif
 %endif
+%if %{with_firebird}
       --with-interbase=shared \
       --with-pdo-firebird=shared \
+%endif
       --enable-dom=shared \
       --with-pgsql=shared \
       --enable-simplexml=shared \
@@ -1696,7 +1711,7 @@ install -m 755 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php
 install -m 700 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/session
 install -m 700 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/wsdlcache
 install -m 700 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/opcache
-%if 0%{?fedora} >= 24
+%if 0%{?fedora} >= 24 || 0%{?rhel} >= 8
 install -m 755 -d $RPM_BUILD_ROOT%{_localstatedir}/lib/php/peclxml
 install -m 755 -d $RPM_BUILD_ROOT%{_docdir}/pecl
 install -m 755 -d $RPM_BUILD_ROOT%{_datadir}/tests/pecl
@@ -1720,7 +1735,7 @@ install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d
 install -m 644 %{SOURCE7} $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/php-fpm
 
 # Environment file
-%if 0%{?fedora} < 26
+%if 0%{?fedora} < 26 && 0%{?rhel} < 8
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 install -m 644 %{SOURCE8} $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/php-fpm
 %endif
@@ -1731,7 +1746,7 @@ install -m 755 -d $RPM_BUILD_ROOT/run/php-fpm
 # this folder requires systemd >= 204
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/php-fpm.service.d
 install -Dm 644 %{SOURCE6}  $RPM_BUILD_ROOT%{_unitdir}/php-fpm.service
-%if 0%{?fedora} >= 27
+%if 0%{?fedora} >= 27 || 0%{?rhel} >= 8
 install -Dm 644 %{SOURCE12} $RPM_BUILD_ROOT%{_unitdir}/httpd.service.d/php-fpm.conf
 install -Dm 644 %{SOURCE12} $RPM_BUILD_ROOT%{_unitdir}/nginx.service.d/php-fpm.conf
 %endif
@@ -1745,7 +1760,7 @@ install -m 755 -d $RPM_BUILD_ROOT%{_initrddir}
 install -m 755 %{SOURCE99} $RPM_BUILD_ROOT%{_initrddir}/php-fpm
 %endif
 
-%if 0%{?fedora} >= 26
+%if 0%{?fedora} >= 26 || 0%{?rhel} >= 8
 sed -e '/EnvironmentFile/d' -i $RPM_BUILD_ROOT%{_unitdir}/php-fpm.service
 %endif
 
@@ -1780,7 +1795,9 @@ for mod in pgsql odbc ldap snmp xmlrpc imap json \
 %if %{with_oci8}
     oci8 pdo_oci \
 %endif
+%if %{with_firebird}
     interbase pdo_firebird \
+%endif
 %if %{with_sqlite3}
     sqlite3 \
 %endif
@@ -1841,7 +1858,9 @@ cat files.pdo_odbc >> files.odbc
 %if %{with_oci8}
 cat files.pdo_oci >> files.oci8
 %endif
+%if %{with_firebird}
 cat files.pdo_firebird >> files.interbase
+%endif
 
 # sysv* and posix in packaged in php-process
 cat files.shmop files.sysv* files.posix > files.process
@@ -1874,7 +1893,7 @@ sed -e "s/@PHP_APIVER@/%{apiver}%{isasuffix}/" \
     -e "/zts/d" \
 %endif
     < %{SOURCE3} > macros.php
-%if 0%{?fedora} >= 24
+%if 0%{?fedora} >= 24 || 0%{?rhel} >= 8
 echo '%pecl_xmldir   %{_localstatedir}/lib/php/peclxml' >>macros.php
 %endif
 install -m 644 -D macros.php \
@@ -2004,7 +2023,7 @@ fi
 %dir %{_libdir}/php-zts/modules
 %endif
 %dir %{_localstatedir}/lib/php
-%if 0%{?fedora} >= 24
+%if 0%{?fedora} >= 24 || 0%{?rhel} >= 8
 %dir %{_localstatedir}/lib/php/peclxml
 %dir %{_docdir}/pecl
 %dir %{_datadir}/tests
@@ -2050,7 +2069,7 @@ fi
 %config(noreplace) %{_sysconfdir}/php-fpm.conf
 %config(noreplace) %{_sysconfdir}/php-fpm.d/www.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/php-fpm
-%if 0%{?fedora} < 26
+%if 0%{?fedora} < 26 && 0%{?rhel} < 8
 %config(noreplace) %{_sysconfdir}/sysconfig/php-fpm
 %endif
 %if %{with_nginx}
@@ -2059,7 +2078,7 @@ fi
 %endif
 %if %{with_systemd}
 %{_unitdir}/php-fpm.service
-%if 0%{?fedora} >= 27
+%if 0%{?fedora} >= 27 || 0%{?rhel} >= 8
 %{_unitdir}/httpd.service.d/%{?scl_prefix}php-fpm.conf
 %{_unitdir}/nginx.service.d/%{?scl_prefix}php-fpm.conf
 %endif
@@ -2128,7 +2147,9 @@ fi
 %files intl -f files.intl
 %files process -f files.process
 %files recode -f files.recode
+%if %{with_firebird}
 %files interbase -f files.interbase
+%endif
 %files enchant -f files.enchant
 %files mysqlnd -f files.mysqlnd
 %files opcache -f files.opcache
@@ -2145,6 +2166,18 @@ fi
 
 
 %changelog
+* Sat Dec  8 2018 Remi Collet <remi@remirepo.net> - 7.2.13-2
+- Fix null pointer dereference in imap_mail CVE-2018-19935
+
+* Wed Dec  5 2018 Remi Collet <remi@remirepo.net> - 7.2.13-1
+- Update to 7.2.13 - http://www.php.net/releases/7_2_13.php
+
+* Fri Nov 30 2018 Remi Collet <remi@remirepo.net> - 7.2.13~RC1-2
+- EL-8 build
+
+* Wed Nov 21 2018 Remi Collet <remi@remirepo.net> - 7.2.13~RC1-1
+- update to 7.2.13RC1
+
 * Tue Nov  6 2018 Remi Collet <remi@remirepo.net> - 7.2.12-1
 - Update to 7.2.12 - http://www.php.net/releases/7_2_12.php
 
