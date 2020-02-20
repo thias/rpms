@@ -26,10 +26,14 @@
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
 %if 0%{?rhel} == 6
+%ifarch x86_64
+%global oraclever 18.5
+%else
 %global oraclever 18.3
+%endif
 %global oraclelib 18.1
 %else
-%global oraclever 19.3
+%global oraclever 19.5
 %global oraclelib 19.1
 %endif
 
@@ -116,13 +120,12 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.3.8
+%global upver        7.3.13
 #global rcver        RC1
-#global lower        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: %{upver}%{?rcver:~%{lower}}
+Version: %{upver}%{?rcver:~%{rcver}}
 Release: 1%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
@@ -134,7 +137,7 @@ License: PHP and Zend and BSD and MIT and ASL 1.0 and NCSA
 Group: Development/Languages
 URL: http://www.php.net/
 
-Source0: http://www.php.net/distributions/php-%{upver}%{?rcver}.tar.xz
+Source0: https://www.php.net/distributions/php-%{upver}%{?rcver}.tar.xz
 Source1: php.conf
 Source2: php.ini
 Source3: macros.php
@@ -149,6 +152,9 @@ Source11: php.conf2
 Source12: php-fpm.wants
 Source13: nginx-fpm.conf
 Source14: nginx-php.conf
+# See https://secure.php.net/gpg-keys.php
+Source20: https://www.php.net/distributions/php-keyring.gpg
+Source21: https://www.php.net/distributions/php-%{upver}%{?rcver}.tar.xz.asc
 # Configuration files for some extensions
 Source50: 10-opcache.ini
 Source51: opcache-default.blacklist
@@ -190,6 +196,7 @@ Patch300: php-7.0.10-datetests.patch
 
 # WIP
 
+BuildRequires: gnupg2
 BuildRequires: bzip2-devel, curl-devel >= 7.9
 BuildRequires: httpd-devel >= 2.0.46-1, pam-devel
 %if %{with_httpd2410}
@@ -346,7 +353,8 @@ Provides: php(httpd)
 %endif
 %if %{with_nginx}
 # for /etc/nginx ownership
-Requires: nginx-filesystem
+# Temporarily not mandatory to allow nginx for nginx repo
+Recommends: nginx-filesystem
 %endif
 %if 0%{?rhel}
 Obsoletes: php53-fpm, php53u-fpm, php54-fpm, php54w-fpm, php55u-fpm, php55w-fpm, php56u-fpm, php56w-fpm
@@ -463,6 +471,7 @@ Provides: php-zts-devel%{?_isa} = %{version}-%{release}
 %endif
 %if 0%{?rhel}
 Obsoletes: php53-devel, php53u-devel, php54-devel, php54w-devel, php55u-devel, php55w-devel, php56u-devel, php56w-devel
+Obsoletes: php55u-pecl-jsonc-devel, php56u-pecl-jsonc-devel
 Obsoletes: php70u-devel, php70w-devel, php71u-devel, php71w-devel, php72u-devel, php72w-devel
 Obsoletes: php73-devel, php73w-devel
 %endif
@@ -1122,6 +1131,8 @@ low-level PHP extension for the libsodium cryptographic library.
 
 
 %prep
+%{?gpgverify:%{gpgverify} --keyring='%{SOURCE20}' --signature='%{SOURCE21}' --data='%{SOURCE0}'}
+
 : CIBLE = %{name}-%{version}-%{release} oci8=%{with_oci8} libzip=%{with_libzip}
 
 %setup -q -n php-%{upver}%{?rcver}
@@ -1193,6 +1204,8 @@ rm ext/date/tests/bug33414-1.phpt
 rm ext/date/tests/bug33415-2.phpt
 rm ext/date/tests/date_modify-1.phpt
 %endif
+# too fast builder
+rm ext/date/tests/bug73837.phpt
 # Should be skipped but fails sometime
 rm ext/standard/tests/file/file_get_contents_error001.phpt
 # fails sometime
@@ -1204,9 +1217,11 @@ rm Zend/tests/bug68412.phpt
 rm sapi/cli/tests/upload_2G.phpt
 # tar issue
 rm ext/zlib/tests/004-mb.phpt
-# avoid issue when 2 builds run simultaneously
+# avoid issue when 2 builds run simultaneously (keep 64321 for the SCL)
 %ifarch x86_64
 sed -e 's/64321/64322/' -i ext/openssl/tests/*.phpt
+%else
+sed -e 's/64321/64323/' -i ext/openssl/tests/*.phpt
 %endif
 
 # Safety check for API version change.
@@ -2089,7 +2104,7 @@ fi
 %dir %{_libdir}/php-zts/modules
 %endif
 %dir %{_localstatedir}/lib/php
-%if 0%{?fedora} >= 24
+%if 0%{?fedora} >= 24 || 0%{?rhel} >= 8
 %dir %{_localstatedir}/lib/php/peclxml
 %dir %{_docdir}/pecl
 %dir %{_datadir}/tests
@@ -2234,6 +2249,42 @@ fi
 
 
 %changelog
+* Tue Dec 17 2019 Remi Collet <remi@remirepo.net> - 7.3.13-1
+- Update to 7.3.13 - http://www.php.net/releases/7_3_13.php
+- use oracle client library version 19.5 (18.5 on EL-6)
+
+* Tue Dec  3 2019 Remi Collet <remi@remirepo.net> - 7.3.13~RC1-1
+- update to 7.3.13RC1
+
+* Tue Nov 19 2019 Remi Collet <remi@remirepo.net> - 7.3.12-1
+- Update to 7.3.12 - http://www.php.net/releases/7_3_12.php
+
+* Wed Nov  6 2019 Remi Collet <remi@remirepo.net> - 7.3.12~RC1-1
+- update to 7.3.12RC1
+
+* Tue Oct 22 2019 Remi Collet <remi@remirepo.net> - 7.3.11-1
+- Update to 7.3.11 - http://www.php.net/releases/7_3_11.php
+- change dependency on nginx-filesystem to weak
+
+* Tue Oct  8 2019 Remi Collet <remi@remirepo.net> - 7.3.11~RC1-1
+- update to 7.3.11RC1
+
+* Tue Sep 24 2019 Remi Collet <remi@remirepo.net> - 7.3.10-1
+- Update to 7.3.10 - http://www.php.net/releases/7_3_10.php
+
+* Wed Sep 11 2019 Remi Collet <remi@remirepo.net> - 7.3.10~RC1-2
+- update to 7.3.10RC1 (new tag)
+- add tarball signature check
+
+* Tue Sep 10 2019 Remi Collet <remi@remirepo.net> - 7.3.10~RC1-1
+- update to 7.3.10RC1
+
+* Wed Aug 28 2019 Remi Collet <remi@remirepo.net> - 7.3.9-1
+- Update to 7.3.9 - http://www.php.net/releases/7_3_9.php
+
+* Mon Aug 19 2019 Remi Collet <remi@remirepo.net> - 7.3.9~RC1-1
+- update to 7.3.9RC1
+
 * Tue Jul 30 2019 Remi Collet <remi@remirepo.net> - 7.3.8-1
 - Update to 7.3.8 - http://www.php.net/releases/7_3_8.php
 
