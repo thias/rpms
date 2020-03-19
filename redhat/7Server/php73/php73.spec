@@ -33,7 +33,7 @@
 %endif
 %global oraclelib 18.1
 %else
-%global oraclever 19.5
+%global oraclever 19.6
 %global oraclelib 19.1
 %endif
 
@@ -120,7 +120,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.3.13
+%global upver        7.3.16
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -2249,6 +2249,25 @@ fi
 
 
 %changelog
+* Tue Mar 17 2020 Remi Collet <remi@remirepo.net> - 7.3.16-1
+- Update to 7.3.16 - http://www.php.net/releases/7_3_16.php
+- use oracle client library version 19.6 (18.5 on EL-6)
+
+* Tue Mar  3 2020 Remi Collet <remi@remirepo.net> - 7.3.16~RC1-1
+- update to 7.3.16RC1
+
+* Tue Feb 18 2020 Remi Collet <remi@remirepo.net> - 7.3.15-1
+- Update to 7.3.15 - http://www.php.net/releases/7_3_15.php
+
+* Tue Feb  4 2020 Remi Collet <remi@remirepo.net> - 7.3.15~RC1-1
+- update to 7.3.15RC1
+
+* Tue Jan 21 2020 Remi Collet <remi@remirepo.net> - 7.3.14-1
+- Update to 7.3.14 - http://www.php.net/releases/7_3_14.php
+
+* Tue Jan  7 2020 Remi Collet <remi@remirepo.net> - 7.3.14~RC1-1
+- update to 7.3.14RC1
+
 * Tue Dec 17 2019 Remi Collet <remi@remirepo.net> - 7.3.13-1
 - Update to 7.3.13 - http://www.php.net/releases/7_3_13.php
 - use oracle client library version 19.5 (18.5 on EL-6)
