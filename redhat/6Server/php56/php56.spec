@@ -28,10 +28,16 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%ifarch ppc ppc64
-%global oraclever 10.2.0.2
+%if 0%{?rhel} == 6
+%ifarch x86_64
+%global oraclever 18.5
 %else
-%global oraclever 12.2
+%global oraclever 18.3
+%endif
+%global oraclelib 18.1
+%else
+%global oraclever 19.6
+%global oraclelib 19.1
 %endif
 
 # Build for LiteSpeed Web Server (LSAPI)
@@ -143,17 +149,10 @@
 %global db_devel  libdb-devel
 %endif
 
-#global rcver  RC1
-%global rpmrel 1
-
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: 5.6.33
-%if 0%{?rcver:1}
-Release: 0.%{rpmrel}.%{rcver}%{?dist}
-%else
-Release: %{rpmrel}%{?dist}
-%endif
+Version: 5.6.40
+Release: 21%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -177,8 +176,8 @@ Source7: php-fpm.logrotate
 Source8: php-fpm.sysconfig
 Source9: php.modconf
 Source10: php.ztsmodconf
-Source11: strip.sh
-Source12: php.conf2
+Source11: php.conf2
+Source12: strip.sh
 Source13: nginx-fpm.conf
 Source14: nginx-php.conf
 # Configuration files for some extensions
@@ -212,8 +211,44 @@ Patch91: php-5.6.3-oci8conf.patch
 
 # Upstream fixes (100+)
 Patch100: php-5.6.31-oci.patch
+Patch103: php-bug76846.patch
 
 # Security fixes (200+)
+# See https://github.com/Microsoft/php-src/commits/PHP-5.6-security-backports
+Patch208: php-bug77396.patch
+Patch209: php-bug77431.patch
+Patch210: php-bug77540.patch
+Patch211: php-bug77563.patch
+Patch212: php-bug77586.patch
+Patch213: php-bug77630.patch
+Patch214: php-news.patch
+Patch215: php-sqlite3-defensive.patch
+Patch216: php-bug77753.patch
+Patch217: php-bug77831.patch
+Patch218: php-bug77950.patch
+Patch219: php-bug78069.patch
+Patch220: php-bug77988.patch
+Patch221: php-bug77967.patch
+Patch222: php-bug78222.patch
+Patch223: php-bug78256.patch
+Patch224: php-bug77919.patch
+Patch225: php-bug75457.patch
+Patch226: php-bug78380.patch
+Patch227: php-bug78599.patch
+Patch228: php-bug78878.patch
+Patch229: php-bug78862.patch
+Patch230: php-bug78863.patch
+Patch231: php-bug78793.patch
+Patch232: php-bug78910.patch
+Patch233: php-bug79099.patch
+Patch234: php-bug79037.patch
+Patch236: php-bug79221.patch
+Patch237: php-bug79082.patch
+Patch238: php-bug79282.patch
+Patch239: php-bug79329.patch
+Patch240: php-bug79330.patch
+Patch241: php-bug79465.patch
+Patch242: php-bug78875.patch
 
 # Fixes for tests (300+)
 # Factory is droped from system tzdata
@@ -221,6 +256,8 @@ Patch100: php-5.6.31-oci.patch
 Patch300: php-5.6.30-datetests.patch
 # Revert changes for pcre < 8.34
 Patch301: php-5.6.0-oldpcre.patch
+# Renew openssl certs
+Patch302: php-openssl-cert.patch
 
 # WIP
 
@@ -302,6 +339,8 @@ which adds support for the PHP language to Apache HTTP Server.
 %package cli
 Group: Development/Languages
 Summary: Command-line interface for PHP
+# sapi/cli/ps_title.c is PostgreSQL
+License: PHP and Zend and BSD and MIT and ASL 1.0 and PostgreSQL
 Requires: php-common%{?_isa} = %{version}-%{release}
 Provides: php-cgi = %{version}-%{release}, php-cgi%{?_isa} = %{version}-%{release}
 Provides: php-pcntl, php-pcntl%{?_isa}
@@ -444,9 +483,15 @@ package and the php-cli package.
 Group: Development/Libraries
 Summary: Files needed for building PHP extensions
 Requires: php-cli%{?_isa} = %{version}-%{release}, autoconf, automake
+# see "php-config --libs"
+Requires: krb5-devel%{?_isa}
+Requires: libedit-devel%{?_isa}
+Requires: libxml2-devel%{?_isa}
+Requires: openssl-devel%{?_isa}
 %if %{with_libpcre}
 Requires: pcre-devel%{?_isa}
 %endif
+Requires: zlib-devel%{?_isa}
 Obsoletes: php-pecl-pdo-devel
 %if %{with_zts}
 Provides: php-zts-devel = %{version}-%{release}
@@ -679,7 +724,7 @@ The extension is linked with Oracle client libraries %{oraclever}
 (Oracle Instant Client).  For details, see Oracle's note
 "Oracle Client / Server Interoperability Support" (ID 207303.1).
 
-You must install libclntsh.so.%{oraclever} to use this package, provided
+You must install libclntsh.so.%{oraclelib} to use this package, provided
 in the database installation, or in the free Oracle Instant Client
 available from Oracle.
 
@@ -955,7 +1000,7 @@ echo CIBLE = %{name}-%{version}-%{release} oci8=%{with_oci8} libzip=%{with_libzi
 
 %patch40 -p1 -b .dlopen
 %patch41 -p1 -b .dtrace
-%if 0%{?fedora} >= 24 || 0%{?rhel} >= 5
+%if 0%{?fedora} >= 28 || 0%{?rhel} >= 5
 %patch42 -p1 -b .systzdata
 %endif
 %patch43 -p1 -b .headers
@@ -969,8 +1014,43 @@ echo CIBLE = %{name}-%{version}-%{release} oci8=%{with_oci8} libzip=%{with_libzi
 
 # upstream patches
 %patch100 -p1 -b .pdo_oci
+%patch103 -p1 -b .bug76846
 
 # security patches
+%patch208 -p1 -b .bug77396
+%patch209 -p1 -b .bug77431
+%patch210 -p1 -b .bug77540
+%patch211 -p1 -b .bug77563
+%patch212 -p1 -b .bug77586
+%patch213 -p1 -b .bug77630
+%patch214 -p1 -b .backport
+%patch215 -p1 -b .sqlite3.defensive
+%patch216 -p1 -b .bug77753
+%patch217 -p1 -b .bug77831
+%patch218 -p1 -b .bug77950
+%patch219 -p1 -b .bug78069
+%patch220 -p1 -b .bug77988
+%patch221 -p1 -b .bug77967
+%patch222 -p1 -b .bug78222
+%patch223 -p1 -b .bug78256
+%patch224 -p1 -b .bug77919
+%patch225 -p1 -b .bug75457
+%patch226 -p1 -b .bug78380
+%patch227 -p1 -b .bug78599
+%patch228 -p1 -b .bug78878
+%patch229 -p1 -b .bug78862
+%patch230 -p1 -b .bug78863
+%patch231 -p1 -b .bug78793
+%patch232 -p1 -b .bug78910
+%patch233 -p1 -b .bug79099
+%patch234 -p1 -b .bug79037
+%patch236 -p1 -b .bug79221
+%patch237 -p1 -b .bug79082
+%patch238 -p1 -b .bug79282
+%patch239 -p1 -b .bug79329
+%patch240 -p1 -b .bug79330
+%patch241 -p1 -b .bug79465
+%patch242 -p1 -b .bug78875
 
 # Fixes for tests
 %patch300 -p1 -b .datetests
@@ -980,6 +1060,9 @@ echo CIBLE = %{name}-%{version}-%{release} oci8=%{with_oci8} libzip=%{with_libzi
 %patch301 -p1 -b .pcre834
 %endif
 %endif
+# New openssl certs
+%patch302 -p1 -b .renewcert
+rm ext/openssl/tests/bug65538_003.phpt
 
 # WIP patch
 
@@ -1012,6 +1095,12 @@ mkdir build-cgi build-apache build-embedded \
 rm ext/date/tests/timezone_location_get.phpt
 rm ext/date/tests/timezone_version_get.phpt
 rm ext/date/tests/timezone_version_get_basic1.phpt
+rm ext/date/tests/bug33414-1.phpt
+rm ext/date/tests/bug33414-2.phpt
+rm ext/date/tests/bug33415-2.phpt
+rm ext/date/tests/date_modify-1.phpt
+rm ext/date/tests/bug51819.phpt
+rm ext/date/tests/date_sunset_variation9.phpt
 # Should be skipped but fails sometime
 rm ext/standard/tests/file/file_get_contents_error001.phpt
 # fails sometime
@@ -1175,7 +1264,7 @@ ln -sf ../configure
     --with-layout=GNU \
     --with-kerberos \
     --with-libxml-dir=%{_prefix} \
-%if 0%{?fedora} >= 24 || 0%{?rhel} >= 5
+%if 0%{?fedora} >= 28 || 0%{?rhel} >= 5
     --with-system-tzdata \
 %endif
     --with-mhash \
@@ -1458,6 +1547,7 @@ cd build-apache
 
 # Run tests, using the CLI SAPI
 export NO_INTERACTION=1 REPORT_EXIT_STATUS=1 MALLOC_CHECK_=2
+export SKIP_SLOW_TESTS=1
 export SKIP_ONLINE_TESTS=1
 unset TZ LANG LC_ALL
 if ! make test; then
@@ -1531,7 +1621,18 @@ cat %{SOURCE10} >>$RPM_BUILD_ROOT%{_httpd_modconfdir}/10-php.conf
 install -D -m 644 %{SOURCE1} $RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
 %endif
 %if %{with_httpd2410}
-cat %{SOURCE12} >>$RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
+cat %{SOURCE11} >>$RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
+%else
+mkdir _fpmdoc
+cat %{SOURCE1} %{SOURCE11} >_fpmdoc/httpd-php.conf
+cat << 'EOF' >_fpmdoc/README
+To use FPM with Apache HTTP server:
+- copy the httpd-php.conf to %{_httpd_confdir}/php.conf
+
+To use FPM with NGINX web server:
+- copy the nginx-fpm.conf to %{_sysconfdir}/nginx/conf.d/php-fpm.conf
+- copy the nginx-php.conf to %{_sysconfdir}/nginx/default.d/php.conf
+EOF
 %endif
 
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/php.d
@@ -1608,6 +1709,9 @@ sed -e 's@127.0.0.1:9000@unix:/run/php-fpm/www.sock@' \
 # Apache
 sed -e 's@proxy:fcgi://127.0.0.1:9000@proxy:unix:/run/php-fpm/www.sock|fcgi://localhost@' \
     -i $RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
+%else
+install -D -m 644 %{SOURCE13} _fpmdoc/nginx-fpm.conf
+install -D -m 644 %{SOURCE14} _fpmdoc/nginx-php.conf
 %endif
 
 # Generate files lists and stub .ini files for each subpackage
@@ -1739,17 +1843,6 @@ rm -rf $RPM_BUILD_ROOT%{_libdir}/php/modules/*.a \
 rm -f README.{Zeus,QNX,CVS-RULES}
 
 
-%pre common
-echo -e "\nWARNING : These %{name}-* RPMs are not official Fedora / Red Hat build and"
-echo -e "overrides the official ones. Don't file bugs on Fedora Project nor Red Hat.\n"
-echo -e "Use dedicated forum at http://forum.remirepo.net/\n"
-
-%if %{?fedora}%{!?fedora:99} < 22
-echo -e "WARNING : Fedora %{fedora} is now EOL :"
-echo -e "You should consider upgrading to a supported release.\n"
-%endif
-
-
 %if ! %{with_httpd2410}
 %pre fpm
 # Add the "apache" user as we don't require httpd
@@ -1829,6 +1922,19 @@ fi
 %postun embedded -p /sbin/ldconfig
 
 
+%posttrans common
+cat << EOF
+=====================================================================
+
+  WARNING : PHP 5.6 have reached its "End of Life" in
+  January 2019. Even, if this package includes some of
+  the important security fix, backported from 7.2, the
+  UPGRADE to a maintained version is very strongly RECOMMENDED.
+
+=====================================================================
+EOF
+
+
 %{!?_licensedir:%global license %%doc}
 
 %files
@@ -1903,6 +2009,8 @@ fi
 %attr(0770,root,apache) %dir %{_localstatedir}/lib/php/wsdlcache
 %if %{with_httpd2410}
 %config(noreplace) %{_httpd_confdir}/php.conf
+%else
+%doc _fpmdoc/*
 %endif
 %config(noreplace) %{_sysconfdir}/php-fpm.conf
 %config(noreplace) %{_sysconfdir}/php-fpm.d/www.conf
@@ -1999,6 +2107,158 @@ fi
 
 
 %changelog
+* Wed May 13 2020 Remi Collet <remi@remirepo.net> - 5.6.40-21
+- Core:
+  Fix #78875 Long filenames cause OOM and temp files are not cleaned
+  CVE-2019-11048
+  Fix #78876 Long variables in multipart/form-data cause OOM and temp
+  files are not cleaned
+
+* Tue Apr 14 2020 Remi Collet <remi@remirepo.net> - 5.6.40-20
+- standard:
+  Fix #79330 shell_exec silently truncates after a null byte
+  Fix #79465 OOB Read in urldecode
+  CVE-2020-7067
+
+* Tue Mar 17 2020 Remi Collet <remi@remirepo.net> - 5.6.40-19
+- standard:
+  Fix #79329 get_headers() silently truncates after a null byte
+  CVE-2020-7066
+- exif:
+  Fix #79282 Use-of-uninitialized-value in exif
+  CVE-2020-7064
+- use oracle client library version 19.6 (18.5 on EL-6)
+
+* Tue Feb 18 2020 Remi Collet <remi@remirepo.net> - 5.6.40-18
+- phar:
+  Fix #79082 Files added to tar with Phar::buildFromIterator have all-access permissions
+  CVE-2020-7063
+- session:
+  Fix #79221 Null Pointer Dereference in PHP Session Upload Progress
+  CVE-2020-7062
+
+* Thu Jan 23 2020 Remi Collet <remi@remirepo.net> - 5.6.40-17
+- mbstring:
+  Fix #79037 global buffer-overflow in mbfl_filt_conv_big5_wchar
+  CVE-2020-7060
+- standard:
+  Fix #79099 OOB read in php_strip_tags_ex
+  CVE-2020-7059
+
+* Tue Dec 17 2019 Remi Collet <remi@remirepo.net> - 5.6.40-15
+- bcmath:
+  Fix #78878 Buffer underflow in bc_shift_addsub
+  CVE-2019-11046
+- core:
+  Fix #78862 link() silently truncates after a null byte on Windows
+  CVE-2019-11044
+  Fix #78863 DirectoryIterator class silently truncates after a null byte
+  CVE-2019-11045
+- exif
+  Fix #78793 Use-after-free in exif parsing under memory sanitizer
+  CVE-2019-11050
+  Fix #78910 Heap-buffer-overflow READ in exif
+  CVE-2019-11047
+- use oracle client library version 19.5 (18.5 on EL-6)
+
+* Tue Oct 22 2019 Remi Collet <remi@remirepo.net> - 5.6.40-14
+- FPM:
+  Fix CVE-2019-11043 env_path_info underflow in fpm_main.c
+
+* Wed Aug 28 2019 Remi Collet <remi@remirepo.net> - 5.6.40-13
+- mbstring:
+  Fix CVE-2019-13224 don't allow different encodings for onig_new_deluxe
+- pcre:
+  Fix #75457 heap use-after-free in pcrelib
+
+* Tue Jul 30 2019 Remi Collet <remi@remirepo.net> - 5.6.40-12
+- exif:
+  Fix #78256 heap-buffer-overflow on exif_process_user_comment
+  CVE-2019-11042
+  Fix #78222 heap-buffer-overflow on exif_scan_thumbnail
+  CVE-2019-11041
+- phar:
+  Fix #77919 Potential UAF in Phar RSHUTDOWN
+
+* Tue Jul  2 2019 Remi Collet <remi@remirepo.net> - 5.6.40-11
+- use oracle client library version 19.3
+
+* Tue May 28 2019 Remi Collet <remi@remirepo.net> - 5.6.40-9
+- iconv:
+  Fix #78069 Out-of-bounds read in iconv.c:_php_iconv_mime_decode()
+  CVE-2019-11039
+- exif:
+  Fix #77988 Heap-buffer-overflow on php_jpg_get16
+  CVE-2019-11040
+- sqlite3:
+  Fix #77967 Bypassing open_basedir restrictions via file uris
+
+* Tue Apr 30 2019 Remi Collet <remi@remirepo.net> - 5.6.40-8
+- exif:
+  Fix #77950 Heap-buffer-overflow in _estrndup via exif_process_IFD_TAG
+  CVE-2019-11036
+
+* Tue Apr  2 2019 Remi Collet <remi@remirepo.net> - 5.6.40-7
+- exif:
+  Fix #77753 Heap-buffer-overflow in php_ifd_get32s
+  CVE-2019-11034
+  Fix #77831 Heap-buffer-overflow in exif_iif_add_value
+  CVE-2019-11035
+- sqlite3:
+  Added sqlite3.defensive INI directive
+
+* Fri Mar 15 2019 Remi Collet <remi@remirepo.net> - 5.6.40-6
+- Fix #76846 Segfault in shutdown function after memory limit error
+
+* Tue Mar 12 2019 Remi Collet <remi@remirepo.net> - 5.6.40-5
+- phar:
+  Fix #77396 Null Pointer Dereference in phar_create_or_parse_filename
+  Fix #77586 - phar_tar_writeheaders_int() buffer overflow
+- spl:
+  Fix #77431 openFile() silently truncates after a null byte
+- security fix synced with https://github.com/Microsoft/php-src/
+
+* Tue Mar  5 2019 Remi Collet <remi@remirepo.net> - 5.6.40-4
+- Fix #77630 rename() across the device may allow unwanted access
+  during processing
+  CVE-2019-9637
+
+* Mon Mar  4 2019 Remi Collet <remi@remirepo.net> - 5.6.40-3
+- exif:
+  Fix #77509 Uninitialized read in exif_process_IFD_in_TIFF
+  CVE-2019-9641
+  Fix #77540 Invalid Read on exif_process_SOFn
+  CVE-2019-9640
+  Fix #77563 Uninitialized read in exif_process_IFD_in_MAKERNOTE
+  CVE-2019-9638
+  Fix #77659 Uninitialized read in exif_process_IFD_in_MAKERNOTE
+  CVE-2019-9639
+
+* Wed Jan  9 2019 Remi Collet <remi@remirepo.net> - 5.6.40-1
+- Update to 5.6.40 - http://www.php.net/releases/5_6_40.php
+
+* Wed Dec  5 2018 Remi Collet <remi@remirepo.net> - 5.6.39-1
+- Update to 5.6.39 - http://www.php.net/releases/5_6_39.php
+
+* Wed Oct 24 2018 Remi Collet <remi@remirepo.net> - 5.6.38-2
+- use oracle client library version 18.3
+
+* Wed Sep 12 2018 Remi Collet <remi@remirepo.net> - 5.6.38-1
+- Update to 5.6.38 - http://www.php.net/releases/5_6_38.php
+
+* Thu Jul 19 2018 Remi Collet <remi@remirepo.net> - 5.6.37-1
+- Update to 5.6.37 - http://www.php.net/releases/5_6_37.php
+
+* Wed Apr 25 2018 Remi Collet <remi@remirepo.net> - 5.6.36-1
+- Update to 5.6.36 - http://www.php.net/releases/5_6_36.php
+
+* Thu Mar 29 2018 Remi Collet <remi@remirepo.net> - 5.6.35-1
+- Update to 5.6.35 - http://www.php.net/releases/5_6_35.php
+- FPM: update default pool configuration for process.dumpable
+
+* Wed Feb 28 2018 Remi Collet <remi@remirepo.net> - 5.6.34-1
+- Update to 5.6.34 - http://www.php.net/releases/5_6_34.php
+
 * Wed Jan  3 2018 Remi Collet <remi@fedoraproject.org> 5.6.33-1
 - Update to 5.6.33 - http://www.php.net/releases/5_6_33.php
 
