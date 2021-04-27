@@ -1,6 +1,6 @@
 # remirepo spec file for php-pecl-swoole4
 #
-# Copyright (c) 2013-2018 Remi Collet
+# Copyright (c) 2013-2021 Remi Collet
 # License: CC-BY-SA
 # http://creativecommons.org/licenses/by-sa/4.0/
 #
@@ -17,58 +17,51 @@
 
 %global with_zts   0%{!?_without_zts:%{?__ztsphp:1}}
 %global pecl_name  swoole
-# After 20-sockets
+# After 20-sockets, 20-json and 20-mysqlnd
 %global ini_name    40-%{pecl_name}.ini
 
-%if 0%{?fedora} >= 24 || 0%{?rhel} >= 8
-%global with_pgsql    1
-%else
-%global with_pgsql    0
-%endif
 %global with_nghttpd2 1
-%global with_hiredis  1
 %if 0%{?fedora} >= 25 || 0%{?rhel} >= 8
 %global with_brotli   1
 %else
 %global with_brotli   0
 %endif
 
+%global upstream_version 4.6.6
+#global upstream_prever  RC2
+
 
 Summary:        PHP's asynchronous concurrent distributed networking framework
 Name:           %{?sub_prefix}php-pecl-%{pecl_name}4
-Version:        4.1.1
+Version:        %{upstream_version}%{?upstream_prever:~%{upstream_prever}}
 Release:        1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
-License:        BSD
-URL:            http://pecl.php.net/package/%{pecl_name}
-Source0:        http://pecl.php.net/get/%{pecl_name}-%{version}.tgz
+# Extension is ASL 2.0
+# Hiredis is BSD
+License:        ASL 2.0 and BSD
+URL:            https://pecl.php.net/package/%{pecl_name}
+Source0:        https://pecl.php.net/get/%{pecl_name}-%{upstream_version}%{?upstream_prever}.tgz
 
-%if 0%{?rhel} == 6
-BuildRequires:  devtoolset-6-toolchain
-%else
+BuildRequires:  make
 BuildRequires:  %{?dtsprefix}gcc
 BuildRequires:  %{?dtsprefix}gcc-c++
-%endif
-BuildRequires:  %{?scl_prefix}php-devel > 7
+BuildRequires:  %{?scl_prefix}php-devel >= 7.2
 BuildRequires:  %{?scl_prefix}php-pear
+BuildRequires:  %{?scl_prefix}php-curl
+BuildRequires:  %{?scl_prefix}php-json
 BuildRequires:  %{?scl_prefix}php-sockets
 BuildRequires:  %{?scl_prefix}php-mysqlnd
 BuildRequires:  pcre-devel
-BuildRequires:  openssl-devel
-%if %{with_nghttpd2}
-BuildRequires:  libnghttp2-devel
-%endif
-%if %{with_pgsql}
-BuildRequires:  postgresql-devel > 9.5
-%endif
-%if %{with_hiredis}
-BuildRequires:  hiredis-devel
-%endif
+BuildRequires:  openssl-devel >= 1.0.2
+BuildRequires:  zlib-devel
+BuildRequires:  libcurl-devel
 %if %{with_brotli}
 BuildRequires:  brotli-devel
 %endif
 
 Requires:       %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:       %{?scl_prefix}php(api) = %{php_core_api}
+Requires:       %{?scl_prefix}php-curl%{?_isa}
+Requires:       %{?scl_prefix}php-json%{?_isa}
 Requires:       %{?scl_prefix}php-sockets%{?_isa}
 Requires:       %{?scl_prefix}php-mysqlnd%{?_isa}
 %{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
@@ -97,23 +90,16 @@ Conflicts:      %{?sub_prefix}php-pecl-%{pecl_name}  < 4
 Conflicts:      %{?sub_prefix}php-pecl-%{pecl_name}2 < 4
 %endif
 
-%if "%{?vendor}" == "Remi Collet" && 0%{!?scl:1} && 0%{?rhel}
-Obsoletes:     php71u-pecl-%{pecl_name}4 <= %{version}
-Obsoletes:     php71w-pecl-%{pecl_name}4 <= %{version}
-%if "%{php_version}" > "7.2"
-Obsoletes:     php72u-pecl-%{pecl_name}4 <= %{version}
-Obsoletes:     php72w-pecl-%{pecl_name}4 <= %{version}
-%endif
+%if "%{?packager}" == "Remi Collet" && 0%{!?scl:1} && 0%{?rhel}
 %if "%{php_version}" > "7.3"
-Obsoletes:     php73u-pecl-%{pecl_name}4 <= %{version}
-Obsoletes:     php73w-pecl-%{pecl_name}4 <= %{version}
+Obsoletes:      php73-pecl-%{pecl_name} <= %{version}
 %endif
+%if "%{php_version}" > "7.4"
+Obsoletes:      php74-pecl-%{pecl_name} <= %{version}
 %endif
-
-%if 0%{?fedora} < 20 && 0%{?rhel} < 7
-# Filter shared private
-%{?filter_provides_in: %filter_provides_in %{_libdir}/.*\.so$}
-%{?filter_setup}
+%if "%{php_version}" > "8.0"
+Obsoletes:      php80-pecl-%{pecl_name} <= %{version}
+%endif
 %endif
 
 
@@ -156,19 +142,24 @@ These are the files needed to compile programs using %{name}.
 
 %prep
 %setup -q -c
-mv %{pecl_name}-%{version} NTS
+mv %{pecl_name}-%{upstream_version}%{?upstream_prever} NTS
+
 
 # Don't install/register tests, install examples as doc
-sed -e '/examples/s/role="src"/role="doc"/' \
-    %{?_licensedir:-e '/LICENSE/s/role="doc"/role="src"/' } \
-    -i package.xml
+sed \
+   -e '/Makefile/s/role="doc"/role="src"/' \
+   -e '/samples/s/role="doc"/role="src"/' \
+   -e '/name="library/s/role="doc"/role="src"/' \
+   %{?_licensedir: -e '/LICENSE/s/role="doc"/role="src"/' } \
+   %{?_licensedir: -e '/COPYING/s/role="doc"/role="src"/' } \
+   -i package.xml
 
 
 cd NTS
 # Sanity check, really often broken
-extver=$(sed -n '/#define PHP_SWOOLE_VERSION/{s/.* "//;s/".*$//;p}' php_swoole.h)
-if test "x${extver}" != "x%{version}%{?prever:-%{prever}}"; then
-   : Error: Upstream extension version is ${extver}, expecting %{version}%{?prever:-%{prever}}.
+extver=$(sed -n '/#define SWOOLE_VERSION /{s/.* "//;s/".*$//;p}' include/swoole_version.h)
+if test "x${extver}" != "x%{upstream_version}%{?upstream_prever}"; then
+   : Error: Upstream extension version is ${extver}, expecting %{upstream_version}%{?upstream_prever}.
    exit 1
 fi
 cd ..
@@ -180,45 +171,32 @@ cp -pr NTS ZTS
 
 # Create configuration file
 cat << 'EOF' | tee %{ini_name}
-; Enable %{summary} extension module
+; Enable %{pecl_name} extension module
 extension=%{pecl_name}.so
 
 ; Configuration
 ;swoole.enable_coroutine = On
-;swoole.aio_thread_num = 2
+;swoole.enable_library = On
+;swoole.enable_preemptive_scheduler = Off
 ;swoole.display_errors = On
-;swoole.use_namespace = On
 :swoole.use_shortname = On
-;swoole.fast_serialize = Off
 ;swoole.unixsock_buffer_size = 8388608
 EOF
 
 
 %build
-%if 0%{?rhel} == 6
-source /opt/rh/devtoolset-6/enable
-g++ --version
-%else
 %{?dtsenable}
-%endif
 
 peclbuild() {
 %configure \
-    --with-swoole \
+    --enable-swoole \
     --enable-sockets \
     --enable-trace-log \
-%if %{with_hiredis}
-    --enable-async-redis \
-%endif
     --enable-openssl \
-%if %{with_nghttpd2}
     --enable-http2 \
-%endif
-%if %{with_pgsql}
-    --enable-coroutine-postgresql \
-%endif
-    --enable-thread \
     --enable-mysqlnd \
+    --enable-swoole-json \
+    --enable-swoole-curl \
     --with-libdir=%{_lib} \
     --with-php-config=$1
 
@@ -237,12 +215,7 @@ peclbuild %{_bindir}/zts-php-config
 
 
 %install
-%if 0%{?rhel} == 6
-source /opt/rh/devtoolset-6/enable
-g++ --version
-%else
 %{?dtsenable}
-%endif
 
 make -C NTS \
      install INSTALL_ROOT=%{buildroot}
@@ -268,6 +241,10 @@ for i in $(grep 'role="doc"' package.xml | sed -e 's/^.*name="//;s/".*$//')
 do install -Dpm 644 NTS/$i %{buildroot}%{pecl_docdir}/%{pecl_name}/$i
 done
 
+# code not compatible with Python 3
+rm %{buildroot}%{pecl_testdir}/%{pecl_name}/tests/swoole_process/echo.py
+rm %{buildroot}%{pecl_docdir}/%{pecl_name}/examples/process/echo.py
+
 
 %if 0%{?fedora} < 24 && 0%{?rhel} < 8
 # when pear installed alone, after us
@@ -291,6 +268,8 @@ fi
 
 %check
 OPT="--no-php-ini"
+[ -f %{php_extdir}/curl.so ]    && OPT="$OPT -d extension=curl.so"
+[ -f %{php_extdir}/json.so ]    && OPT="$OPT -d extension=json.so"
 [ -f %{php_extdir}/sockets.so ] && OPT="$OPT -d extension=sockets.so"
 [ -f %{php_extdir}/mysqlnd.so ] && OPT="$OPT -d extension=mysqlnd.so"
 
@@ -298,19 +277,21 @@ cd NTS
 : Minimal load test for NTS extension
 %{__php} $OPT \
     --define extension=modules/%{pecl_name}.so \
-    --modules | grep %{pecl_name}
+    --modules | grep '^%{pecl_name}$'
 
 %if %{with_zts}
 cd ../ZTS
 : Minimal load test for ZTS extension
 %{__ztsphp} $OPT \
     --define extension=modules/%{pecl_name}.so \
-    --modules | grep %{pecl_name}
+    --modules | grep '^%{pecl_name}$'
 %endif
 
 
 %files
 %{?_licensedir:%license NTS/LICENSE}
+%{?_licensedir:%license NTS/thirdparty/hiredis/COPYING}
+%{!?_licensedir:%{pecl_docdir}/%{pecl_name}/LICENSE}
 %{!?_licensedir:%{pecl_docdir}/%{pecl_name}/LICENSE}
 %doc %{pecl_docdir}/%{pecl_name}/*md
 %doc %{pecl_docdir}/%{pecl_name}/CREDITS
@@ -328,6 +309,9 @@ cd ../ZTS
 %files devel
 %doc %{pecl_testdir}/%{pecl_name}
 %doc %{pecl_docdir}/%{pecl_name}/examples
+%doc %{pecl_docdir}/%{pecl_name}/gdbinit
+%doc %{pecl_docdir}/%{pecl_name}/thirdparty
+%doc %{pecl_docdir}/%{pecl_name}/travis
 %{php_incldir}/ext/%{pecl_name}
 
 %if %{with_zts}
@@ -336,6 +320,245 @@ cd ../ZTS
 
 
 %changelog
+* Thu Apr 22 2021 Remi Collet <remi@remirepo.net> - 4.6.6-1
+- update to 4.6.6
+
+* Fri Apr  9 2021 Remi Collet <remi@remirepo.net> - 4.6.5-1
+- update to 4.6.5
+
+* Thu Mar 11 2021 Remi Collet <remi@remirepo.net> - 4.6.4-1
+- update to 4.6.4
+
+* Tue Feb  9 2021 Remi Collet <remi@remirepo.net> - 4.6.3-1
+- update to 4.6.3
+
+* Mon Jan 25 2021 Remi Collet <remi@remirepo.net> - 4.6.2-1
+- update to 4.6.2
+
+* Mon Jan 11 2021 Remi Collet <remi@remirepo.net> - 4.6.1-1
+- update to 4.6.1
+
+* Wed Jan  6 2021 Remi Collet <remi@remirepo.net> - 4.6.0-1
+- update to 4.6.0
+- enable curl support
+- raise dependency on PHP 7.2
+
+* Wed Dec 23 2020 Remi Collet <remi@remirepo.net> - 4.5.10-1
+- update to 4.5.10
+
+* Fri Nov 27 2020 Remi Collet <remi@remirepo.net> - 4.5.9-1
+- update to 4.5.9
+
+* Mon Nov 23 2020 Remi Collet <remi@remirepo.net> - 4.5.8-2
+- add upstream patch for PHP 8
+
+* Sat Nov 21 2020 Remi Collet <remi@remirepo.net> - 4.5.8-1
+- update to 4.5.8
+
+* Mon Nov  9 2020 Remi Collet <remi@remirepo.net> - 4.5.7-1
+- update to 4.5.7
+
+* Fri Oct 30 2020 Remi Collet <remi@remirepo.net> - 4.5.6-1
+- update to 4.5.6
+- raise dependency on openssl 1.0.2 (drop EL-6 support)
+- add dependency on json extension
+
+* Thu Oct 15 2020 Remi Collet <remi@remirepo.net> - 4.5.5-1
+- update to 4.5.5
+- drop patches merged upstream
+
+* Wed Sep 30 2020 Remi Collet <remi@remirepo.net> - 4.5.4-3
+- rebuild for PHP 8.0.0RC1
+- add patch from https://github.com/swoole/swoole-src/pull/3713
+
+* Sun Sep 20 2020 Remi Collet <remi@remirepo.net> - 4.5.4-2
+- add upstream patch for EL-6 and for PHP 8
+- add patch for EL-6 from
+  https://github.com/swoole/swoole-src/pull/3686
+
+* Sun Sep 20 2020 Remi Collet <remi@remirepo.net> - 4.5.4-1
+- update to 4.5.4
+- open https://github.com/swoole/swoole-src/issues/3681 broken build on EL-6
+- open https://github.com/swoole/swoole-src/issues/3683 broken build on PHP 8
+
+* Sun Aug 30 2020 Remi Collet <remi@remirepo.net> - 4.5.3-1
+- update to 4.5.3
+
+* Thu May 28 2020 Remi Collet <remi@remirepo.net> - 4.5.2-1
+- update to 4.5.2
+
+* Mon May 11 2020 Remi Collet <remi@remirepo.net> - 4.5.1-1
+- update to 4.5.1
+
+* Mon Apr 27 2020 Remi Collet <remi@remirepo.net> - 4.5.0-2
+- add upstream patch to fix 32-bit and old GCC builds
+
+* Mon Apr 27 2020 Remi Collet <remi@remirepo.net> - 4.5.0-1
+- update to 4.5.0
+- open https://github.com/swoole/swoole-src/issues/3276
+  broken 32-bit build
+
+* Sun Apr 26 2020 Remi Collet <remi@remirepo.net> - 4.4.18-1
+- update to 4.4.18
+- open https://github.com/swoole/swoole-src/issues/3274
+  missing libstdc++ in link
+
+* Wed Apr  1 2020 Remi Collet <remi@remirepo.net> - 4.4.17-1
+- update to 4.4.17
+
+* Wed Feb 19 2020 Remi Collet <remi@remirepo.net> - 4.4.16-1
+- update to 4.4.16
+
+* Wed Jan 15 2020 Remi Collet <remi@remirepo.net> - 4.4.15-1
+- update to 4.4.15
+
+* Thu Dec 26 2019 Remi Collet <remi@remirepo.net> - 4.4.14-1
+- update to 4.4.14
+
+* Wed Dec 18 2019 Remi Collet <remi@remirepo.net> - 4.4.13-1
+- update to 4.4.13
+
+* Wed Dec 11 2019 Remi Collet <remi@remirepo.net> - 4.4.13~RC2-1
+- update to 4.4.13RC2
+
+* Thu Dec  5 2019 Remi Collet <remi@remirepo.net> - 4.4.13~RC1-1
+- update to 4.4.13RC1
+
+* Mon Nov  4 2019 Remi Collet <remi@remirepo.net> - 4.4.12-1
+- update to 4.4.12
+
+* Thu Oct 31 2019 Remi Collet <remi@remirepo.net> - 4.4.10-1
+- update to 4.4.10
+
+* Wed Oct 30 2019 Remi Collet <remi@remirepo.net> - 4.4.9-1
+- update to 4.4.9
+- open https://github.com/swoole/swoole-src/issues/2925
+  undefined symbol: BrotliDecoderDecompress
+
+* Tue Oct 15 2019 Remi Collet <remi@remirepo.net> - 4.4.8-1
+- update to 4.4.8
+
+* Wed Sep 25 2019 Remi Collet <remi@remirepo.net> - 4.4.7-1
+- update to 4.4.7
+
+* Thu Sep 19 2019 Remi Collet <remi@remirepo.net> - 4.4.6-1
+- update to 4.4.6
+
+* Tue Sep 03 2019 Remi Collet <remi@remirepo.net> - 4.4.5-2
+- rebuild for 7.4.0RC1
+
+* Fri Aug 30 2019 Remi Collet <remi@remirepo.net> - 4.4.5-1
+- update to 4.4.5
+
+* Fri Aug 23 2019 Remi Collet <remi@remirepo.net> - 4.4.4-2
+- drop echo.py which is python 2 only
+
+* Sun Aug 18 2019 Remi Collet <remi@remirepo.net> - 4.4.4-1
+- update to 4.4.4
+
+* Sat Aug  3 2019 Remi Collet <remi@remirepo.net> - 4.4.3-1
+- update to 4.4.3
+
+* Fri Jul 26 2019 Remi Collet <remi@remirepo.net> - 4.4.2-1
+- update to 4.4.2
+- drop patch merged upstream
+
+* Tue Jul 23 2019 Remi Collet <remi@remirepo.net> - 4.4.1-2
+- rebuild for 7.4.0beta1
+- add patch from https://github.com/swoole/swoole-src/pull/2707
+
+* Tue Jul 16 2019 Remi Collet <remi@remirepo.net> - 4.4.1-1
+- update to 4.4.1
+
+* Sun Jul  7 2019 Remi Collet <remi@remirepo.net> - 4.4.0-1
+- update to 4.4.0
+- raise dependency on PHP 7.1
+- drop `Serialize` module
+- drop `PostgreSQL` module
+
+* Fri Jun 14 2019 Remi Collet <remi@remirepo.net> - 4.3.5-1
+- update to 4.3.5
+
+* Fri May 17 2019 Remi Collet <remi@remirepo.net> - 4.3.4-1
+- update to 4.3.4
+
+* Tue Apr 23 2019 Remi Collet <remi@remirepo.net> - 4.3.3-1
+- update to 4.3.3
+
+* Mon Apr 15 2019 Remi Collet <remi@remirepo.net> - 4.3.2-1
+- update to 4.3.2
+
+* Wed Mar 13 2019 Remi Collet <remi@remirepo.net> - 4.3.1-1
+- update to 4.3.1
+
+* Mon Mar 11 2019 Remi Collet <remi@remirepo.net> - 4.3.0-2
+- test build for upstream patch
+
+* Thu Mar  7 2019 Remi Collet <remi@remirepo.net> - 4.3.0-1
+- update to 4.3.0
+- drop dependencies on libnghttp2 and c-ares
+- open https://github.com/swoole/swoole-src/issues/2411 32-bit broken
+- remove the --enable-trace-log build option on 32-bit
+
+* Mon Feb  4 2019 Remi Collet <remi@remirepo.net> - 4.2.13-1
+- update to 4.2.13
+
+* Sun Jan  6 2019 Remi Collet <remi@remirepo.net> - 4.2.12-1
+- update to 4.2.12
+- use --enable-cares build option
+- swoole.aio_thread_num configuration option removed
+
+* Fri Dec 28 2018 Remi Collet <remi@remirepo.net> - 4.2.11-1
+- update to 4.2.11
+
+* Thu Dec 20 2018 Remi Collet <remi@remirepo.net> - 4.2.10-1
+- update to 4.2.10
+
+* Mon Nov 26 2018 Remi Collet <remi@remirepo.net> - 4.2.9-1
+- update to 4.2.9
+
+* Mon Nov 19 2018 Remi Collet <remi@remirepo.net> - 4.2.8-1
+- update to 4.2.8
+
+* Sat Nov 10 2018 Remi Collet <remi@remirepo.net> - 4.2.7-1
+- update to 4.2.7
+
+* Mon Nov  5 2018 Remi Collet <remi@remirepo.net> - 4.2.6-1
+- update to 4.2.6
+- use hiredis bundled library
+- open https://github.com/swoole/swoole-src/issues/2089 borken with PHP 7.3
+- open https://github.com/php/php-src/pull/3652 fix for C++
+
+* Sun Oct 28 2018 Remi Collet <remi@remirepo.net> - 4.2.5-1
+- update to 4.2.5
+
+* Fri Oct 26 2018 Remi Collet <remi@remirepo.net> - 4.2.4-1
+- update to 4.2.4
+
+* Tue Oct 16 2018 Remi Collet <remi@remirepo.net> - 4.2.3-1
+- update to 4.2.3
+
+* Mon Oct 15 2018 Remi Collet <remi@remirepo.net> - 4.2.2-1
+- update to 4.2.2
+- open https://github.com/swoole/swoole-src/issues/2038 bad version
+
+* Wed Sep 19 2018 Remi Collet <remi@remirepo.net> - 4.2.1-1
+- update to 4.2.1
+
+* Tue Sep 18 2018 Remi Collet <remi@remirepo.net> - 4.2.0-1
+- update to 4.2.0
+- open https://github.com/swoole/swoole-src/issues/1982
+  undefined symbol: zif_time_nanosleep
+- open https://github.com/swoole/swoole-src/issues/1983
+  undefined symbol: php_stream_mode_sanitize_fdopen_fopencookie
+- open https://github.com/swoole/swoole-src/issues/1986
+  ZTS build is broken: undefined symbol: _Z14virtual_unlinkPKc
+- open https://github.com/swoole/swoole-src/pull/1985
+  zif_handler to save function pointer
+
+* Wed Sep  5 2018 Remi Collet <remi@remirepo.net> - 4.1.2-1
+- update to 4.1.2
+
 * Fri Aug 31 2018 Remi Collet <remi@remirepo.net> - 4.1.1-1
 - update to 4.1.1 (no change)
 
