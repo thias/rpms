@@ -25,17 +25,8 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%if 0%{?rhel} == 6
-%ifarch x86_64
-%global oraclever 18.5
-%else
-%global oraclever 18.3
-%endif
-%global oraclelib 18.1
-%else
-%global oraclever 19.6
-%global oraclelib 19.1
-%endif
+%global oraclever 21.1
+%global oraclelib 21.1
 
 # Build for LiteSpeed Web Server (LSAPI)
 %global with_lsws     1
@@ -60,12 +51,7 @@
 
 %global with_sqlite3  1
 
-# until firebird available in EPEL
-%if 0%{?rhel} == 8
-%global with_firebird  0
-%else
-%global with_firebird  1
-%endif
+%global with_firebird 1
 
 # Build ZTS extension or only NTS
 %global with_zts      1
@@ -120,7 +106,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.3.16
+%global upver        7.3.28
 #global rcver        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -176,17 +162,25 @@ Patch42: php-7.3.3-systzdata-v18.patch
 Patch43: php-7.3.0-phpize.patch
 # Use -lldap_r for OpenLDAP
 Patch45: php-7.2.3-ldap_r.patch
-# Make php_config.h constant across builds
-Patch46: php-7.2.4-fixheader.patch
+# Make php_config.h constant across builds (from 7.4)
+Patch46: php-7.3.20-fixheader.patch
 # drop "Configure command" from phpinfo output
-Patch47: php-5.6.3-phpinfo.patch
+# and add build system and provider (from 8.0)
+Patch47: php-7.3.20-phpinfo.patch
 # backport PDOStatement::getColumnMeta from 7.4
 Patch48: php-7.3.3-pdooci.patch
+# backport FPM signals changes from 7.4
+# https://bugs.php.net/74083 master PHP-fpm is stopped on multiple reloads
+Patch49: php-7.3.24-fpm.patch
 
 # RC Patch
 Patch91: php-7.2.0-oci8conf.patch
 
 # Upstream fixes (100+)
+# Backported from 7.4.16 - opcache and pcre.jit
+Patch100: php-bug80682.patch
+# Backported from 7.4.18 - pdo_odbc
+Patch101: php-bug80783.patch
 
 # Security fixes (200+)
 
@@ -224,6 +218,7 @@ BuildRequires: bzip2
 BuildRequires: perl
 BuildRequires: autoconf
 BuildRequires: automake
+BuildRequires: make
 BuildRequires: %{?dtsprefix}gcc
 BuildRequires: %{?dtsprefix}gcc-c++
 BuildRequires: libtool
@@ -317,7 +312,7 @@ Group: Development/Languages
 Summary: The interactive PHP debugger
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel}
-Obsoletes: php56u-dbg, php56w-dbg, php70u-dbg, php70w-phpdbg, php71u-dbg, php71w-phpdbg, php72u-dbg, php72w-phpdbg
+Obsoletes: php56u-dbg, php56w-phpdbg, php70u-dbg, php70w-phpdbg, php71u-dbg, php71w-phpdbg, php72u-dbg, php72w-phpdbg
 Obsoletes: php73-dbg, php73w-phpdbg
 %endif
 %description dbg
@@ -449,6 +444,7 @@ Requires: php-cli%{?_isa} = %{version}-%{release}
 # always needed to build extension
 Requires: autoconf
 Requires: automake
+Requires: make
 Requires: gcc
 Requires: gcc-c++
 Requires: libtool
@@ -826,8 +822,11 @@ Group: Development/Languages
 # ucgendat is licensed under OpenLDAP
 License: PHP and LGPLv2 and BSD and OpenLDAP
 %if %{with_onig}
-# ensure we have soname 5
-BuildRequires: oniguruma-devel >= 6.8
+%if 0%{?rhel}
+BuildRequires: oniguruma5php-devel
+%else
+BuildRequires: oniguruma-devel
+%endif
 %else
 Provides: bundled(oniguruma) = 6.9.0
 %endif
@@ -1028,7 +1027,7 @@ Group: System Environment/Libraries
 # All files licensed under PHP version 3.01
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
-# Upstream requires 4.0, we require 50 to ensure use of libicu-last / libicu62
+# Upstream requires 4.0, we require 50 to ensure use of libicu-last / libicu65
 BuildRequires: libicu-devel >= 50
 %if 0%{?rhel}
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
@@ -1157,10 +1156,13 @@ low-level PHP extension for the libsodium cryptographic library.
 %patch46 -p1 -b .fixheader
 %patch47 -p1 -b .phpinfo
 %patch48 -p1 -b .pdooci
+%patch49 -p1 -b .fpmsig
 
 %patch91 -p1 -b .remi-oci8
 
 # upstream patches
+%patch100 -p1 -b .bug80682
+%patch101 -p1 -b .bug80783
 
 # security patches
 
@@ -1317,6 +1319,11 @@ fi
 
 # Set build date from https://reproducible-builds.org/specs/source-date-epoch/
 export SOURCE_DATE_EPOCH=$(date +%s -r NEWS)
+export PHP_UNAME=$(uname)
+export PHP_BUILD_SYSTEM=$(cat /etc/redhat-release | sed -e 's/ Beta//')
+%if 0%{?vendor:1}
+export PHP_BUILD_PROVIDER="%{vendor}"
+%endif
 
 # aclocal workaround - to be improved
 cat $(aclocal --print-ac-dir)/{libtool,ltoptions,ltsugar,ltversion,lt~obsolete}.m4 >>aclocal.m4
@@ -1513,6 +1520,7 @@ popd
 without_shared="--without-gd \
       --disable-dom --disable-dba --without-unixODBC \
       --disable-opcache \
+      --disable-phpdbg \
       --disable-json \
       --disable-xmlreader --disable-xmlwriter \
       --without-sodium \
@@ -2249,6 +2257,93 @@ fi
 
 
 %changelog
+* Tue Apr 27 2021 Remi Collet <remi@remirepo.net> - 7.3.28-1
+- Update to 7.3.28 - http://www.php.net/releases/7_3_28.php
+
+* Thu Apr  8 2021 Remi Collet <remi@remirepo.net> - 7.3.27-2
+- add upstream patch for https://bugs.php.net/80783
+  PDO ODBC truncates BLOB records at every 256th byte
+- use oracle client library version 21.1
+
+* Tue Feb  2 2021 Remi Collet <remi@remirepo.net> - 7.3.27-1
+- Update to 7.3.27 - http://www.php.net/releases/7_3_27.php
+
+* Thu Jan 28 2021 Remi Collet <remi@remirepo.net> - 7.3.26-2
+- add upstream patch for https://bugs.php.net/80682
+  fix opcache doesn't honour pcre.jit option
+
+* Tue Jan  5 2021 Remi Collet <remi@remirepo.net> - 7.3.26-1
+- Update to 7.3.26 - http://www.php.net/releases/7_3_26.php
+
+* Tue Dec 15 2020 Remi Collet <remi@remirepo.net> - 7.3.26~RC1-1
+- update to 7.3.26RC1
+
+* Tue Nov 24 2020 Remi Collet <remi@remirepo.net> - 7.3.25-1
+- Update to 7.3.25 - http://www.php.net/releases/7_3_25.php
+- use oracle client library version 19.9 (x86_64)
+
+* Tue Nov 10 2020 Remi Collet <remi@remirepo.net> - 7.3.25~RC1-1
+- update to 7.3.25RC1
+
+* Tue Oct 27 2020 Remi Collet <remi@remirepo.net> - 7.3.24-1
+- Update to 7.3.24 - http://www.php.net/releases/7_3_24.php
+
+* Fri Oct 23 2020 Remi Collet <remi@remirepo.net> - 7.3.24~RC1-2
+- backport fix for https://bugs.php.net/74083 from 7.4
+  master PHP-fpm is stopped on multiple reloads
+
+* Tue Oct 13 2020 Remi Collet <remi@remirepo.net> - 7.3.24~RC1-1
+- update to 7.3.24RC1
+
+* Tue Sep 29 2020 Remi Collet <remi@remirepo.net> - 7.3.23-1
+- Update to 7.3.23 - http://www.php.net/releases/7_3_23.php
+
+* Tue Sep 15 2020 Remi Collet <remi@remirepo.net> - 7.3.23~RC1-1
+- update to 7.3.23RC1
+
+* Tue Sep  1 2020 Remi Collet <remi@remirepo.net> - 7.3.22-1
+- Update to 7.3.22 - http://www.php.net/releases/7_3_22.php
+
+* Tue Aug 18 2020 Remi Collet <remi@remirepo.net> - 7.3.22~RC1-1
+- update to 7.3.22RC1
+- use oracle client library version 19.8 (x86_64)
+
+* Tue Aug  4 2020 Remi Collet <remi@remirepo.net> - 7.3.21-1
+- Update to 7.3.21 - http://www.php.net/releases/7_3_21.php
+
+* Tue Jul 21 2020 Remi Collet <remi@remirepo.net> - 7.3.21~RC1-1
+- update to 7.3.21RC1
+- build using ICU 65 (excepted on EL-6)
+
+* Tue Jul  7 2020 Remi Collet <remi@remirepo.net> - 7.3.20-1
+- Update to 7.3.20 - http://www.php.net/releases/7_3_20.php
+
+* Tue Jun 23 2020 Remi Collet <remi@remirepo.net> - 7.3.20~RC1-2
+- display build system and provider in phpinfo (from 8.0)
+
+* Tue Jun 23 2020 Remi Collet <remi@remirepo.net> - 7.3.20~RC1-1
+- update to 7.3.20RC1
+
+* Tue Jun  9 2020 Remi Collet <remi@remirepo.net> - 7.3.19-1
+- Update to 7.3.19 - http://www.php.net/releases/7_3_19.php
+- rebuild using oniguruma5php
+- build phpdbg only once
+
+* Tue May 26 2020 Remi Collet <remi@remirepo.net> - 7.3.19~RC1-1
+- update to 7.3.19RC1
+
+* Tue May 12 2020 Remi Collet <remi@remirepo.net> - 7.3.18-1
+- Update to 7.3.18 - http://www.php.net/releases/7_3_18.php
+
+* Tue Apr 28 2020 Remi Collet <remi@remirepo.net> - 7.3.18~RC1-1
+- update to 7.3.18RC1
+
+* Tue Apr 14 2020 Remi Collet <remi@remirepo.net> - 7.3.17-1
+- Update to 7.3.17 - http://www.php.net/releases/7_3_17.php
+
+* Tue Mar 31 2020 Remi Collet <remi@remirepo.net> - 7.3.17~RC1-1
+- update to 7.3.17RC1
+
 * Tue Mar 17 2020 Remi Collet <remi@remirepo.net> - 7.3.16-1
 - Update to 7.3.16 - http://www.php.net/releases/7_3_16.php
 - use oracle client library version 19.6 (18.5 on EL-6)
