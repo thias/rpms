@@ -12,15 +12,15 @@
 %global ini_name    40-%{pecl_name}.ini
 
 # https://github.com/51Degrees/device-detection-cxx
-%global cxx_dd_commit 0451c193d8fd869e67f0781635c8dbe68d668051
+%global cxx_dd_commit 214a7663337e7f6af5a0c9291a6f94ea7919d0b4
 %global cxx_dd_short  %(c=%{cxx_dd_commit}; echo ${c:0:7})
 # https://github.com/51Degrees/common-cxx
-%global cxx_c_commit  5a632475e54917e16ec5cc34859ef99618578030
+%global cxx_c_commit  4aad033453fb1459bcccd643bffceafa0d5f37ea
 %global cxx_c_short   %(c=%{cxx_c_commit}; echo ${c:0:7})
 
 Summary:       Client extension for 51Degrees Device-Detection
 Name:          %{?scl_prefix}php-%{pecl_name}
-Version:       4.2.0
+Version:       4.2.4
 %if 0%{?gh_date:1}
 Release:       1.%{gh_date}git%{gh_short}%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 %else
