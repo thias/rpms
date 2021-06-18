@@ -1,0 +1,22 @@
+From 122dac0629dbdb5c74041dfd2a47086db1c67776 Mon Sep 17 00:00:00 2001
+From: P. Christeas <p_christ@hol.gr>
+Date: Sun, 3 Apr 2011 02:43:38 +0300
+Subject: [PATCH 3/6] server-init: simplify syntax for RedHat
+
+
+diff --git a/doc/openerp-server.init b/doc/openerp-server.init
+index e6f99e6..ae6afc3 100644
+--- a/doc/openerp-server.init
++++ b/doc/openerp-server.init
+@@ -53,7 +53,7 @@ RETVAL=0
+ start() {
+     if [ -d /etc/openerp/start.d ] ; then
+         echo -n $"Preparing $desc: "
+-        run-parts --exit-on-error /etc/openerp/start.d
++        run-parts /etc/openerp/start.d
+         RETVAL=$?
+         echo
+         [ $RETVAL -ne 0 ] && return $RETVAL
+-- 
+1.7.4.4
+

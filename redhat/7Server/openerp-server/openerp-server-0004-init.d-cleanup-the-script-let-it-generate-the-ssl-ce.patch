@@ -1,0 +1,98 @@
+From 765016c6d310157fd6bd1336b94af8a3879c7a21 Mon Sep 17 00:00:00 2001
+From: P. Christeas <p_christ@hol.gr>
+Date: Mon, 11 Apr 2011 10:29:35 +0300
+Subject: [PATCH 4/6] init.d: cleanup the script, let it generate the ssl
+ certificate
+
+After suggestions from Fedora reviewers, the ssl certificate creation
+procedure has moved from the .spec file into this script.
+Also, fix the header wrt. start/stop of postgresql.
+
+diff --git a/doc/openerp-server.init b/doc/openerp-server.init
+index ae6afc3..fdd8521 100644
+--- a/doc/openerp-server.init
++++ b/doc/openerp-server.init
+@@ -10,10 +10,9 @@
+ 
+ ### BEGIN INIT INFO
+ # Provides: openerp-server
+-# Required-Start: postgresql
+-# Required-Stop: postgresql
+-# Should-Start: $network harddrake
+-# Default-Start: 345
++# Should-Start: $network $local_fs postgresql
++# Should-Stop: postgresql
++# Default-Start: 3 4 5
+ # Default-Stop: 3 4 5
+ # Short-Description: Launches the OpenERP server.
+ # Description: This startup script launches the OpenERP server.
+@@ -25,6 +24,7 @@
+ PIDFILE=/var/run/openerp/openerp-server.pid
+ LOCKFILE=/var/lock/subsys/openerp-server
+ LOGFILE=/var/log/openerp/openerp-server.log
++ETC_OPENERP_DIR=/etc/openerp/
+ 
+ OPTS="--pidfile=$PIDFILE --logfile=$LOGFILE"
+ 
+@@ -117,6 +117,47 @@ status() {
+     return $RETVAL
+ }
+ 
++gen_cert(){
++    if [ -r "/etc/openerp/server.cert" ] ; then
++	return 0
++    fi
++
++    if [ ! -x "/usr/bin/openssl" ] ; then
++	    echo "OpenERP server: openssl is missing. Cannot create SSL certificates"
++    else
++	    pushd $ETC_OPENERP_DIR
++
++	    if [ ! -f server.key ] ; then
++	    /usr/bin/openssl genrsa -rand /proc/apm:/proc/cpuinfo:/proc/dma:/proc/filesystems:/proc/interrupts:/proc/ioports:/proc/pci:/proc/rtc:/proc/uptime \
++		    1024 > server.key 2> /dev/null
++	    fi
++
++	    FQDN=`hostname`
++	    if [ "x${FQDN}" = "x" ]; then
++		    FQDN=localhost.localdomain
++	    fi
++
++	    if [ ! -f server.cert ] ; then
++		    cat << EOF | /usr/bin/openssl req -new -key server.key \
++			    -x509 -days 365 -set_serial $RANDOM -extensions v3_req \
++			    -out server.cert 2>/dev/null
++--
++SomeState
++SomeCity
++SomeOrganization
++SomeOrganizationalUnit
++${FQDN}
++root@${FQDN}
++EOF
++		fi
++
++		echo "Created a self-signed SSL certificate for OpenERP. You may want to revise it or get a real one."
++		chown openerp:openerp server.cert server.key
++		popd
++    fi
++
++}
++
+ case "$1" in
+ start)
+     start
+@@ -138,6 +179,10 @@ status)
+     status
+     ;;
+ 
++gen_cert)
++    gen_cert
++    ;;
++
+ probe)
+     exit 0
+     ;;
+-- 
+1.7.4.4
+
