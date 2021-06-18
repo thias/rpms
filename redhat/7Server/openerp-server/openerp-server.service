@@ -1,0 +1,11 @@
+[Unit]
+Description=
+After=network.target
+
+[Service]
+User=openerp
+ExecStart=/usr/bin/openerp-server --logfile=/var/log/openerp/openerp-server.log  -c /etc/openerp-server.conf
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

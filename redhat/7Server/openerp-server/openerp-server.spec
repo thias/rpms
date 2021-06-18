@@ -1,42 +1,15 @@
-# The /var/run/openerp directory uses tmpfiles.d when mounted using tmpfs
-%if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
-%bcond_without tmpfiles
-%else
-%bcond_with    tmpfiles
-%endif
-
-# Redhat, static version of the spec file
-
 Name:      openerp-server
-Version:   6.0.3
+Version:   6.0.4
 Release:   0%{?dist}
 License:   AGPLv3 and GPLv2 and LGPLv2+ and MIT
 Group:     System Environment/Daemons
 Summary:   OpenERP Server
-URL:       http://www.openerp.com/
-Source0:   http://www.openerp.com/download/stable/source/%{name}-%{version}.tar.gz
-#          All non-official patches are contained in:
-#          http://git.hellug.gr/?p=xrg/openerp  and referred submodules
-#          look for the ./redhat folder there, where this .spec file is held, also.
-Source2:   openerp-server-check.sh
-
-# Patches for:  server
-Patch1:    openerp-server-0001-server-init-add-the-required-Default-Stop-tag.patch
-Patch2:    openerp-server-0002-Readme-netsvc-expression-Fix-shebangs-and-EOL-for-RP.patch
-Patch3:    openerp-server-0003-server-init-simplify-syntax-for-RedHat.patch
-Patch4:    openerp-server-0004-init.d-cleanup-the-script-let-it-generate-the-ssl-ce.patch
-Patch5:    openerp-server-0005-server-init-don-t-start-OpenERP-by-default.patch
-Patch6:    openerp-server-0006-tools-misc-use-only-the-py2.5-threadinglocal-class.patch
-
-# Patches for:  addons
-Patch1000: openerp-server-1000-base_report_designer-remove-empty-DTD-file.patch
-Patch1001: openerp-server-1001-document-relicense-dict_tools-to-LGPL2.1.patch
-
-
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
+URL:       https://www.odoo.com/
+Source0:   https://nightly.odoo.com/old/openerp-6.0/%{version}/openerp-server-%{version}.tar.gz
+Source1:   openerp-server.service
 BuildArch:      noarch
 BuildRequires:  python
-BuildRequires:  desktop-file-utils, python-setuptools
+BuildRequires:  python-setuptools
 BuildRequires:  pygtk2-devel, libxslt-python
 BuildRequires:  python2-devel
 BuildRequires:  jpackage-utils
@@ -50,9 +23,8 @@ Requires:       PyXML
 # Requires: python-matplotlib
 Requires:       PyYAML, python-mako
 Requires:       pychart
-Requires(post): chkconfig
-Requires(preun): chkconfig
-Requires(preun): initscripts
+BuildRequires: systemd
+%{?systemd_requires}
 
 %description
 Server package for OpenERP.
@@ -82,161 +54,86 @@ or  http://apps.openerp.com/
 %prep
 %setup -q
 
-%patch -P1 -p1 
-%patch -P2 -p1 
-%patch -P3 -p1 
-%patch -P4 -p1 
-%patch -P5 -p1 
-%patch -P6 -p1 
-# patch -P1000 -p1 -d bin/addons/
-%patch -P1001 -p1 -d bin/addons/
-
-# I don't understand why this is needed at this stage
-rm -rf win32 debian setup.nsi
-
-# Hope that the upstream one will do.
-rm -rf bin/pychart
-
-# Remove prebuilt binaries
-pushd bin/addons
-    rm -f outlook/plugin/openerp-outlook-addin.exe \
-          thunderbird/plugin/openerp_plugin.xpi
-
-# Well, we'd better exclude all the client-side plugin, until
-# we can build it under Fedora (doubt it).
-    rm -rf outlook/plugin/
-
-# Wiki contains some other licenses, and bundled modules, we should
-# skip it until they are resolved. Also, web modules shall better be
-# directly packaged into the web-client.
-    rm -rf wiki/web
-
-# Remove unwanted files in addons
-    rm -f .bzrignore
-    
-popd
-
-# Tmp, as long as server-check is not in official sources:
-mkdir -p tools/
-cp %{SOURCE2} tools/server-check.sh
-
 
 %build
-NO_INSTALL_REQS=1 python ./setup.py build --quiet
-
-# TODO: build the thunderbird plugin and the report designer
+NO_INSTALL_REQS=1 python setup.py build --quiet
 
 
 %install
 rm -rf %{buildroot}
 
-mkdir -p %{buildroot}%{_sysconfdir}
-
-python ./setup.py install --root=%{buildroot}
-
-# the Python installer plants the RPM_BUILD_ROOT inside the launch scripts, fix that:
-pushd %{buildroot}%{_bindir}
-    sed -i "s|%{buildroot}||" %{name}
-popd
+python setup.py install --root=%{buildroot}
+# the Python installer plants the RPM_BUILD_ROOT inside the launch script
+sed -i "s|%{buildroot}||" %{buildroot}%{_bindir}/openerp-server
 
 # When setup.py copies files, it removes the executable bit, so we have to
 # restore it here for some scripts:
 pushd %{buildroot}%{python_sitelib}/%{name}
-    chmod a+x addons/document_ftp/ftpserver/ftpserver.py \
-        addons/document/odt2txt.py \
-        addons/document/test_cindex.py \
-        addons/document_webdav/test_davclient.py \
-        addons/email_template/html2text.py \
-        addons/mail_gateway/scripts/openerp_mailgate/openerp_mailgate.py \
-        openerp-server.py \
-        report/render/rml2txt/rml2txt.py \
-        tools/graph.py \
-        tools/which.py
+  chmod a+x addons/document_ftp/ftpserver/ftpserver.py \
+    addons/document/odt2txt.py \
+    addons/document/test_cindex.py \
+    addons/document_webdav/test_davclient.py \
+    addons/email_template/html2text.py \
+    addons/mail_gateway/scripts/openerp_mailgate/openerp_mailgate.py \
+    openerp-server.py \
+    report/render/rml2txt/rml2txt.py \
+    tools/graph.py \
+    tools/which.py
 popd
 
-# Install the init scripts and conf
-install -m 644 -D doc/openerp-server.conf %{buildroot}%{_sysconfdir}/openerp-server.conf
-install -m 755 -D doc/openerp-server.init %{buildroot}%{_initddir}/openerp-server
-install -m 644 -D doc/openerp-server.logrotate %{buildroot}%{_sysconfdir}/logrotate.d/openerp-server
+# Install the conf
+install -m 0644 -D doc/openerp-server.conf \
+  %{buildroot}/etc/openerp-server.conf
+install -m 0644 -D doc/openerp-server.logrotate \
+  %{buildroot}/etc/logrotate.d/openerp-server
 
-install -d %{buildroot}%{_sysconfdir}/openerp/start.d
-install -d %{buildroot}%{_sysconfdir}/openerp/stop.d
-
-install -m 644 bin/import_xml.rng %{buildroot}%{python_sitelib}/%{name}/
-
-install -d %{buildroot}%{_libexecdir}/%{name}
-install -m 744 tools/server-check.sh %{buildroot}%{_libexecdir}/%{name}/
-
-install -d %{buildroot}%{python_sitelib}/openerp-server/addons/base/security/
-install -m 644 bin/addons/base/security/* %{buildroot}%{python_sitelib}/openerp-server/addons/base/security/
-
-install -d %{buildroot}%{_datadir}/pixmaps/openerp-server
-install -m 644 -D pixmaps/* %{buildroot}%{_datadir}/pixmaps/openerp-server/
+# Create systemd unit file
+install -D -p -m 0644 %{SOURCE1} %{buildroot}%{_unitdir}/openerp-server.service
 
 mkdir -p %{buildroot}/var/log/openerp
-mkdir -p %{buildroot}/var/spool/openerp
+mkdir -p %{buildroot}/var/lib/openerp
 
-# Install empty run directory to include
-mkdir -p %{buildroot}/var/run/openerp
-%if %{with tmpfiles}
-# Setup tmpfiles.d config for the above
-mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
-echo 'D /var/run/openerp 0750 openerp openerp -' > \
-    %{buildroot}%{_sysconfdir}/tmpfiles.d/openerp-server.conf
-%endif
 
 %clean
 rm -rf %{buildroot}
 
-%files
-%defattr(-,root,root)
-%doc LICENSE README doc/INSTALL doc/Changelog
-%attr(0755,openerp,openerp) %dir /var/log/openerp
-%attr(0755,openerp,openerp) %dir /var/spool/openerp
-%if %{with tmpfiles}
-%ghost %attr(0750,openerp,openerp) %dir /var/run/openerp/
-%else
-%attr(0750,openerp,openerp) %dir /var/run/openerp/
-%endif
-%attr(0755,openerp,openerp) %dir %{_sysconfdir}/openerp
-%{_initddir}/openerp-server
-%attr(0644,openerp,openerp) %config(noreplace) %{_sysconfdir}/openerp-server.conf
-%config(noreplace) %{_sysconfdir}/logrotate.d/openerp-server
-%dir %{_sysconfdir}/openerp/start.d/
-%dir %{_sysconfdir}/openerp/stop.d/
-%if %{with tmpfiles}
-%config(noreplace) %{_sysconfdir}/tmpfiles.d/openerp-server.conf
-%endif
-%{_bindir}/openerp-server
-%{python_sitelib}/openerp-server/
-%dir %{_libexecdir}/%{name}
-%attr(0755,root,root) %{_libexecdir}/%{name}/server-check.sh
-%{_datadir}/pixmaps/openerp-server/
-%{_mandir}/man1/openerp-server.*
-%{python_sitelib}/openerp_server-%{version}-py%{python_version}.egg-info
-%{_mandir}/man5/openerp_serverrc.5*
 
 %pre
 /usr/sbin/useradd -c "OpenERP Server" \
-    -s /sbin/nologin -r -d /var/spool/openerp openerp 2>/dev/null || :
+  -s /sbin/nologin -r -d /var/lib/openerp openerp 2>/dev/null || :
 
 %post
-# Trigger the server-check.sh the next time openerp-server starts
-touch /var/run/openerp-server-check
-/sbin/chkconfig --add openerp-server
+%systemd_post openerp-server.service
 
 %preun
-if [ $1 -eq 0 ] ; then
-    /sbin/service openerp-server stop >/dev/null 2>&1
-    /sbin/chkconfig --del openerp-server
-fi
+%systemd_preun openerp-server.service
 
 %postun
-if [ $1 -ge 1 ] ; then
-    /sbin/service openerp-server condrestart >/dev/null 2>&1 || :
-fi
+%systemd_postun_with_restart openerp-server.service
+
+
+%files
+%defattr(-,root,root)
+%doc LICENSE README doc/INSTALL doc/Changelog
+%attr(0775,openerp,openerp) %dir /var/log/openerp
+%attr(0775,openerp,openerp) %dir /var/lib/openerp
+%attr(0640,root,openerp) %config(noreplace) /etc/openerp-server.conf
+%config(noreplace) /etc/logrotate.d/openerp-server
+%{_bindir}/openerp-server
+%{_unitdir}/openerp-server.service
+%{python_sitelib}/openerp-server/
+%{python_sitelib}/openerp_server-%{version}-py%{python_version}.egg-info
+%{_mandir}/man1/openerp-server.*
+%{_mandir}/man5/openerp_serverrc.5*
+
 
 %changelog
+* Fri Jun 18 2021 Matthias Saou <matthias@saou.eu> 6.0.4-0
+- Update to 6.0.4.
+- Rip out all patches.
+- Simplify spec file to the max.
+- Switch to systemd.
+
 * Wed Sep 28 2011 Matthias Saou <matthias@saou.eu> 6.0.3-0
 - Update to 6.0.3 final.
 - Spec file cleanups from the Fedora package review (#693425).
