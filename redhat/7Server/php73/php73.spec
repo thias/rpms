@@ -106,8 +106,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.3.28
-#global rcver        RC1
+%global upver        7.3.29
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
@@ -1174,7 +1173,7 @@ low-level PHP extension for the libsodium cryptographic library.
 # WIP patch
 
 # Prevent %%doc confusion over LICENSE files
-cp Zend/LICENSE Zend/ZEND_LICENSE
+cp Zend/LICENSE ZEND_LICENSE
 cp TSRM/LICENSE TSRM_LICENSE
 %if ! %{with_libgd}
 cp ext/gd/libgd/README libgd_README
@@ -2098,7 +2097,7 @@ fi
 
 %files common -f files.common
 %doc CODING_STANDARDS CREDITS EXTENSIONS NEWS README*
-%license LICENSE TSRM_LICENSE
+%license LICENSE TSRM_LICENSE ZEND_LICENSE
 %license libmagic_LICENSE
 %license timelib_LICENSE
 %doc php.ini-*
@@ -2257,6 +2256,9 @@ fi
 
 
 %changelog
+* Tue Jun 29 2021 Remi Collet <remi@remirepo.net> - 7.3.29-1
+- Update to 7.3.29 - http://www.php.net/releases/7_3_29.php
+
 * Tue Apr 27 2021 Remi Collet <remi@remirepo.net> - 7.3.28-1
 - Update to 7.3.28 - http://www.php.net/releases/7_3_28.php
 
