@@ -14,7 +14,7 @@
 # Extension version
 %global fileinfover 1.0.5
 %global oci8ver     3.0.1
-%global zipver      1.19.2
+%global zipver      1.19.3
 
 # Adds -z now to the linker flags
 %global _hardened_build 1
@@ -85,14 +85,14 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.0.5
+%global upver          8.0.10
 #global rcver          RC1
 #global lower          RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{lower}}
-Release: 1%{?dist}
+Release: 2%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -130,20 +130,30 @@ Patch1: php-7.4.0-httpd.patch
 Patch5: php-7.2.0-includedir.patch
 Patch6: php-8.0.0-embed.patch
 Patch8: php-7.4.0-libdb.patch
-Patch9: php-7.0.7-curl.patch
+# get rid of deprecated functions from 8.1
+Patch9: php-8.0.6-deprecated.patch
+# RHEL backports
+Patch10: php-7.0.7-curl.patch
 
 # Functional changes
 # Use system nikic/php-parser
 Patch41: php-8.0.0-parser.patch
 # use system tzdata
-Patch42: php-8.0.0-systzdata-v19.patch
+Patch42: php-8.0.10-systzdata-v20.patch
 # See http://bugs.php.net/53436
 Patch43: php-7.4.0-phpize.patch
 # Use -lldap_r for OpenLDAP
 Patch45: php-7.4.0-ldap_r.patch
+# Ignore unsupported "threads" option on password_hash
+Patch46: php-8.0.7-argon2.patch
 # drop "Configure command" from phpinfo output
 # and only use gcc (instead of full version)
 Patch47: php-8.0.0-phpinfo.patch
+# add sha256 / sha512 security protocol, from 8.1
+Patch48: php-8.0.10-snmp-sha.patch
+# switch phar to use sha256 signature by default, from 8.1
+# implement openssl_256 and openssl_512 for phar signatures, from 8.1
+Patch49: php-8.0.10-phar-sha.patch
 
 # RC Patch
 Patch91: php-7.2.0-oci8conf.patch
@@ -1136,8 +1146,9 @@ in pure PHP.
 %patch5 -p1 -b .includedir
 %patch6 -p1 -b .embed
 %patch8 -p1 -b .libdb
+%patch9 -p1 -b .deprecated
 %if 0%{?rhel}
-%patch9 -p1 -b .curltls
+%patch10 -p1 -b .curltls
 %endif
 
 %patch41 -p1 -b .syslib
@@ -1146,7 +1157,10 @@ in pure PHP.
 %endif
 %patch43 -p1 -b .headers
 %patch45 -p1 -b .ldap_r
+%patch46 -p1 -b .argon2
 %patch47 -p1 -b .phpinfo
+%patch48 -p1 -b .sha
+%patch49 -p1 -b .pharsha
 
 %patch91 -p1 -b .remi-oci8
 
@@ -1162,7 +1176,7 @@ in pure PHP.
 # WIP patch
 
 # Prevent %%doc confusion over LICENSE files
-cp Zend/LICENSE Zend/ZEND_LICENSE
+cp Zend/LICENSE ZEND_LICENSE
 cp TSRM/LICENSE TSRM_LICENSE
 cp sapi/fpm/LICENSE fpm_LICENSE
 cp ext/mbstring/libmbfl/LICENSE libmbfl_LICENSE
@@ -1988,7 +2002,7 @@ fi
 
 %files common -f files.common
 %doc EXTENSIONS NEWS UPGRADING* README.REDIST.BINS *md docs
-%license LICENSE TSRM_LICENSE
+%license LICENSE TSRM_LICENSE ZEND_LICENSE
 %license libmagic_LICENSE
 %license timelib_LICENSE
 %doc php.ini-*
@@ -2138,6 +2152,43 @@ fi
 
 
 %changelog
+* Tue Aug 24 2021 Remi Collet <remi@remirepo.net> - 8.0.10-1
+- Update to 8.0.10 - http://www.php.net/releases/8_0_10.php
+
+* Wed Aug 11 2021 Remi Collet <remi@remirepo.net> - 8.0.10~RC1-2
+- phar: switch to sha256 signature by default, backported from 8.1
+- phar: implement openssl_256 and openssl_512 for signatures, backported from 8.1
+- snmp: add sha256 / sha512 security protocol, backported from 8.1
+
+* Tue Aug 10 2021 Remi Collet <remi@remirepo.net> - 8.0.10~RC1-1
+- update to 8.0.10RC1
+- adapt systzdata patch for timelib 2020.03 (v20)
+
+* Thu Jul 29 2021 Remi Collet <remi@remirepo.net> - 8.0.9-1
+- Update to 8.0.9 - http://www.php.net/releases/8_0_9.php
+
+* Tue Jul 13 2021 Remi Collet <remi@remirepo.net> - 8.0.9~RC1-1
+- update to 8.0.9RC1
+
+* Tue Jun 29 2021 Remi Collet <remi@remirepo.net> - 8.0.8-1
+- Update to 8.0.8 - http://www.php.net/releases/8_0_8.php
+
+* Tue Jun 15 2021 Remi Collet <remi@remirepo.net> - 8.0.8~RC1-1
+- update to 8.0.8RC1
+- ignore unsupported "threads" option on password_hash
+
+* Wed Jun  2 2021 Remi Collet <remi@remirepo.net> - 8.0.7-1
+- Update to 8.0.7 - http://www.php.net/releases/8_0_7.php
+
+* Thu May 20 2021 Remi Collet <remi@remirepo.net> - 8.0.7~RC1-1
+- update to 8.0.7RC1
+
+* Sat May  8 2021 Remi Collet <remi@remirepo.net> - 8.0.6-2
+- get rid of inet_ntoa, inet_aton, inet_addr and gethostbyaddr calls
+
+* Wed May  5 2021 Remi Collet <remi@remirepo.net> - 8.0.6-1
+- Update to 8.0.6 - http://www.php.net/releases/8_0_6.php
+
 * Tue Apr 27 2021 Remi Collet <remi@remirepo.net> - 8.0.5-1
 - Update to 8.0.5 - http://www.php.net/releases/8_0_5.php
 
