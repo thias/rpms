@@ -106,7 +106,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.3.29
+%global upver        7.3.30
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
@@ -2256,6 +2256,9 @@ fi
 
 
 %changelog
+* Tue Aug 24 2021 Remi Collet <remi@remirepo.net> - 7.3.30-1
+- Update to 7.3.30 - http://www.php.net/releases/7_3_30.php
+
 * Tue Jun 29 2021 Remi Collet <remi@remirepo.net> - 7.3.29-1
 - Update to 7.3.29 - http://www.php.net/releases/7_3_29.php
 
