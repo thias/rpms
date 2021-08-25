@@ -13,7 +13,7 @@
 %global pdover      20170320
 # Extension version
 %global fileinfover 1.0.5
-%global oci8ver     2.1.8
+%global oci8ver     2.2.0
 %global zipver      1.13.0
 %global jsonver     1.6.0
 
@@ -25,11 +25,8 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%ifarch ppc ppc64
-%global oraclever 10.2.0.2
-%else
-%global oraclever 18.3
-%endif
+%global oraclever 21.1
+%global oraclelib 21.1
 
 # Build for LiteSpeed Web Server (LSAPI)
 %global with_lsws     1
@@ -50,11 +47,7 @@
 %else
 %global with_libpcre  0
 %endif
-%if 0%{?fedora} >= 26
 %global with_onig     1
-%else
-%global with_onig     0
-%endif
 
 %global with_sqlite3  1
 
@@ -100,17 +93,11 @@
 %global with_nginx     0
 %endif
 
-# until firebird available in EPEL
-%if 0%{?rhel} == 8
-%global with_firebird  0
-%else
 %global with_firebird  1
-%endif
-
-%global with_dtrace  1
-%global with_libgd   1
-%global with_libzip  1
-%global with_zip     0
+%global with_dtrace    1
+%global with_libgd     1
+%global with_libzip    1
+%global with_zip       0
 
 %if 0%{?fedora} < 18 && 0%{?rhel} < 7
 %global db_devel  db4-devel
@@ -118,13 +105,12 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.2.13
-#global rcver        RC1
+%global upver        7.2.34
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{rcver}}
-Release: 2%{?dist}
+Release: 6%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -150,6 +136,9 @@ Source11: php.conf2
 Source12: php-fpm.wants
 Source13: nginx-fpm.conf
 Source14: nginx-php.conf
+# See https://secure.php.net/gpg-keys.php
+Source20: https://www.php.net/distributions/php-keyring.gpg
+Source21: https://www.php.net/distributions/php-%{upver}%{?rcver}.tar.xz.asc
 # Configuration files for some extensions
 Source50: 10-opcache.ini
 Source51: opcache-default.blacklist
@@ -166,17 +155,20 @@ Patch9: php-7.0.7-curl.patch
 
 # Functional changes
 Patch40: php-7.2.4-dlopen.patch
-Patch42: php-7.2.3-systzdata-v16.patch
+Patch42: php-7.2.16-systzdata-v17.patch
 # See http://bugs.php.net/53436
 Patch43: php-7.2.12-phpize.patch
 # Use -lldap_r for OpenLDAP
 Patch45: php-7.2.3-ldap_r.patch
-# Make php_config.h constant across builds
-Patch46: php-7.2.4-fixheader.patch
+# Make php_config.h constant across builds (from 7.4)
+Patch46: php-7.2.32-fixheader.patch
 # drop "Configure command" from phpinfo output
-Patch47: php-5.6.3-phpinfo.patch
+# and add build system and provider (from 8.0)
+Patch47: php-7.2.32-phpinfo.patch
 # getallheaders for FPM backported from 7.3
 Patch48: php-7.2.8-getallheaders.patch
+# backport PDOStatement::getColumnMeta from 7.4
+Patch49: php-7.2.16-pdooci.patch
 
 # RC Patch
 Patch91: php-7.2.0-oci8conf.patch
@@ -184,7 +176,11 @@ Patch91: php-7.2.0-oci8conf.patch
 # Upstream fixes (100+)
 
 # Security fixes (200+)
-Patch200: php-imap.patch
+Patch200: php-bug77423.patch
+Patch201: php-bug80672.patch
+Patch202: php-bug80710.patch
+Patch203: php-bug81122.patch
+Patch204: php-bug76450.patch
 
 # Fixes for tests (300+)
 # Factory is droped from system tzdata
@@ -194,6 +190,7 @@ Patch301: php-7.0.0-oldpcre.patch
 
 # WIP
 
+BuildRequires: gnupg2
 BuildRequires: bzip2-devel, curl-devel >= 7.9
 BuildRequires: httpd-devel >= 2.0.46-1, pam-devel
 %if %{with_httpd2410}
@@ -219,6 +216,7 @@ BuildRequires: bzip2
 BuildRequires: perl
 BuildRequires: autoconf
 BuildRequires: automake
+BuildRequires: make
 BuildRequires: %{?dtsprefix}gcc
 BuildRequires: %{?dtsprefix}gcc-c++
 BuildRequires: libtool
@@ -303,7 +301,7 @@ Group: Development/Languages
 Summary: The interactive PHP debugger
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel}
-Obsoletes: php56u-dbg, php56w-dbg, php70u-dbg, php70w-phpdbg, php71u-dbg, php71w-phpdbg, php72u-dbg, php72w-phpdbg
+Obsoletes: php56u-dbg, php56w-phpdbg, php70u-dbg, php70w-phpdbg, php71u-dbg, php71w-phpdbg, php72u-dbg, php72w-phpdbg
 %endif
 %description dbg
 The php-dbg package contains the interactive PHP debugger.
@@ -338,7 +336,8 @@ Provides: php(httpd)
 %endif
 %if %{with_nginx}
 # for /etc/nginx ownership
-Requires: nginx-filesystem
+# Temporarily not mandatory to allow nginx for nginx repo
+Recommends: nginx-filesystem
 %endif
 %if 0%{?rhel}
 Obsoletes: php53-fpm, php53u-fpm, php54-fpm, php54w-fpm, php55u-fpm, php55w-fpm, php56u-fpm, php56w-fpm
@@ -430,12 +429,21 @@ Requires: php-cli%{?_isa} = %{version}-%{release}
 # always needed to build extension
 Requires: autoconf
 Requires: automake
+Requires: make
 Requires: gcc
 Requires: gcc-c++
 Requires: libtool
+# see "php-config --libs"
+Requires: krb5-devel%{?_isa}
+Requires: libargon2-devel%{?_isa}
+Requires: libedit-devel%{?_isa}
+Requires: libxml2-devel%{?_isa}
+Requires: openssl-devel%{?_isa}
 %if %{with_libpcre}
 Requires: pcre-devel%{?_isa}
 %endif
+Requires: zlib-devel%{?_isa}
+
 Obsoletes: php-pecl-pdo-devel
 Obsoletes: php-pecl-json-devel  < %{jsonver}
 Obsoletes: php-pecl-jsonc-devel < %{jsonver}
@@ -445,6 +453,7 @@ Provides: php-zts-devel%{?_isa} = %{version}-%{release}
 %endif
 %if 0%{?rhel}
 Obsoletes: php53-devel, php53u-devel, php54-devel, php54w-devel, php55u-devel, php55w-devel, php56u-devel, php56w-devel
+Obsoletes: php55u-pecl-jsonc-devel, php56u-pecl-jsonc-devel
 Obsoletes: php70u-devel, php70w-devel, php71u-devel, php71w-devel, php72u-devel, php72w-devel
 %endif
 
@@ -685,10 +694,10 @@ BuildRequires:  oracle-instantclient-devel >= %{oraclever}
 Requires:       php-pdo%{?_isa} = %{version}-%{release}
 Provides:       php_database
 Provides:       php-pdo_oci, php-pdo_oci%{?_isa}
-Obsoletes:      php-pecl-oci8 <  %{oci8ver}
-Conflicts:      php-pecl-oci8 >= %{oci8ver}
+Obsoletes:      php-pecl-oci8 <= %{oci8ver}
+Conflicts:      php-pecl-oci8 >  %{oci8ver}
 Provides:       php-pecl(oci8) = %{oci8ver}, php-pecl(oci8)%{?_isa} = %{oci8ver}
-# Should requires libclntsh.so.12.1, but it's not provided by Oracle RPM.
+# Should requires libclntsh.so.18.3, but it's not provided by Oracle RPM.
 AutoReq:        0
 %if 0%{?rhel}
 Obsoletes:      php53-oci8, php53u-oci8, php54-oci8, php54w-oci8, php55u-oci8, php55w-oci8, php56u-oci8, php56w-oci8
@@ -703,7 +712,7 @@ The extension is linked with Oracle client libraries %{oraclever}
 (Oracle Instant Client).  For details, see Oracle's note
 "Oracle Client / Server Interoperability Support" (ID 207303.1).
 
-You must install libclntsh.so.%{oraclever} to use this package, provided
+You must install libclntsh.so.%{oraclelib} to use this package, provided
 in the database installation, or in the free Oracle Instant Client
 available from Oracle.
 
@@ -781,7 +790,11 @@ Group: Development/Languages
 # ucgendat is licensed under OpenLDAP
 License: PHP and LGPLv2 and BSD and OpenLDAP
 %if %{with_onig}
+%if 0%{?rhel}
+BuildRequires: oniguruma5php-devel
+%else
 BuildRequires: oniguruma-devel
+%endif
 %else
 Provides: bundled(oniguruma) = 6.3.0
 %endif
@@ -916,7 +929,7 @@ Obsoletes: php70u-pdo-dblib, php70w-pdo_dblib, php71u-pdo-dblib, php71w-pdo_dbli
 %description pdo-dblib
 The php-pdo-dblib package contains a dynamic shared object
 that implements the PHP Data Objects (PDO) interface to enable access from
-PHP to Microsoft SQL Server and Sybase databases through the FreeTDS libary.
+PHP to Microsoft SQL Server and Sybase databases through the FreeTDS library.
 
 %package embedded
 Summary: PHP library for embedding in applications
@@ -972,7 +985,7 @@ Group: System Environment/Libraries
 # All files licensed under PHP version 3.01
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
-# Upstream requires 4.0, we require 50 to ensure use of libicu-last
+# Upstream requires 4.0, we require 50 to ensure use of libicu-last / libicu62
 BuildRequires: libicu-devel >= 50
 %if 0%{?rhel}
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
@@ -1039,6 +1052,7 @@ Provides:  php-pecl-json          = %{jsonver}
 Provides:  php-pecl-json%{?_isa}  = %{jsonver}
 %if 0%{?rhel}
 Obsoletes: php53-json, php53u-json, php54-json, php54w-json, php55u-json, php55w-json, php56u-json, php56w-json
+Obsoletes: php55u-pecl-jsonc, php56u-pecl-jsonc
 Obsoletes: php70u-json, php70w-json, php71u-json, php71w-json, php72u-json, php72w-json
 %endif
 
@@ -1069,6 +1083,8 @@ low-level PHP extension for the libsodium cryptographic library.
 
 
 %prep
+%{?gpgverify:%{gpgverify} --keyring='%{SOURCE20}' --signature='%{SOURCE21}' --data='%{SOURCE0}'}
+
 : CIBLE = %{name}-%{version}-%{release} oci8=%{with_oci8} libzip=%{with_libzip}
 
 %setup -q -n php-%{upver}%{?rcver}
@@ -1083,7 +1099,7 @@ low-level PHP extension for the libsodium cryptographic library.
 %endif
 
 %patch40 -p1 -b .dlopen
-%if 0%{?fedora} >= 25 || 0%{?rhel} >= 6
+%if 0%{?fedora} >= 28 || 0%{?rhel} >= 6
 %patch42 -p1 -b .systzdata
 %endif
 %patch43 -p1 -b .headers
@@ -1093,13 +1109,18 @@ low-level PHP extension for the libsodium cryptographic library.
 %patch46 -p1 -b .fixheader
 %patch47 -p1 -b .phpinfo
 %patch48 -p1 -b .getallheaders
+%patch49 -p1 -b .pdooci
 
 %patch91 -p1 -b .remi-oci8
 
 # upstream patches
 
 # security patches
-%patch200 -p1 -b .imap
+%patch200 -p1 -b .bug77423
+%patch201 -p1 -b .bug80672
+%patch202 -p1 -b .bug80710
+%patch203 -p1 -b .bug81122
+%patch204 -p1 -b .bug76450
 
 # Fixes for tests
 %if 0%{?fedora} >= 25 || 0%{?rhel} >= 6
@@ -1115,7 +1136,7 @@ fi
 # WIP patch
 
 # Prevent %%doc confusion over LICENSE files
-cp Zend/LICENSE Zend/ZEND_LICENSE
+cp Zend/LICENSE ZEND_LICENSE
 cp TSRM/LICENSE TSRM_LICENSE
 %if ! %{with_libgd}
 cp ext/gd/libgd/README libgd_README
@@ -1142,6 +1163,14 @@ mkdir build-cgi build-apache build-embedded \
 rm ext/date/tests/timezone_location_get.phpt
 rm ext/date/tests/timezone_version_get.phpt
 rm ext/date/tests/timezone_version_get_basic1.phpt
+%if 0%{?fedora} < 28
+# need tzdata 2018i
+rm ext/date/tests/bug33414-1.phpt
+rm ext/date/tests/bug33415-2.phpt
+rm ext/date/tests/date_modify-1.phpt
+%endif
+# too fast builder
+rm ext/date/tests/bug73837.phpt
 # Should be skipped but fails sometime
 rm ext/standard/tests/file/file_get_contents_error001.phpt
 # fails sometime
@@ -1151,9 +1180,11 @@ rm Zend/tests/bug54268.phpt
 rm Zend/tests/bug68412.phpt
 # slow and erratic result
 rm sapi/cli/tests/upload_2G.phpt
-# avoid issue when 2 builds run simultaneously
+# avoid issue when 2 builds run simultaneously (keep 64321 for the SCL)
 %ifarch x86_64
 sed -e 's/64321/64322/' -i ext/openssl/tests/*.phpt
+%else
+sed -e 's/64321/64323/' -i ext/openssl/tests/*.phpt
 %endif
 
 # Safety check for API version change.
@@ -1234,9 +1265,6 @@ cat << EOF >>10-opcache.ini
 ; This should improve performance, but requires appropriate OS configuration.
 opcache.huge_code_pages=0
 EOF
-%ifarch x86_64
-sed -e '/opcache.huge_code_pages/s/0/1/' -i 10-opcache.ini
-%endif
 %endif
 cp %{SOURCE52} 20-oci8.ini
 
@@ -1252,6 +1280,11 @@ fi
 
 # Set build date from https://reproducible-builds.org/specs/source-date-epoch/
 export SOURCE_DATE_EPOCH=$(date +%s -r NEWS)
+export PHP_UNAME=$(uname)
+export PHP_BUILD_SYSTEM=$(cat /etc/redhat-release | sed -e 's/ Beta//')
+%if 0%{?vendor:1}
+export PHP_BUILD_PROVIDER="%{vendor}"
+%endif
 
 # aclocal workaround - to be improved
 cat $(aclocal --print-ac-dir)/{libtool,ltoptions,ltsugar,ltversion,lt~obsolete}.m4 >>aclocal.m4
@@ -1324,7 +1357,7 @@ ln -sf ../configure
     --with-layout=GNU \
     --with-kerberos \
     --with-libxml-dir=%{_prefix} \
-%if 0%{?fedora} >= 25 || 0%{?rhel} >= 6
+%if 0%{?fedora} >= 28 || 0%{?rhel} >= 6
     --with-system-tzdata \
 %endif
     --with-mhash \
@@ -1449,6 +1482,7 @@ popd
 without_shared="--without-gd \
       --disable-dom --disable-dba --without-unixODBC \
       --disable-opcache \
+      --disable-phpdbg \
       --disable-json \
       --disable-xmlreader --disable-xmlwriter \
       --without-sodium \
@@ -1625,6 +1659,7 @@ cd build-apache
 # Run tests, using the CLI SAPI
 export NO_INTERACTION=1 REPORT_EXIT_STATUS=1 MALLOC_CHECK_=2
 export SKIP_ONLINE_TESTS=1
+export SKIP_SLOW_TESTS=1
 export SKIP_IO_CAPTURE_TESTS=1
 unset TZ LANG LC_ALL
 if ! make test; then
@@ -1694,13 +1729,24 @@ cat %{SOURCE1} >>$RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
 %else
 # Dual config file with httpd >= 2.4 (fedora >= 18)
 install -D -m 644 %{SOURCE9} $RPM_BUILD_ROOT%{_httpd_modconfdir}/15-php.conf
-%if %{with_zts}
+%if %{with_zts} && 0%{?fedora} < 27 && 0%{?rhel} < 8
 cat %{SOURCE10} >>$RPM_BUILD_ROOT%{_httpd_modconfdir}/15-php.conf
 %endif
 install -D -m 644 %{SOURCE1} $RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
 %endif
 %if %{with_httpd2410}
 cat %{SOURCE11} >>$RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
+%else
+mkdir _fpmdoc
+cat %{SOURCE1} %{SOURCE11} >_fpmdoc/httpd-php.conf
+cat << 'EOF' >_fpmdoc/README
+To use FPM with Apache HTTP server:
+- copy the httpd-php.conf to %{_httpd_confdir}/php.conf
+
+To use FPM with NGINX web server:
+- copy the nginx-fpm.conf to %{_sysconfdir}/nginx/conf.d/php-fpm.conf
+- copy the nginx-php.conf to %{_sysconfdir}/nginx/default.d/php.conf
+EOF
 %endif
 
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/php.d
@@ -1780,6 +1826,9 @@ sed -e 's@127.0.0.1:9000@unix:/run/php-fpm/www.sock@' \
 # Apache
 sed -e 's@proxy:fcgi://127.0.0.1:9000@proxy:unix:/run/php-fpm/www.sock|fcgi://localhost@' \
     -i $RPM_BUILD_ROOT%{_httpd_confdir}/php.conf
+%else
+install -D -m 644 %{SOURCE13} _fpmdoc/nginx-fpm.conf
+install -D -m 644 %{SOURCE14} _fpmdoc/nginx-php.conf
 %endif
 
 # Generate files lists and stub .ini files for each subpackage
@@ -1820,7 +1869,9 @@ for mod in pgsql odbc ldap snmp xmlrpc imap json \
     # some extensions have their own config file
     if [ -f ${ini} ]; then
       cp -p ${ini} $RPM_BUILD_ROOT%{_sysconfdir}/php.d/${ini}
+      %if %{with_zts}
       cp -p ${ini} $RPM_BUILD_ROOT%{_sysconfdir}/php-zts.d/${ini}
+      %endif
     else
       cat > $RPM_BUILD_ROOT%{_sysconfdir}/php.d/${ini} <<EOF
 ; Enable ${mod} extension module
@@ -1880,9 +1931,11 @@ cat files.curl files.phar files.fileinfo \
 
 # The default Zend OPcache blacklist file
 install -m 644 %{SOURCE51} $RPM_BUILD_ROOT%{_sysconfdir}/php.d/opcache-default.blacklist
+%if %{with_zts}
 install -m 644 %{SOURCE51} $RPM_BUILD_ROOT%{_sysconfdir}/php-zts.d/opcache-default.blacklist
 sed -e '/blacklist_filename/s/php.d/php-zts.d/' \
     -i $RPM_BUILD_ROOT%{_sysconfdir}/php-zts.d/10-opcache.ini
+%endif
 
 # Install the macros file:
 sed -e "s/@PHP_APIVER@/%{apiver}%{isasuffix}/" \
@@ -1911,7 +1964,7 @@ rm -f README.{Zeus,QNX,CVS-RULES}
 
 
 %pre common
-%if %{?fedora}%{!?fedora:99} < 25
+%if %{?fedora}%{!?fedora:99} < 28
 echo -e "WARNING : Fedora %{fedora} is now EOL :"
 echo -e "You should consider upgrading to a supported release.\n"
 %endif
@@ -1990,6 +2043,19 @@ fi
 %endif
 
 
+%posttrans common
+cat << EOF
+=====================================================================
+
+  WARNING : PHP 7.2 have reached its "End of Life" in
+  November 2020. Even, if this package includes some of
+  the important security fix, backported from 7.3, the
+  UPGRADE to a maintained version is very strongly RECOMMENDED.
+
+=====================================================================
+EOF
+
+
 %{!?_licensedir:%global license %%doc}
 
 %files
@@ -2008,7 +2074,7 @@ fi
 
 %files common -f files.common
 %doc CODING_STANDARDS CREDITS EXTENSIONS NEWS README*
-%license LICENSE TSRM_LICENSE
+%license LICENSE TSRM_LICENSE ZEND_LICENSE
 %license libmagic_LICENSE
 %license phar_LICENSE
 %license timelib_LICENSE
@@ -2065,6 +2131,8 @@ fi
 %attr(0770,root,apache) %dir %{_localstatedir}/lib/php/opcache
 %if %{with_httpd2410}
 %config(noreplace) %{_httpd_confdir}/php.conf
+%else
+%doc _fpmdoc/*
 %endif
 %config(noreplace) %{_sysconfdir}/php-fpm.conf
 %config(noreplace) %{_sysconfdir}/php-fpm.d/www.conf
@@ -2166,6 +2234,169 @@ fi
 
 
 %changelog
+* Mon Jun 28 2021 Remi Collet <remi@remirepo.net> - 7.2.34-6
+- Fix #81122 SSRF bypass in FILTER_VALIDATE_URL
+  CVE-2021-21705
+- Fix #76448 Stack buffer overflow in firebird_info_cb
+- Fix #76449 SIGSEGV in firebird_handle_doer
+- Fix #76450 SIGSEGV in firebird_stmt_execute
+- Fix #76452 Crash while parsing blob data in firebird_fetch_blob
+  CVE-2021-21704
+
+* Wed Apr 28 2021 Remi Collet <remi@remirepo.net> - 7.2.34-4
+- Fix #80710 imap_mail_compose() header injection
+- use oracle client library version 21.1
+
+* Wed Feb  3 2021 Remi Collet <remi@remirepo.net> - 7.2.34-3
+- Fix #80672 Null Dereference in SoapClient
+  CVE-2021-21702
+- better fix for #77423
+
+* Mon Jan  4 2021 Remi Collet <remi@remirepo.net> - 7.2.34-2
+- Fix #77423 FILTER_VALIDATE_URL accepts URLs with invalid userinfo
+  CVE-2020-7071
+
+* Wed Sep 30 2020 Remi Collet <remi@remirepo.net> - 7.2.34-1
+- Update to 7.2.34 - http://www.php.net/releases/7_2_34.php
+
+* Tue Aug  4 2020 Remi Collet <remi@remirepo.net> - 7.2.33-1
+- Update to 7.2.33 - http://www.php.net/releases/7_2_33.php
+
+* Tue Jul  7 2020 Remi Collet <remi@remirepo.net> - 7.2.32-1
+- Update to 7.2.32 (no change)
+- display build system and provider in phpinfo (from 8.0)
+
+* Tue Jun  9 2020 Remi Collet <remi@remirepo.net> - 7.2.31-2
+- rebuild using oniguruma5php
+- build phpdbg only once
+
+* Tue May 12 2020 Remi Collet <remi@remirepo.net> - 7.2.31-1
+- Update to 7.2.31 - http://www.php.net/releases/7_2_31.php
+
+* Wed Apr 15 2020 Remi Collet <remi@remirepo.net> - 7.2.30-1
+- Update to 7.2.30 - http://www.php.net/releases/7_2_30.php
+
+* Tue Mar 17 2020 Remi Collet <remi@remirepo.net> - 7.2.29-1
+- Update to 7.2.29 - http://www.php.net/releases/7_2_29.php
+- use oracle client library version 19.6 (18.5 on EL-6)
+
+* Tue Feb 18 2020 Remi Collet <remi@remirepo.net> - 7.2.28-1
+- Update to 7.2.28 - http://www.php.net/releases/7_2_28.php
+
+* Wed Jan 22 2020 Remi Collet <remi@remirepo.net> - 7.2.27-1
+- Update to 7.2.27 - http://www.php.net/releases/7_2_27.php
+
+* Tue Dec 17 2019 Remi Collet <remi@remirepo.net> - 7.2.26-1
+- Update to 7.2.26 - http://www.php.net/releases/7_2_26.php
+- use oracle client library version 19.5 (18.5 on EL-6)
+
+* Tue Dec  3 2019 Remi Collet <remi@remirepo.net> - 7.2.26~RC1-1
+- update to 7.2.26RC1
+
+* Wed Nov 20 2019 Remi Collet <remi@remirepo.net> - 7.2.25-1
+- Update to 7.2.25 - http://www.php.net/releases/7_2_25.php
+
+* Tue Nov  5 2019 Remi Collet <remi@remirepo.net> - 7.2.25~RC1-1
+- update to 7.2.25RC1
+
+* Tue Oct 22 2019 Remi Collet <remi@remirepo.net> - 7.2.24-1
+- Update to 7.2.24 - http://www.php.net/releases/7_2_24.php
+- change dependency on nginx-filesystem to weak
+
+* Tue Oct  8 2019 Remi Collet <remi@remirepo.net> - 7.2.24~RC1-1
+- update to 7.2.24RC1
+
+* Wed Sep 25 2019 Remi Collet <remi@remirepo.net> - 7.2.23-1
+- Update to 7.2.23 - http://www.php.net/releases/7_2_23.php
+
+* Tue Sep 10 2019 Remi Collet <remi@remirepo.net> - 7.2.23~RC1-1
+- update to 7.2.23RC1
+
+* Wed Aug 28 2019 Remi Collet <remi@remirepo.net> - 7.2.22-1
+- Update to 7.2.22 - http://www.php.net/releases/7_2_22.php
+- fix generator incorrectly reports non-releasable $this as GC child
+  https://bugs.php.net/78412
+
+* Mon Aug 19 2019 Remi Collet <remi@remirepo.net> - 7.2.22~RC1-1
+- update to 7.2.22RC1
+
+* Tue Jul 30 2019 Remi Collet <remi@remirepo.net> - 7.2.21-1
+- Update to 7.2.21 - http://www.php.net/releases/7_2_21.php
+
+* Tue Jul 16 2019 Remi Collet <remi@remirepo.net> - 7.2.21~RC1-1
+- update to 7.2.21RC1
+- add upstream patch for #78297
+
+* Tue Jul  2 2019 Remi Collet <remi@remirepo.net> - 7.2.20-1
+- Update to 7.2.20 - http://www.php.net/releases/7_2_20.php
+- disable opcache.huge_code_pages in default configuration
+
+* Thu Jun 20 2019 Remi Collet <remi@remirepo.net> - 7.2.20~RC3-1
+- update to 7.2.20RC3
+
+* Tue Jun 18 2019 Remi Collet <remi@remirepo.net> - 7.2.20~RC2-1
+- update to 7.2.20RC2
+
+* Mon Jun 17 2019 Remi Collet <remi@remirepo.net> - 7.2.20~RC1-2
+- use oracle client library version 19.3
+
+* Tue Jun 11 2019 Remi Collet <remi@remirepo.net> - 7.2.20~RC1-1
+- update to 7.2.20RC1
+
+* Wed May 29 2019 Remi Collet <remi@remirepo.net> - 7.2.19-2
+- Update to 7.2.19 - http://www.php.net/releases/7_2_19.php
+- add httpd and nginx configuration files for FPM in documentation
+
+* Wed May 15 2019 Remi Collet <remi@remirepo.net> - 7.2.19~RC1-1
+- update to 7.2.19RC1
+
+* Tue Apr 30 2019 Remi Collet <remi@remirepo.net> - 7.2.18-1
+- Update to 7.2.18 - http://www.php.net/releases/7_2_18.php
+
+* Wed Apr 17 2019 Remi Collet <remi@remirepo.net> - 7.2.18~RC1-1
+- update to 7.2.18RC1
+
+* Wed Apr  3 2019 Remi Collet <remi@remirepo.net> - 7.2.17-1
+- Update to 7.2.17 - http://www.php.net/releases/7_2_17.php
+
+* Thu Mar 21 2019 Remi Collet <remi@remirepo.net> - 7.2.17~RC1-2
+- update to 7.2.17RC1 new tag
+- add upstream patches for failed tests
+
+* Wed Mar 20 2019 Remi Collet <remi@remirepo.net> 7.2.17~RC1-1
+- update to 7.2.17RC1
+
+* Tue Mar  5 2019 Remi Collet <remi@remirepo.net> - 7.2.16-2
+- add upstream patch for OpenSSL 1.1.1b
+
+* Tue Mar  5 2019 Remi Collet <remi@remirepo.net> - 7.2.16-1
+- Update to 7.2.16 - http://www.php.net/releases/7_2_16.php
+
+* Fri Feb 22 2019 Remi Collet <remi@remirepo.net> - 7.2.16~RC1-2
+- php-devel: drop dependency on libicu-devel
+
+* Tue Feb 19 2019 Remi Collet <remi@remirepo.net> 7.2.16~RC1-1
+- update to 7.2.16RC1
+- adapt systzdata patch (v17)
+
+* Mon Feb 18 2019 Remi Collet <remi@remirepo.net> - 7.2.15-2
+- pdo_oci: backport PDOStatement::getColumnMeta from 7.4
+- rebuild using libicu62
+- drop configuration for ZTS mod_php (Fedora >= 27)
+
+* Tue Feb  5 2019 Remi Collet <remi@remirepo.net> - 7.2.15-1
+- Update to 7.2.15 - http://www.php.net/releases/7_2_15.php
+
+* Wed Jan 30 2019 Remi Collet <remi@remirepo.net> 7.2.15~RC1-1
+- update to 7.2.15RC1
+
+* Tue Jan  8 2019 Remi Collet <remi@remirepo.net> - 7.2.14-1
+- Update to 7.2.14 - http://www.php.net/releases/7_2_14.php
+
+* Tue Dec 18 2018 Remi Collet <remi@remirepo.net> - 7.2.14~RC1-1
+- update to 7.2.14RC1
+- oci8 version is now 2.2.0
+
 * Sat Dec  8 2018 Remi Collet <remi@remirepo.net> - 7.2.13-2
 - Fix null pointer dereference in imap_mail CVE-2018-19935
 
