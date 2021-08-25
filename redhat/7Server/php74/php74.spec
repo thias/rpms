@@ -24,8 +24,8 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%global oraclever 19.5
-%global oraclelib 19.1
+%global oraclever 21.1
+%global oraclelib 21.1
 
 # Build for LiteSpeed Web Server (LSAPI)
 %global with_lsws     1
@@ -46,14 +46,8 @@
 %else
 %global with_libpcre  0
 %endif
-%global with_onig     1
 
-# until firebird available in EPEL
-%if 0%{?rhel} == 8
-%global with_firebird  0
-%else
-%global with_firebird  1
-%endif
+%global with_firebird 1
 
 # Build ZTS extension or only NTS
 %global with_zts      1
@@ -96,13 +90,12 @@
 %global with_libzip  1
 %global with_zip     0
 
-%global upver        7.4.1
+%global upver        7.4.23
 #global rcver        RC1
-#global lower        RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: %{upver}%{?rcver:~%{lower}}
+Version: %{upver}%{?rcver:~%{rcver}}
 Release: 1%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
@@ -151,10 +144,11 @@ Patch42: php-7.3.3-systzdata-v18.patch
 Patch43: php-7.4.0-phpize.patch
 # Use -lldap_r for OpenLDAP
 Patch45: php-7.4.0-ldap_r.patch
-# Make php_config.h constant across builds
-Patch46: php-7.2.4-fixheader.patch
+# Ignore unsupported "threads" option on password_hash
+Patch46: php-7.4.20-argon2.patch
 # drop "Configure command" from phpinfo output
-Patch47: php-5.6.3-phpinfo.patch
+# and add build system and provider (from 8.0)
+Patch47: php-7.4.8-phpinfo.patch
 
 # RC Patch
 Patch91: php-7.2.0-oci8conf.patch
@@ -198,6 +192,7 @@ BuildRequires: bzip2
 BuildRequires: perl
 BuildRequires: autoconf
 BuildRequires: automake
+BuildRequires: make
 BuildRequires: %{?dtsprefix}gcc
 BuildRequires: %{?dtsprefix}gcc-c++
 BuildRequires: libtool
@@ -248,7 +243,9 @@ Recommends: php-sodium%{?_isa}   = %{version}-%{release}
 Recommends: php-xml%{?_isa}      = %{version}-%{release}
 %else
 # For backwards-compatibility, require php-cli for the time being:
-Requires: php-cli%{?_isa}        = %{version}-%{release}
+Requires:   php-cli%{?_isa}      = %{version}-%{release}
+# For ARGON2 password
+Requires:   php-sodium%{?_isa}   = %{version}-%{release}
 %endif
 
 
@@ -289,7 +286,7 @@ Group: Development/Languages
 Summary: The interactive PHP debugger
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel}
-Obsoletes: php56u-dbg, php56w-dbg, php70u-dbg, php70w-phpdbg, php71u-dbg, php71w-phpdbg, php72u-dbg, php72w-phpdbg
+Obsoletes: php56u-dbg, php56w-phpdbg, php70u-dbg, php70w-phpdbg, php71u-dbg, php71w-phpdbg, php72u-dbg, php72w-phpdbg
 Obsoletes: php73-dbg, php73w-phpdbg
 Obsoletes: php74-dbg, php74w-phpdbg
 %endif
@@ -419,12 +416,12 @@ Requires: php-cli%{?_isa} = %{version}-%{release}
 # always needed to build extension
 Requires: autoconf
 Requires: automake
+Requires: make
 Requires: gcc
 Requires: gcc-c++
 Requires: libtool
 # see "php-config --libs"
 Requires: krb5-devel%{?_isa}
-Requires: libedit-devel%{?_isa}
 Requires: libxml2-devel%{?_isa}
 Requires: openssl-devel%{?_isa} >= 1.0.1
 %if %{with_libpcre}
@@ -805,11 +802,10 @@ Group: Development/Languages
 # onigurama is licensed under BSD
 # ucgendat is licensed under OpenLDAP
 License: PHP and LGPLv2 and BSD and OpenLDAP
-%if %{with_onig}
-# ensure we have soname 5
-BuildRequires: pkgconfig(oniguruma) >= 6.8
+%if 0%{?rhel}
+BuildRequires: oniguruma5php-devel
 %else
-Provides: bundled(oniguruma) = 6.9.3
+BuildRequires: oniguruma-devel
 %endif
 Provides: bundled(libmbfl) = 1.3.2
 Requires: php-common%{?_isa} = %{version}-%{release}
@@ -1001,9 +997,9 @@ Group: System Environment/Libraries
 # All files licensed under PHP version 3.01
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
-BuildRequires: pkgconfig(icu-i18n) >= 50.1
-BuildRequires: pkgconfig(icu-io)   >= 50.1
-BuildRequires: pkgconfig(icu-uc)   >= 50.1
+BuildRequires: pkgconfig(icu-i18n) >= 65
+BuildRequires: pkgconfig(icu-io)   >= 65
+BuildRequires: pkgconfig(icu-uc)   >= 65
 %if 0%{?rhel}
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
 Obsoletes: php70u-intl, php70w-intl, php71u-intl, php71w-intl, php72u-intl, php72w-intl
@@ -1149,7 +1145,7 @@ in pure PHP.
 %endif
 %patch43 -p1 -b .headers
 %patch45 -p1 -b .ldap_r
-%patch46 -p1 -b .fixheader
+%patch46 -p1 -b .argon2
 %patch47 -p1 -b .phpinfo
 
 %patch91 -p1 -b .remi-oci8
@@ -1166,12 +1162,8 @@ in pure PHP.
 # WIP patch
 
 # Prevent %%doc confusion over LICENSE files
-cp Zend/LICENSE Zend/ZEND_LICENSE
+cp Zend/LICENSE ZEND_LICENSE
 cp TSRM/LICENSE TSRM_LICENSE
-%if ! %{with_libgd}
-cp ext/gd/libgd/README libgd_README
-cp ext/gd/libgd/COPYING libgd_COPYING
-%endif
 cp sapi/fpm/LICENSE fpm_LICENSE
 cp ext/mbstring/libmbfl/LICENSE libmbfl_LICENSE
 cp ext/fileinfo/libmagic/LICENSE libmagic_LICENSE
@@ -1289,10 +1281,21 @@ fi
 
 
 %build
+# This package fails to build with LTO due to undefined symbols.  LTO
+# was disabled in OpenSuSE as well, but with no real explanation why
+# beyond the undefined symbols.  It really shold be investigated further.
+# Disable LTO
+%define _lto_cflags %{nil}
+
 %{?dtsenable}
 
 # Set build date from https://reproducible-builds.org/specs/source-date-epoch/
 export SOURCE_DATE_EPOCH=$(date +%s -r NEWS)
+export PHP_UNAME=$(uname)
+export PHP_BUILD_SYSTEM=$(cat /etc/redhat-release | sed -e 's/ Beta//')
+%if 0%{?vendor:1}
+export PHP_BUILD_PROVIDER="%{vendor}"
+%endif
 
 # Force use of system libtool:
 libtoolize --force --copy
@@ -1470,6 +1473,7 @@ popd
 without_shared="--disable-gd \
       --disable-dom --disable-dba --without-unixODBC \
       --disable-opcache \
+      --disable-phpdbg \
       --disable-json \
       --without-ffi \
       --disable-xmlreader --disable-xmlwriter \
@@ -1627,7 +1631,7 @@ popd
 
 %check
 %if %runselftest
-cd build-apache
+cd build-fpm
 
 # Run tests, using the CLI SAPI
 export NO_INTERACTION=1 REPORT_EXIT_STATUS=1 MALLOC_CHECK_=2
@@ -1671,6 +1675,9 @@ make -C build-fpm install-fpm \
 # Install everything from the CGI SAPI build
 make -C build-cgi install \
      INSTALL_ROOT=$RPM_BUILD_ROOT
+
+# Use php-config from embed SAPI to reduce used libs
+install -m 755 build-embedded/scripts/php-config $RPM_BUILD_ROOT%{_bindir}/php-config
 
 # Install the default configuration file
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/
@@ -1920,6 +1927,8 @@ rm -rf $RPM_BUILD_ROOT%{_libdir}/php/modules/*.a \
        $RPM_BUILD_ROOT%{_libdir}/php-zts/modules/*.a \
        $RPM_BUILD_ROOT%{_bindir}/{phptar} \
        $RPM_BUILD_ROOT%{_datadir}/pear \
+       $RPM_BUILD_ROOT%{_bindir}/zts-phar* \
+       $RPM_BUILD_ROOT%{_mandir}/man1/zts-phar* \
        $RPM_BUILD_ROOT%{_libdir}/libphp7.a \
        $RPM_BUILD_ROOT%{_libdir}/libphp7.la
 
@@ -2001,7 +2010,7 @@ fi
 
 %files common -f files.common
 %doc EXTENSIONS NEWS UPGRADING* README.REDIST.BINS *md docs
-%license LICENSE TSRM_LICENSE
+%license LICENSE TSRM_LICENSE ZEND_LICENSE
 %license libmagic_LICENSE
 %license timelib_LICENSE
 %doc php.ini-*
@@ -2025,19 +2034,21 @@ fi
 
 %files cli
 %{_bindir}/php
-%{_bindir}/zts-php
 %{_bindir}/php-cgi
 %{_bindir}/phar.phar
 %{_bindir}/phar
 # provides phpize here (not in -devel) for pecl command
 %{_bindir}/phpize
 %{_mandir}/man1/php.1*
-%{_mandir}/man1/zts-php.1*
 %{_mandir}/man1/php-cgi.1*
 %{_mandir}/man1/phar.1*
 %{_mandir}/man1/phar.phar.1*
 %{_mandir}/man1/phpize.1*
+%if %{with_zts}
+%{_bindir}/zts-php
+%{_mandir}/man1/zts-php.1*
 %{_mandir}/man1/zts-phpize.1*
+%endif
 
 %files dbg
 %{_bindir}/phpdbg
@@ -2117,10 +2128,6 @@ fi
 %files mbstring -f files.mbstring
 %license libmbfl_LICENSE
 %files gd -f files.gd
-%if ! %{with_libgd}
-%license libgd_README
-%license libgd_COPYING
-%endif
 %files soap -f files.soap
 %files bcmath -f files.bcmath
 %license libbcmath_LICENSE
@@ -2139,7 +2146,9 @@ fi
 %files mysqlnd -f files.mysqlnd
 %files opcache -f files.opcache
 %config(noreplace) %{_sysconfdir}/php.d/opcache-default.blacklist
+%if %{with_zts}
 %config(noreplace) %{_sysconfdir}/php-zts.d/opcache-default.blacklist
+%endif
 %if %{with_oci8}
 %files oci8 -f files.oci8
 %endif
@@ -2153,6 +2162,159 @@ fi
 
 
 %changelog
+* Tue Aug 24 2021 Remi Collet <remi@remirepo.net> - 7.4.23-1
+- Update to 7.4.23 - http://www.php.net/releases/7_4_23.php
+
+* Tue Aug 10 2021 Remi Collet <remi@remirepo.net> - 7.4.23~RC1-1
+- update to 7.4.23RC1
+
+* Wed Jul 28 2021 Remi Collet <remi@remirepo.net> - 7.4.22-1
+- Update to 7.4.22 - http://www.php.net/releases/7_4_22.php
+
+* Tue Jul 13 2021 Remi Collet <remi@remirepo.net> - 7.4.22~RC1-1
+- update to 7.4.22RC1
+
+* Tue Jun 29 2021 Remi Collet <remi@remirepo.net> - 7.4.21-1
+- Update to 7.4.21 - http://www.php.net/releases/7_4_21.php
+
+* Wed Jun 16 2021 Remi Collet <remi@remirepo.net> - 7.4.21~RC1-1
+- update to 7.4.21RC1
+- ignore unsupported "threads" option on password_hash
+
+* Wed Jun  2 2021 Remi Collet <remi@remirepo.net> - 7.4.20-1
+- Update to 7.4.20 - http://www.php.net/releases/7_4_20.php
+
+* Tue May 18 2021 Remi Collet <remi@remirepo.net> - 7.4.20~RC1-1
+- update to 7.4.20RC1
+
+* Tue May  4 2021 Remi Collet <remi@remirepo.net> - 7.4.19-1
+- Update to 7.4.19 - http://www.php.net/releases/7_4_19.php
+
+* Tue Apr 27 2021 Remi Collet <remi@remirepo.net> - 7.4.18-1
+- Update to 7.4.18 - http://www.php.net/releases/7_4_18.php
+
+* Tue Apr 13 2021 Remi Collet <remi@remirepo.net> - 7.4.18~RC1-1
+- update to 7.4.18RC1
+
+* Tue Mar 16 2021 Remi Collet <remi@remirepo.net> - 7.4.17~RC1-1
+- update to 7.4.17RC1
+- use oracle client library version 21.1
+
+* Tue Mar  2 2021 Remi Collet <remi@remirepo.net> - 7.4.16-1
+- Update to 7.4.16 - http://www.php.net/releases/7_4_16.php
+
+* Tue Feb 16 2021 Remi Collet <remi@remirepo.net> - 7.4.16~RC1-1
+- update to 7.4.16RC1
+
+* Tue Feb  2 2021 Remi Collet <remi@remirepo.net> - 7.4.15-1
+- Update to 7.4.15 - http://www.php.net/releases/7_4_15.php
+
+* Thu Jan 28 2021 Remi Collet <remi@remirepo.net> - 7.4.15~RC2-2
+- add upstream patch for https://bugs.php.net/80682
+  fix opcache doesn't honour pcre.jit option
+
+* Tue Jan 19 2021 Remi Collet <remi@remirepo.net> - 7.4.15~RC2-1
+- update to 7.4.15RC2
+
+* Tue Jan  5 2021 Remi Collet <remi@remirepo.net> - 7.4.14-1
+- Update to 7.4.14 - http://www.php.net/releases/7_4_14.php
+
+* Tue Dec 15 2020 Remi Collet <remi@remirepo.net> - 7.4.14~RC1-1
+- update to 7.4.14RC1
+
+* Tue Nov 24 2020 Remi Collet <remi@remirepo.net> - 7.4.13-1
+- Update to 7.4.13 - http://www.php.net/releases/7_4_13.php
+- use oracle client library version 19.9 (x86_64)
+
+* Wed Nov 11 2020 Remi Collet <remi@remirepo.net> - 7.4.13~RC1-1
+- update to 7.4.13RC1
+
+* Tue Oct 27 2020 Remi Collet <remi@remirepo.net> - 7.4.12-1
+- Update to 7.4.12 - http://www.php.net/releases/7_4_12.php
+
+* Tue Oct 13 2020 Remi Collet <remi@remirepo.net> - 7.4.12~RC1-1
+- update to 7.4.12RC1
+
+* Tue Sep 29 2020 Remi Collet <remi@remirepo.net> - 7.4.11-1
+- Update to 7.4.11 - http://www.php.net/releases/7_4_11.php
+
+* Tue Sep 15 2020 Remi Collet <remi@remirepo.net> - 7.4.11~RC1-1
+- update to 7.4.11RC1
+
+* Tue Sep  1 2020 Remi Collet <remi@remirepo.net> - 7.4.10-1
+- Update to 7.4.10 - http://www.php.net/releases/7_4_10.php
+
+* Tue Aug 18 2020 Remi Collet <remi@remirepo.net> - 7.4.10~RC1-1
+- update to 7.4.10RC1
+- use oracle client library version 19.8 (x86_64)
+
+* Tue Aug  4 2020 Remi Collet <remi@remirepo.net> - 7.4.9-1
+- Update to 7.4.9 - http://www.php.net/releases/7_4_9.php
+
+* Tue Jul 21 2020 Remi Collet <remi@remirepo.net> - 7.4.9~RC1-1
+- update to 7.4.9RC1
+- build using ICU 65
+
+* Thu Jul  9 2020 Remi Collet <remi@remirepo.net> - 7.4.8-2
+- Update to 7.4.8 - http://www.php.net/releases/7_4_8.php
+  rebuild from new sources
+
+* Tue Jul  7 2020 Remi Collet <remi@remirepo.net> - 7.4.8-1
+- Update to 7.4.8 - http://www.php.net/releases/7_4_8.php
+
+* Mon Jul  6 2020 Remi Collet <remi@remirepo.net> - 7.4.8~RC1-2
+- display build system and provider in phpinfo (from 8.0)
+
+* Tue Jun 23 2020 Remi Collet <remi@remirepo.net> - 7.4.8~RC1-1
+- update to 7.4.8RC1
+- drop patch to fix PHP_UNAME
+
+* Tue Jun  9 2020 Remi Collet <remi@remirepo.net> - 7.4.7-1
+- Update to 7.4.7 - http://www.php.net/releases/7_4_7.php
+- rebuild using oniguruma5php
+- build phpdbg only once
+
+* Tue May 26 2020 Remi Collet <remi@remirepo.net> - 7.4.7~RC1-1
+- update to 7.4.7RC1
+
+* Wed May 20 2020 Remi Collet <remi@remirepo.net> - 7.4.6-2
+- use php-config from embed SAPI to reduce used libs
+
+* Tue May 12 2020 Remi Collet <remi@remirepo.net> - 7.4.6-1
+- Update to 7.4.6 - http://www.php.net/releases/7_4_6.php
+
+* Wed Apr 29 2020 Remi Collet <remi@remirepo.net> - 7.4.6~RC1-1
+- update to 7.4.6RC1
+
+* Tue Apr 14 2020 Remi Collet <remi@remirepo.net> - 7.4.5-1
+- Update to 7.4.5 - http://www.php.net/releases/7_4_5.php
+
+* Tue Mar 31 2020 Remi Collet <remi@remirepo.net> - 7.4.5~RC1-1
+- update to 7.4.5RC1
+
+* Tue Mar 17 2020 Remi Collet <remi@remirepo.net> - 7.4.4-1
+- Update to 7.4.4 - http://www.php.net/releases/7_4_4.php
+- use oracle client library version 19.6 (18.5 on EL-6)
+
+* Tue Mar  3 2020 Remi Collet <remi@remirepo.net> - 7.4.4~RC1-1
+- update to 7.4.4RC1
+
+* Tue Feb 18 2020 Remi Collet <remi@remirepo.net> - 7.4.3-1
+- Update to 7.4.3 - http://www.php.net/releases/7_4_3.php
+
+* Tue Feb  4 2020 Remi Collet <remi@remirepo.net> - 7.4.3~RC1-1
+- update to 7.4.3RC1
+
+* Tue Jan 28 2020 Remi Collet <remi@remirepo.net> - 7.4.2-2
+- make sodium mandatory on EL-7, to avoid user confusion
+  https://github.com/remicollet/remirepo/issues/137
+
+* Tue Jan 21 2020 Remi Collet <remi@remirepo.net> - 7.4.2-1
+- Update to 7.4.2 - http://www.php.net/releases/7_4_2.php
+
+* Tue Jan  7 2020 Remi Collet <remi@remirepo.net> - 7.4.2~RC1-1
+- update to 7.4.2RC1
+
 * Wed Dec 18 2019 Remi Collet <remi@remirepo.net> - 7.4.1-1
 - Update to 7.4.1 - http://www.php.net/releases/7_4_1.php
 
