@@ -1,0 +1,37 @@
+diff -ru icu.orig/source/test/intltest/tztest.cpp icu/source/test/intltest/tztest.cpp
+--- icu.orig/source/test/intltest/tztest.cpp	2022-04-08 00:41:55.000000000 +0200
++++ icu/source/test/intltest/tztest.cpp	2022-09-27 17:15:20.860744015 +0200
+@@ -2049,6 +2049,33 @@
+         const char *alias;  // link-from
+         const char *zone;   // link-to (A zone ID with "Zone" rule)
+     } excluded1[] = {
++        {"Atlantic/Reykjavik", "Africa/Abidjan"},
++        {"Iceland", "Africa/Abidjan"},
++        {"Pacific/Chuuk", "Pacific/Port_Moresby"},
++        {"Pacific/Truk", "Pacific/Port_Moresby"},
++        {"Pacific/Yap", "Pacific/Port_Moresby"},
++        {"Asia/Kashgar", "Anarctica/Vostok"},
++        {"Asia/Urumqi", "Antarctica/Vostok"},
++        {"Asia/Kuching", "Asia/Brunei"},
++        {"Europe/Berlin", "Europe/Oslo"},
++        {"Europe/Copenhagen", "Europe/Oslo"},
++        {"Europe/Stockholm", "Europe/Oslo"},
++        {"Europe/Brussels", "Europe/Amsterdam"},
++        {"Europe/Luxembourg", "Europe/Amsterdam"},
++        {"Europe/Monaco", "Europe/Paris"},
++        {"Indian/Christmas", "Asia/Bangkok"},
++        {"Indian/Cocos", "Asia/Rangoon"},
++        {"Indian/Maldives", "Indian/Kerguelen"},
++        {"Indian/Mahe", "Asia/Dubai"},
++        {"Indian/Reunion", "Asia/Dubai"},
++        {"Pacific/Majuro", "Pacific/Funafuti"},
++        {"Pacific/Tarawa", "Pacific/Funafuti"},
++        {"Pacific/Wake", "Pacific/Funafuti"},
++        {"Pacific/Wallis", "Pacific/Funafuti"},
++        {"Pacific/Pohnpei", "Pacific/Port_Moresby"},
++        {"Pacific/Ponape", "Pacific/Guadalcanal"},
++        {"Asia/Singapore", "Asia/Kuala_Lumpur"},
++        {"Singapore", "Asia/Kuala_Lumpur"},
+         {"Africa/Accra", "Africa/Abidjan"},
+         {"Africa/Addis_Ababa", "Africa/Nairobi"},
+         {"Africa/Asmera", "Africa/Nairobi"},
