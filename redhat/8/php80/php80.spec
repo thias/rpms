@@ -14,7 +14,7 @@
 # Extension version
 %global fileinfover 1.0.5
 %global oci8ver     3.0.1
-%global zipver      1.19.3
+%global zipver      1.19.5
 
 # Adds -z now to the linker flags
 %global _hardened_build 1
@@ -24,7 +24,7 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%global oraclever 21.1
+%global oraclever 21.7
 %global oraclelib 21.1
 
 # Build for LiteSpeed Web Server (LSAPI), you can disable using --without tests
@@ -46,6 +46,21 @@
 %else
 # switch to system library using --with libpcre
 %bcond_with           libpcre
+%endif
+
+# Using qdbm from "remi" for now, see https://bugzilla.redhat.com/2017308
+%if 0%{?fedora} >= 33 || 0%{?rhel} >= 8
+%bcond_without        qdbm
+%else
+%bcond_with           qdbm
+%endif
+
+%if 0%{?fedora} >= 33 || 0%{?rhel} >= 8
+# switch to bundled library using --without libxcrypt
+%bcond_without        libxcrypt
+%else
+# switch to system library using --with libxcrypt
+%bcond_with           libxcrypt
 %endif
 
 # Build firebird extensions, you can disable using --without firebird
@@ -85,14 +100,13 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.0.10
+%global upver          8.0.25
 #global rcver          RC1
-#global lower          RC1
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
-Version: %{upver}%{?rcver:~%{lower}}
-Release: 2%{?dist}
+Version: %{upver}%{?rcver:~%{rcver}}
+Release: 1%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -137,9 +151,9 @@ Patch10: php-7.0.7-curl.patch
 
 # Functional changes
 # Use system nikic/php-parser
-Patch41: php-8.0.0-parser.patch
+Patch41: php-8.0.19-parser.patch
 # use system tzdata
-Patch42: php-8.0.10-systzdata-v20.patch
+Patch42: php-8.0.10-systzdata-v21.patch
 # See http://bugs.php.net/53436
 Patch43: php-7.4.0-phpize.patch
 # Use -lldap_r for OpenLDAP
@@ -154,6 +168,10 @@ Patch48: php-8.0.10-snmp-sha.patch
 # switch phar to use sha256 signature by default, from 8.1
 # implement openssl_256 and openssl_512 for phar signatures, from 8.1
 Patch49: php-8.0.10-phar-sha.patch
+# compatibility with OpenSSL 3.0, from 8.1
+Patch50: php-8.0.21-openssl3.patch
+# use system libxcrypt, from 8.1
+Patch51: php-8.0.13-crypt.patch
 
 # RC Patch
 Patch91: php-7.2.0-oci8conf.patch
@@ -193,6 +211,9 @@ BuildRequires: pkgconfig(libpcre2-8) >= 10.30
 %else
 Provides:      bundled(pcre2) = 10.32
 %endif
+%if %{with libxcrypt}
+BuildRequires: pkgconfig(libxcrypt)
+%endif
 BuildRequires: bzip2
 BuildRequires: perl
 BuildRequires: autoconf
@@ -210,14 +231,12 @@ BuildRequires: %{?dtsprefix}systemtap-sdt-devel
 # used for tests
 BuildRequires: /bin/ps
 
-%if 0%{?rhel}
-Obsoletes: php53, php53u, php54w, php55u, php55w, php56u, php56w, mod_php70u, php70w, mod_php71u, mod_php71w, mod_php72u, mod_php72w
+%if 0%{?rhel} == 7
+Obsoletes: php53, php53u, php54, php54w, php55u, php55w, php56u, php56w, mod_php70u, php70w, mod_php71u, mod_php71w, mod_php72u, mod_php72w
 Obsoletes: mod_php73, mod_php73w
 Obsoletes: mod_php74, mod_php74w
 Obsoletes: mod_php80
 %endif
-# Avoid obsoleting php54 from RHSCL
-Obsoletes: php54 > 5.4
 %if %{with zts}
 Obsoletes: php-zts < 5.3.7
 Provides: php-zts = %{version}-%{release}
@@ -273,7 +292,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 Provides: php-cgi = %{version}-%{release}, php-cgi%{?_isa} = %{version}-%{release}
 Provides: php-pcntl, php-pcntl%{?_isa}
 Provides: php-readline, php-readline%{?_isa}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-cli, php53u-cli, php54-cli, php54w-cli, php55u-cli, php55w-cli, php56u-cli, php56w-cli
 Obsoletes: php70u-cli, php70w-cli, php71u-cli, php71w-cli, php72u-cli, php72w-cli
 Obsoletes: php73-cli, php73w-cli
@@ -289,7 +308,7 @@ executing PHP scripts, /usr/bin/php, and the CGI interface.
 %package dbg
 Summary: The interactive PHP debugger
 Requires: php-common%{?_isa} = %{version}-%{release}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php56u-dbg, php56w-phpdbg, php70u-dbg, php70w-phpdbg, php71u-dbg, php71w-phpdbg, php72u-dbg, php72w-phpdbg
 Obsoletes: php73-dbg, php73w-phpdbg
 Obsoletes: php74-dbg, php74w-phpdbg
@@ -304,7 +323,6 @@ Summary: PHP FastCGI Process Manager
 BuildRequires: libacl-devel
 BuildRequires: pkgconfig(libsystemd) >= 209
 Requires: php-common%{?_isa} = %{version}-%{release}
-Requires(pre): /usr/sbin/useradd
 %{?systemd_requires}
 # This is actually needed for the %%triggerun script but Requires(triggerun)
 # is not valid.  We can use %%post because this particular %%triggerun script
@@ -318,13 +336,15 @@ Requires(pre): httpd-filesystem
 Requires: httpd-filesystem >= 2.4.10
 # php engine for Apache httpd webserver
 Provides: php(httpd)
+%else
+Requires(pre): /usr/sbin/useradd
 %endif
 %if %{with_nginx}
 # for /etc/nginx ownership
 # Temporarily not mandatory to allow nginx for nginx repo
 Recommends: nginx-filesystem
 %endif
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-fpm, php53u-fpm, php54-fpm, php54w-fpm, php55u-fpm, php55w-fpm, php56u-fpm, php56w-fpm
 Obsoletes: php70u-fpm, php70w-fpm, php71u-fpm, php71w-fpm, php72u-fpm, php72w-fpm
 Obsoletes: php73-fpm, php73w-fpm
@@ -341,7 +361,7 @@ any size, especially busier sites.
 %package litespeed
 Summary: LiteSpeed Web Server PHP support
 Requires: php-common%{?_isa} = %{version}-%{release}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-litespeed, php53u-litespeed, php54-litespeed, php54w-litespeed, php55u-litespeed, php55w-litespeed, php56u-litespeed, php56w-litespeed
 Obsoletes: php70u-litespeed, php70w-litespeed, php71u-litespeed, php71w-litespeed, php72u-litespeed, php72w-litespeed
 Obsoletes: php73-litespeed, php73w-litespeed
@@ -402,7 +422,7 @@ Obsoletes: php-pecl-Fileinfo < 1.0.5
 Provides:  php-pecl-Fileinfo = %{fileinfover}, php-pecl-Fileinfo%{?_isa} = %{fileinfover}
 Provides:  php-pecl(Fileinfo) = %{fileinfover}, php-pecl(Fileinfo)%{?_isa} = %{fileinfover}
 Obsoletes: php-mhash < 5.3.0
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-mhash, php53u-mhash
 Obsoletes: php53-common, php53u-common, php54-common, php54w-common, php55u-common, php55w-common, php56u-common, php56w-common
 Obsoletes: php70u-common, php70w-common, php71u-common, php71w-common, php72u-common, php72w-common
@@ -444,14 +464,13 @@ Requires: openssl-devel%{?_isa} >= 1.0.1
 Requires: pcre2-devel%{?_isa}
 %endif
 Requires: zlib-devel%{?_isa}
-Obsoletes: php-pecl-pdo-devel
 Obsoletes: php-pecl-json-devel  < %{version}
 Obsoletes: php-pecl-jsonc-devel < %{version}
 %if %{with zts}
 Provides: php-zts-devel = %{version}-%{release}
 Provides: php-zts-devel%{?_isa} = %{version}-%{release}
 %endif
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-devel, php53u-devel, php54-devel, php54w-devel, php55u-devel, php55w-devel, php56u-devel, php56w-devel
 Obsoletes: php55u-pecl-jsonc-devel, php56u-pecl-jsonc-devel
 Obsoletes: php70u-devel, php70w-devel, php71u-devel, php71w-devel, php72u-devel, php72w-devel
@@ -460,7 +479,7 @@ Obsoletes: php74-devel, php74w-devel
 Obsoletes: php80-devel
 %endif
 %if 0%{?fedora} || 0%{?rhel} >= 8
-Recommends: php-nikic-php-parser4 >= 4.3.0
+Recommends: php-nikic-php-parser4 >= 4.13.0
 %endif
 
 %description devel
@@ -472,12 +491,12 @@ need to install this package.
 Summary:   The Zend OPcache
 License:   PHP
 Requires:  php-common%{?_isa} = %{version}-%{release}
-Obsoletes: php-pecl-zendopcache
+Obsoletes: php-pecl-zendopcache < 7.0.6
 Provides:  php-pecl-zendopcache = %{version}
 Provides:  php-pecl-zendopcache%{?_isa} = %{version}
 Provides:  php-pecl(opcache) = %{version}
 Provides:  php-pecl(opcache)%{?_isa} = %{version}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php55u-opcache, php55w-opcache, php56u-opcache, php56w-opcache
 Obsoletes: php70u-opcache, php70w-opcache, php71u-opcache, php71w-opcache, php72u-opcache, php72w-opcache
 Obsoletes: php73-opcache, php73w-opcache
@@ -497,12 +516,11 @@ Summary: A module for PHP applications that use IMAP
 # All files licensed under PHP version 3.01
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
-Obsoletes: mod_php3-imap, stronghold-php-imap
 BuildRequires: pkgconfig(krb5)
 BuildRequires: pkgconfig(krb5-gssapi)
 BuildRequires: openssl-devel >= 1.0.1
 BuildRequires: libc-client-devel
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-imap, php53u-imap, php54-imap, php54w-imap, php55u-imap, php55w-imap, php56u-imap, php56w-imap
 Obsoletes: php70u-imap, php70w-imap, php71u-imap, php71w-imap, php72u-imap, php72w-imap
 Obsoletes: php73-imap, php73w-imap
@@ -523,7 +541,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: pkgconfig(libsasl2)
 BuildRequires: openldap-devel
 BuildRequires: openssl-devel >= 1.0.1
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-ldap, php53u-ldap, php54-ldap, php54w-ldap, php55u-ldap, php55w-ldap, php56u-ldap, php56w-ldap
 Obsoletes: php70u-ldap, php70w-ldap, php71u-ldap, php71w-ldap, php72u-ldap, php72w-ldap
 Obsoletes: php73-ldap, php73w-ldap
@@ -547,7 +565,7 @@ Provides: php-pdo-abi  = %{pdover}-%{__isa_bits}
 Provides: php(pdo-abi) = %{pdover}-%{__isa_bits}
 Provides: php-sqlite3, php-sqlite3%{?_isa}
 Provides: php-pdo_sqlite, php-pdo_sqlite%{?_isa}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-pdo, php53u-pdo, php54-pdo, php54w-pdo, php55u-pdo, php55w-pdo, php56u-pdo, php56w-pdo
 Obsoletes: php70u-pdo, php70w-pdo, php71u-pdo, php71w-pdo, php72u-pdo, php72w-pdo
 Obsoletes: php73-pdo, php73w-pdo
@@ -571,7 +589,7 @@ Provides: php-mysqli = %{version}-%{release}
 Provides: php-mysqli%{?_isa} = %{version}-%{release}
 Provides: php-pdo_mysql, php-pdo_mysql%{?_isa}
 Obsoletes: php-mysql < %{version}-%{release}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-mysqlnd, php53u-mysqlnd, php54-mysqlnd, php54w-mysqlnd, php55u-mysqlnd, php55w-mysqlnd, php56u-mysqlnd, php56w-mysqlnd
 Obsoletes: php70u-mysqlnd, php70w-mysqlnd, php71u-mysqlnd, php71w-mysqlnd, php72u-mysqlnd, php72w-mysqlnd
 Obsoletes: php73-mysqlnd, php73w-mysqlnd
@@ -600,7 +618,7 @@ Provides: php-pdo_pgsql, php-pdo_pgsql%{?_isa}
 BuildRequires: krb5-devel
 BuildRequires: openssl-devel >= 1.0.1
 BuildRequires: postgresql-devel
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-pgsql, php53u-pgsql, php54-pgsql, php54w-pgsql, php55u-pgsql, php55w-pgsql, php56u-pgsql, php56w-pgsql
 Obsoletes: php70u-pgsql, php70w-pgsql, php71u-pgsql, php71w-pgsql, php72u-pgsql, php72w-pgsql
 Obsoletes: php73-pgsql, php73w-pgsql
@@ -626,7 +644,7 @@ Provides: php-shmop, php-shmop%{?_isa}
 Provides: php-sysvsem, php-sysvsem%{?_isa}
 Provides: php-sysvshm, php-sysvshm%{?_isa}
 Provides: php-sysvmsg, php-sysvmsg%{?_isa}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-process, php53u-process, php54-process, php54w-process, php55u-process, php55w-process, php56u-process, php56w-process
 Obsoletes: php70u-process, php70w-process, php71u-process, php71w-process, php72u-process, php72w-process
 Obsoletes: php73-process, php73w-process
@@ -649,7 +667,7 @@ Provides: php_database
 Provides: php-pdo_odbc, php-pdo_odbc%{?_isa}
 # EL-7 version don't have pkgconfig
 BuildRequires: unixODBC-devel
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-odbc, php53u-odbc, php54-odbc, php54w-odbc, php55u-odbc, php55w-odbc, php56u-odbc, php56w-odbc
 Obsoletes: php70u-odbc, php70w-odbc, php71u-odbc, php71w-odbc, php72u-odbc, php72w-odbc
 Obsoletes: php73-odbc, php73w-odbc
@@ -672,7 +690,7 @@ Summary: A module for PHP applications that use the SOAP protocol
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: pkgconfig(libxml-2.0)
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-soap, php53u-soap, php54-soap, php54w-soap, php55u-soap, php55w-soap, php56u-soap, php56w-soap
 Obsoletes: php70u-soap, php70w-soap, php71u-soap, php71w-soap, php72u-soap, php72w-soap
 Obsoletes: php73-soap, php73w-soap
@@ -693,7 +711,7 @@ BuildRequires:  firebird-devel
 Requires: php-pdo%{?_isa} = %{version}-%{release}
 Provides: php_database
 Provides: php-pdo_firebird, php-pdo_firebird%{?_isa}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-interbase, php53u-interbase, php54-interbase, php54w-interbase, php55u-interbase, php55w-interbase, php56u-interbase, php56w-interbase
 Obsoletes: php70u-interbase, php70w-interbase, php71u-interbase, php71w-interbase, php72u-interbase, php72w-interbase
 Obsoletes: php73-interbase, php73w-interbase
@@ -722,7 +740,7 @@ Provides:       php-pecl(oci8)         = %{oci8ver}
 Provides:       php-pecl(oci8)%{?_isa} = %{oci8ver}
 # Should requires libclntsh.so.18.3, but it's not provided by Oracle RPM.
 AutoReq:        0
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes:      php53-oci8, php53u-oci8, php54-oci8, php54w-oci8, php55u-oci8, php55w-oci8, php56u-oci8, php56w-oci8
 Obsoletes:      php70u-oci8, php70w-oci8, php71u-oci8, php71w-oci8, php72u-oci8, php72w-oci8
 Obsoletes:      php73-oci8, php73w-oci8
@@ -755,7 +773,7 @@ Summary: A module for PHP applications that query SNMP-managed devices
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}, net-snmp
 BuildRequires: net-snmp-devel
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-snmp, php53u-snmp, php54-snmp, php54w-snmp, php55u-snmp, php55w-snmp, php56u-snmp, php56w-snmp
 Obsoletes: php70u-snmp, php70w-snmp, php71u-snmp, php71w-snmp, php72u-snmp, php72w-snmp
 Obsoletes: php73-snmp, php73w-snmp
@@ -783,7 +801,7 @@ Provides: php-xsl, php-xsl%{?_isa}
 BuildRequires: pkgconfig(libxslt)  >= 1.1
 BuildRequires: pkgconfig(libexslt)
 BuildRequires: pkgconfig(libxml-2.0)  >= 2.7.6
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-xml, php53u-xml, php54-xml, php54w-xml, php55u-xml, php55w-xml, php56u-xml, php56w-xml
 Obsoletes: php70u-xml, php70w-xml, php71u-xml, php71w-xml, php72u-xml, php72w-xml
 Obsoletes: php73-xml, php73w-xml
@@ -810,7 +828,7 @@ BuildRequires: oniguruma-devel
 %endif
 Provides: bundled(libmbfl) = 1.3.2
 Requires: php-common%{?_isa} = %{version}-%{release}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-mbstring, php53u-mbstring, php54-mbstring, php54w-mbstring, php55u-mbstring, php55w-mbstring, php56u-mbstring, php56w-mbstring
 Obsoletes: php70u-mbstring, php70w-mbstring, php71u-mbstring, php71w-mbstring, php72u-mbstring, php72w-mbstring
 Obsoletes: php73-mbstring, php73w-mbstring
@@ -833,12 +851,7 @@ License: PHP and BSD
 %endif
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if %{with libgd}
-BuildRequires: pkgconfig(gdlib) >= 2.1.1
-%if 0%{?fedora} <= 19 && 0%{?rhel} <= 7
-Requires: gd-last%{?_isa} >= 2.1.1
-%else
-Requires: gd%{?_isa} >= 2.1.1
-%endif
+BuildRequires: pkgconfig(gdlib) >= 2.3.3
 %else
 # Required to build the bundled GD library
 BuildRequires: pkgconfig(zlib)
@@ -849,7 +862,7 @@ BuildRequires: pkgconfig(xpm)
 BuildRequires: pkgconfig(libwebp)
 Provides: bundled(gd) = 2.0.35
 %endif
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-gd, php53u-gd, php54-gd, php54w-gd, php55u-gd, php55w-gd, php56u-gd, php56w-gd
 Obsoletes: php70u-gd, php70w-gd, php71u-gd, php71w-gd, php72u-gd, php72w-gd
 Obsoletes: php73-gd, php73w-gd
@@ -867,7 +880,7 @@ Summary: A module for PHP applications for using the bcmath library
 # libbcmath is licensed under LGPLv2+
 License: PHP and LGPLv2+
 Requires: php-common%{?_isa} = %{version}-%{release}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-bcmath, php53u-bcmath, php54-bcmath, php54w-bcmath, php55u-bcmath, php55w-bcmath, php56u-bcmath, php56w-bcmath
 Obsoletes: php70u-bcmath, php70w-bcmath, php71u-bcmath, php71w-bcmath, php72u-bcmath, php72w-bcmath
 Obsoletes: php73-bcmath, php73w-bcmath
@@ -886,7 +899,7 @@ Summary: A module for PHP applications for using the GNU MP library
 License: PHP
 BuildRequires: gmp-devel
 Requires: php-common%{?_isa} = %{version}-%{release}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-gmp, php53u-gmp, php54-gmp, php54w-gmp, php55u-gmp, php55w-gmp, php56u-gmp, php56w-gmp
 Obsoletes: php70u-gmp, php70w-gmp, php71u-gmp, php71w-gmp, php72u-gmp, php72w-gmp
 Obsoletes: php73-gmp, php73w-gmp
@@ -904,10 +917,12 @@ Summary: A database abstraction layer module for PHP applications
 License: PHP
 BuildRequires: libdb-devel
 BuildRequires: tokyocabinet-devel
-BuildRequires: gdbm-devel
 BuildRequires: lmdb-devel
+%if %{with qdbm}
+BuildRequires: qdbm-devel
+%endif
 Requires: php-common%{?_isa} = %{version}-%{release}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-dba, php53u-dba, php54-dba, php54w-dba, php55u-dba, php55w-dba, php56u-dba, php56w-dba
 Obsoletes: php70u-dba, php70w-dba, php71u-dba, php71w-dba, php72u-dba, php72w-dba
 Obsoletes: php73-dba, php73w-dba
@@ -925,7 +940,7 @@ Summary: Standard PHP module provides tidy library support
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: libtidy-devel
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-tidy, php53u-tidy, php54-tidy, php54w-tidy, php55u-tidy, php55w-tidy, php56u-tidy, php56w-tidy
 Obsoletes: php70u-tidy, php70w-tidy, php71u-tidy, php71w-tidy, php72u-tidy, php72w-tidy
 Obsoletes: php73-tidy, php73w-tidy
@@ -945,7 +960,7 @@ Requires: php-pdo%{?_isa} = %{version}-%{release}
 BuildRequires: freetds-devel >= 0.91
 Provides: php-pdo_dblib, php-pdo_dblib%{?_isa}
 Obsoletes: php-mssql < %{version}-%{release}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-mssql, php53u-mssql, php54-mssql, php54w-mssql, php55u-mssql, php55w-mssql, php56u-mssql, php56w-mssql
 Obsoletes: php70u-pdo-dblib, php70w-pdo_dblib, php71u-pdo-dblib, php71w-pdo_dblib, php72u-pdo-dblib, php72w-pdo_dblib
 Obsoletes: php73-pdo-dblib, php73w-pdo_dblib
@@ -964,7 +979,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 # doing a real -devel package for just the .so symlink is a bit overkill
 Provides: php-embedded-devel = %{version}-%{release}
 Provides: php-embedded-devel%{?_isa} = %{version}-%{release}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-embedded, php53u-embedded, php54-embedded, php54w-embedded, php55u-embedded, php55w-embedded, php56u-embedded, php56w-embedded
 Obsoletes: php70u-embedded, php70w-embedded, php71u-embedded, php71w-embedded, php72u-embedded, php72w-embedded
 Obsoletes: php73-embedded, php73w-embedded
@@ -982,7 +997,7 @@ Summary: A module for PHP applications for using pspell interfaces
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: aspell-devel >= 0.50.0
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-pspell, php53u-pspell, php54-pspell, php54w-pspell, php55u-pspell, php55w-pspell, php56u-pspell, php56w-pspell
 Obsoletes: php70u-pspell, php70w-pspell, php71u-pspell, php71w-pspell, php72u-pspell, php72w-pspell
 Obsoletes: php73-pspell, php73w-pspell
@@ -999,10 +1014,10 @@ Summary: Internationalization extension for PHP applications
 # All files licensed under PHP version 3.01
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
-BuildRequires: pkgconfig(icu-i18n) >= 65
-BuildRequires: pkgconfig(icu-io)   >= 65
-BuildRequires: pkgconfig(icu-uc)   >= 65
-%if 0%{?rhel}
+BuildRequires: pkgconfig(icu-i18n) >= 71
+BuildRequires: pkgconfig(icu-io)   >= 71
+BuildRequires: pkgconfig(icu-uc)   >= 71
+%if 0%{?rhel} == 7
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
 Obsoletes: php70u-intl, php70w-intl, php71u-intl, php71w-intl, php72u-intl, php72w-intl
 Obsoletes: php73-intl, php73w-intl
@@ -1020,7 +1035,7 @@ Summary: Enchant spelling extension for PHP applications
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: pkgconfig(enchant-2)
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-enchant, php53u-enchant, php54-enchant, php54w-enchant, php55u-enchant, php55w-enchant, php56u-enchant, php56w-enchant
 Obsoletes: php70u-enchant, php70w-enchant, php71u-enchant, php71w-enchant, php72u-enchant, php72w-enchant
 Obsoletes: php73-enchant, php73w-enchant
@@ -1043,7 +1058,7 @@ Provides:  php-pecl(zip)         = %{zipver}
 Provides:  php-pecl(zip)%{?_isa} = %{zipver}
 Provides:  php-pecl-zip          = %{zipver}
 Provides:  php-pecl-zip%{?_isa}  = %{zipver}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php53-zip, php53u-zip, php54-zip, php54w-zip, php55u-zip, php55w-zip, php56u-zip, php56w-zip
 Obsoletes: php70u-zip, php70w-zip, php71u-zip, php71w-zip, php72u-zip, php72w-zip
 Obsoletes: php73-zip, php73w-zip
@@ -1068,7 +1083,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 Obsoletes: php-pecl-libsodium2 < 3
 Provides:  php-pecl(libsodium)         = %{version}
 Provides:  php-pecl(libsodium)%{?_isa} = %{version}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php72u-sodium, php72w-sodium
 Obsoletes: php73-sodium, php73w-sodium
 Obsoletes: php74-sodium, php74w-sodium
@@ -1087,7 +1102,7 @@ License: PHP
 BuildRequires:  pkgconfig(libffi)
 
 Requires: php-common%{?_isa} = %{version}-%{release}
-%if 0%{?rhel}
+%if 0%{?rhel} == 7
 Obsoletes: php74-ffi, php74w-ffi
 Obsoletes: php80-ffi
 %endif
@@ -1161,6 +1176,11 @@ in pure PHP.
 %patch47 -p1 -b .phpinfo
 %patch48 -p1 -b .sha
 %patch49 -p1 -b .pharsha
+%if 0%{?fedora} >= 36 || 0%{?rhel} >= 9
+%patch50 -p1 -b .openssl3
+rm ext/openssl/tests/p12_with_extra_certs.p12
+%endif
+%patch51 -p1 -b .libxcrypt
 
 %patch91 -p1 -b .remi-oci8
 
@@ -1194,10 +1214,8 @@ mkdir build-cgi build-apache build-embedded \
 # ----- Manage known as failed test -------
 # affected by systzdata patch
 rm ext/date/tests/timezone_location_get.phpt
-rm ext/date/tests/timezone_version_get.phpt
-rm ext/date/tests/timezone_version_get_basic1.phpt
-%if 0%{?fedora} < 29
-# need tzdata 2018i
+%if 0%{?fedora} < 36
+# need tzdata 2022b
 rm ext/date/tests/bug33414-1.phpt
 rm ext/date/tests/bug33415-2.phpt
 rm ext/date/tests/date_modify-1.phpt
@@ -1215,6 +1233,10 @@ rm Zend/tests/bug68412.phpt
 rm sapi/cli/tests/upload_2G.phpt
 # tar issue
 rm ext/zlib/tests/004-mb.phpt
+# failed when systemd is enabled
+rm sapi/fpm/tests/gh8885-stderr-fd-reload-usr1.phpt
+rm sapi/fpm/tests/gh8885-stderr-fd-reload-usr2.phpt
+
 # avoid issue when 2 builds run simultaneously (keep 64321 for the SCL)
 %ifarch x86_64
 sed -e 's/64321/64322/' -i ext/openssl/tests/*.phpt
@@ -1371,6 +1393,9 @@ ln -sf ../configure
 %if %{with libpcre}
     --with-external-pcre \
 %endif
+%if %{with libxcrypt}
+    --with-external-libcrypt \
+%endif
     --with-zlib \
     --with-layout=GNU \
     --with-kerberos \
@@ -1422,9 +1447,11 @@ build --libdir=%{_libdir}/php \
       --with-bz2=shared \
       --enable-ctype=shared \
       --enable-dba=shared --with-db4=%{_prefix} \
-                          --with-gdbm=%{_prefix} \
                           --with-tcadb=%{_prefix} \
                           --with-lmdb=%{_prefix} \
+%if %{with qdbm}
+                          --with-qdbm=%{_root_prefix} \
+%endif
       --enable-exif=shared \
       --enable-ftp=shared \
       --with-gettext=shared \
@@ -1560,9 +1587,11 @@ build --includedir=%{_includedir}/php-zts \
       --with-bz2=shared \
       --enable-ctype=shared \
       --enable-dba=shared --with-db4=%{_prefix} \
-                          --with-gdbm=%{_prefix} \
                           --with-tcadb=%{_prefix} \
                           --with-lmdb=%{_prefix} \
+%if %{with qdbm}
+                          --with-qdbm=%{_root_prefix} \
+%endif
       --with-gettext=shared \
       --with-iconv=shared \
       --enable-sockets=shared \
@@ -1787,9 +1816,9 @@ install -D -m 644 %{SOURCE14} _fpmdoc/nginx-php.conf
 
 TESTCMD="$RPM_BUILD_ROOT%{_bindir}/php --no-php-ini"
 # Ensure all provided extensions are really there
-for mod in core date filter hash libxml openssl pcntl pcre readline reflection session spl standard zlib
+for mod in core date filter hash json libxml openssl pcntl pcre readline reflection session spl standard zlib
 do
-     $TESTCMD --modules | grep -qi $mod
+     $TESTCMD --modules | grep -i "$mod\$"
 done
 
 TESTCMD="$TESTCMD --define extension_dir=$RPM_BUILD_ROOT%{_libdir}/php/modules"
@@ -1834,7 +1863,7 @@ do
         ini=20-${mod}.ini;;
     esac
 
-    $TESTCMD --modules | grep -qi $mod
+    $TESTCMD --modules | grep -i "$mod\$"
 
     # some extensions have their own config file
     if [ -f ${ini} ]; then
@@ -1912,7 +1941,7 @@ sed -e "s/@PHP_APIVER@/%{apiver}-%{__isa_bits}/" \
 %endif
     < %{SOURCE3} > macros.php
 %if 0%{?fedora} >= 24 || 0%{?rhel} >= 8
-echo '%pecl_xmldir   %{_localstatedir}/lib/php/peclxml' >>macros.php
+echo '%%pecl_xmldir   %{_localstatedir}/lib/php/peclxml' >>macros.php
 %endif
 install -m 644 -D macros.php \
            $RPM_BUILD_ROOT%{macrosdir}/macros.php
@@ -2152,6 +2181,128 @@ fi
 
 
 %changelog
+* Tue Oct 25 2022 Remi Collet <remi@remirepo.net> - 8.0.25-1
+- Update to 8.0.25 - http://www.php.net/releases/8_0_25.php
+
+* Tue Oct 11 2022 Remi Collet <remi@remirepo.net> - 8.0.25~RC1-1
+- update to 8.0.25RC1
+
+* Wed Sep 28 2022 Remi Collet <remi@remirepo.net> - 8.0.24-1
+- Update to 8.0.24 - http://www.php.net/releases/8_0_24.php
+
+* Wed Sep 14 2022 Remi Collet <remi@remirepo.net> - 8.0.24~RC1-1
+- update to 8.0.24RC1
+
+* Tue Aug 30 2022 Remi Collet <remi@remirepo.net> - 8.0.23-1
+- Update to 8.0.23 - http://www.php.net/releases/8_0_23.php
+
+* Wed Aug 17 2022 Remi Collet <remi@remirepo.net> - 8.0.23~RC1-1
+- update to 8.0.23RC1
+- use oracle client library version 21.7
+- use ICU 71.1
+
+* Tue Aug  2 2022 Remi Collet <remi@remirepo.net> - 8.0.22-1
+- Update to 8.0.22 - http://www.php.net/releases/8_0_22.php
+
+* Fri Jul 29 2022 Remi Collet <remi@remirepo.net> - 8.0.22~RC1-2
+- fix snmp backport
+
+* Tue Jul 19 2022 Remi Collet <remi@remirepo.net> - 8.0.22~RC1-1
+- update to 8.0.22RC1
+
+* Wed Jul  6 2022 Remi Collet <remi@remirepo.net> - 8.0.21-2
+- Update to 8.0.21 - http://www.php.net/releases/8_0_21.php
+- rebuild with new sources
+
+* Tue Jul  5 2022 Remi Collet <remi@remirepo.net> - 8.0.21-1
+- Update to 8.0.21 - http://www.php.net/releases/8_0_21.php
+
+* Tue Jun 21 2022 Remi Collet <remi@remirepo.net> - 8.0.21~RC1-1
+- update to 8.0.21RC1
+
+* Wed Jun  8 2022 Remi Collet <remi@remirepo.net> - 8.0.20-1
+- Update to 8.0.20 - http://www.php.net/releases/8_0_20.php
+
+* Fri Jun  3 2022 Remi Collet <remi@remirepo.net> - 8.0.20~RC1-2
+- add upstream patch to initialize pcre before mbstring
+
+* Wed May 25 2022 Remi Collet <remi@remirepo.net> - 8.0.20~RC1-1
+- update to 8.0.20RC1
+
+* Tue May 10 2022 Remi Collet <remi@remirepo.net> - 8.0.19-1
+- Update to 8.0.19 - http://www.php.net/releases/8_0_19.php
+- use oracle client library version 21.6
+
+* Tue Apr 26 2022 Remi Collet <remi@remirepo.net> - 8.0.19~RC1-1
+- update to 8.0.19RC1
+
+* Wed Apr 13 2022 Remi Collet <remi@remirepo.net> - 8.0.18-1
+- Update to 8.0.18 - http://www.php.net/releases/8_0_18.php
+
+* Thu Mar 31 2022 Remi Collet <remi@remirepo.net> - 8.0.18~RC1-1
+- update to 8.0.18RC1
+
+* Tue Mar 15 2022 Remi Collet <remi@remirepo.net> - 8.0.17-1
+- Update to 8.0.17 - http://www.php.net/releases/8_0_17.php
+- retrieve tzdata version
+
+* Wed Mar  2 2022 Remi Collet <remi@remirepo.net> - 8.0.17~RC1-1
+- update to 8.0.17RC1
+
+* Tue Feb 22 2022 Remi Collet <remi@remirepo.net> - 8.0.16-2
+- retrieve tzdata version
+- use oracle client library version 21.5
+
+* Wed Feb 16 2022 Remi Collet <remi@remirepo.net> - 8.0.16-1
+- Update to 8.0.16 - http://www.php.net/releases/8_0_16.php
+
+* Thu Feb  3 2022 Remi Collet <remi@remirepo.net> - 8.0.16~RC1-1
+- update to 8.0.16RC1
+
+* Tue Jan 18 2022 Remi Collet <remi@remirepo.net> - 8.0.15-1
+- Update to 8.0.15 - http://www.php.net/releases/8_0_15.php
+
+* Wed Jan  5 2022 Remi Collet <remi@remirepo.net> - 8.0.15~RC1-1
+- update to 8.0.15RC1
+
+* Thu Dec 16 2021 Remi Collet <remi@remirepo.net> - 8.0.14-1
+- Update to 8.0.14 - http://www.php.net/releases/8_0_14.php
+
+* Thu Dec  2 2021 Remi Collet <remi@remirepo.net> - 8.0.14~RC1-2
+- ensure we use libgd >= 2.3
+
+* Thu Dec  2 2021 Remi Collet <remi@remirepo.net> - 8.0.14~RC1-1
+- update to 8.0.14RC1
+- use oracle client library version 21.4
+
+* Wed Nov 17 2021 Remi Collet <remi@remirepo.net> - 8.0.13-1
+- Update to 8.0.13 - http://www.php.net/releases/8_0_13.php
+
+* Wed Nov  3 2021 Remi Collet <remi@remirepo.net> - 8.0.13~RC1-1
+- update to 8.0.13RC1
+- dba: enable qdbm backend
+- dba: drop gdbm backend
+
+* Tue Oct 26 2021 Remi Collet <remi@remirepo.net> - 8.0.12-2
+- add patch for OpenSSL 3.0 on F36 and EL9
+
+* Tue Oct 19 2021 Remi Collet <remi@remirepo.net> - 8.0.12-1
+- Update to 8.0.12 - http://www.php.net/releases/8_0_12.php
+
+* Mon Oct 18 2021 Remi Collet <remi@remirepo.net> - 8.0.12~RC1-2
+- build using system libxcrypt (Fedora)
+
+* Wed Oct  6 2021 Remi Collet <remi@remirepo.net> - 8.0.12~RC1-1
+- update to 8.0.12RC1
+- use libicu version 69
+
+* Wed Sep 22 2021 Remi Collet <remi@remirepo.net> - 8.0.11-1
+- Update to 8.0.11 - http://www.php.net/releases/8_0_11.php
+
+* Tue Sep  7 2021 Remi Collet <remi@remirepo.net> - 8.0.11~RC1-1
+- update to 8.0.11RC1
+- use oracle client library version 21.3
+
 * Tue Aug 24 2021 Remi Collet <remi@remirepo.net> - 8.0.10-1
 - Update to 8.0.10 - http://www.php.net/releases/8_0_10.php
 

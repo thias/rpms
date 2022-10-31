@@ -61,12 +61,12 @@ index 69d6549405b17..f0917501751f5 100644
  #include "ext/spl/spl_exceptions.h"
  #include "snmp_arginfo.h"
  
-@@ -938,16 +939,48 @@ static int netsnmp_session_set_auth_prot
+@@ -938,16 +939,48 @@ static int netsnmp_session_set_auth_protocol(struct snmp_session *s, char *prot)
  	if (!strcasecmp(prot, "MD5")) {
  		s->securityAuthProto = usmHMACMD5AuthProtocol;
  		s->securityAuthProtoLen = USM_AUTH_PROTO_MD5_LEN;
 -	} else
-+		return true;
++		return 0;
 +	}
  #endif
 +
@@ -76,7 +76,7 @@ index 69d6549405b17..f0917501751f5 100644
 -	} else {
 -		zend_value_error("Authentication protocol must be either \"MD5\" or \"SHA\"");
 -		return (-1);
-+		return true;
++		return 0;
  	}
 -	return (0);
 +
@@ -84,7 +84,7 @@ index 69d6549405b17..f0917501751f5 100644
 +	if (!strcasecmp(prot, "SHA256")) {
 +		s->securityAuthProto = usmHMAC192SHA256AuthProtocol;
 +		s->securityAuthProtoLen = sizeof(usmHMAC192SHA256AuthProtocol) / sizeof(oid);
-+		return true;
++		return 0;
 +	}
 +#endif
 +
@@ -92,7 +92,7 @@ index 69d6549405b17..f0917501751f5 100644
 +	if (!strcasecmp(prot, "SHA512")) {
 +		s->securityAuthProto = usmHMAC384SHA512AuthProtocol;
 +		s->securityAuthProtoLen = sizeof(usmHMAC384SHA512AuthProtocol) / sizeof(oid);
-+		return true;
++		return 0;
 +	}
 +#endif
 +
@@ -111,7 +111,7 @@ index 69d6549405b17..f0917501751f5 100644
 +	smart_string_0(&err);
 +	zend_value_error("%s", err.c);
 +	smart_string_free(&err);
-+	return false;
++	return -1;
  }
  /* }}} */
  
