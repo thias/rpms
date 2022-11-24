@@ -107,7 +107,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.1.12
+%global upver          8.1.13
 #global rcver          RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -2175,6 +2175,12 @@ fi
 
 
 %changelog
+* Tue Nov 22 2022 Remi Collet <remi@remirepo.net> - 8.1.13-1
+- Update to 8.1.13 - http://www.php.net/releases/8_1_13.php
+
+* Wed Nov  9 2022 Remi Collet <remi@remirepo.net> - 8.1.13~RC1-1
+- update to 8.1.13RC1
+
 * Wed Oct 26 2022 Remi Collet <remi@remirepo.net> - 8.1.12-1
 - Update to 8.1.12 - http://www.php.net/releases/8_1_12.php
 
