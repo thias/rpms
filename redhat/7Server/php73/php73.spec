@@ -25,7 +25,7 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%global oraclever 21.1
+%global oraclever 21.3
 %global oraclelib 21.1
 
 # Build for LiteSpeed Web Server (LSAPI)
@@ -106,7 +106,7 @@
 %global db_devel  libdb-devel
 %endif
 
-%global upver        7.3.30
+%global upver        7.3.32
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
@@ -1027,7 +1027,7 @@ Group: System Environment/Libraries
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
 # Upstream requires 4.0, we require 50 to ensure use of libicu-last / libicu65
-BuildRequires: libicu-devel >= 50
+BuildRequires: libicu-devel >= 69
 %if 0%{?rhel}
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
 Obsoletes: php70u-intl, php70w-intl, php71u-intl, php71w-intl, php72u-intl, php72w-intl
@@ -1691,7 +1691,7 @@ popd
 
 %check
 %if %runselftest
-cd build-apache
+cd build-fpm
 
 # Run tests, using the CLI SAPI
 export NO_INTERACTION=1 REPORT_EXIT_STATUS=1 MALLOC_CHECK_=2
@@ -2256,6 +2256,18 @@ fi
 
 
 %changelog
+* Tue Oct 26 2021 Remi Collet <remi@remirepo.net> - 7.3.32-1
+- Update to 7.3.32 - http://www.php.net/releases/7_3_32.php
+
+* Wed Oct 20 2021 Remi Collet <remi@remirepo.net> - 7.3.31-2
+- fix PHP-FPM oob R/W in root process leading to priv escalation
+  CVE-2021-21703
+- use libicu version 69
+
+* Tue Sep 21 2021 Remi Collet <remi@remirepo.net> - 7.3.31-1
+- Update to 7.3.31 - http://www.php.net/releases/7_3_31.php
+- use oracle client library version 21.3
+
 * Tue Aug 24 2021 Remi Collet <remi@remirepo.net> - 7.3.30-1
 - Update to 7.3.30 - http://www.php.net/releases/7_3_30.php
 
