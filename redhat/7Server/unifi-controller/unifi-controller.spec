@@ -3,7 +3,7 @@
 %global unifi_prefix /opt/UniFi
 
 Name: unifi-controller
-Version: 5.7.20
+Version: 7.3.83
 Release: 1%{?dist}
 Summary: UniFi wireless AP (UAP), routing (USG), and switching (USW) controller
 Group: System Environment/Daemons
@@ -12,7 +12,7 @@ URL: https://www.ubnt.com/download/unifi/
 Source0: https://dl.ubnt.com/unifi/%{version}/UniFi.unix.zip
 Source1: unifi.service
 Requires: mongodb-server
-Requires: java-1.8.0-openjdk-headless
+Requires: libjava.so()(64bit)
 %{?systemd_requires}
 BuildRequires: systemd
 ExclusiveArch: x86_64 %{arm}
@@ -90,6 +90,10 @@ fi
 
 
 %changelog
+* Fri Feb 17 2023 Matthias Saou <matthias@saou.eu> 7.3.83-1
+- Update to 7.3.83... when something works well, it lasts!
+- Update java-headless requires to work with el7 java 11.
+
 * Tue Mar 13 2018 Matthias Saou <matthias@saou.eu> 5.7.20-1
 - Update to 5.7.20.
 
