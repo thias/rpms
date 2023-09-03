@@ -5,6 +5,7 @@ Add support for use of the system timezone database, rather
 than embedding a copy.  Discussed upstream but was not desired.
 
 History:
+r23: fix possible buffer overflow
 r22: retrieve tzdata version from /usr/share/zoneinfo/tzdata.zi
 r21: adapt for timelib 2021.03 (in 8.1.0)
 r20: adapt for timelib 2020.03 (in 8.0.10RC1)
@@ -456,7 +457,7 @@ index e41315efdb..4b6547c0a3 100644
 +        size_t n;
 +        char *data, *p;
 +        
-+        data = malloc(3 * sysdb->index_size + 7);
++        data = malloc(3 * sysdb->index_size + sizeof(FAKE_HEADER) - 1);
 +
 +        p = mempcpy(data, FAKE_HEADER, sizeof(FAKE_HEADER) - 1);
 +
