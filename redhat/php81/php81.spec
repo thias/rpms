@@ -24,7 +24,7 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%global oraclever 21.8
+%global oraclever 21.10
 %global oraclelib 21.1
 
 # Build for LiteSpeed Web Server (LSAPI), you can disable using --without tests
@@ -40,12 +40,7 @@
 # Optional Oracle extensions; pass "--with oci8" etc to rpmbuild.
 %bcond_with           oci8
 
-%if 0%{?fedora} >= 38 || 0%{?rhel} >= 10
-# uw-imap is not available
-%bcond_with           imap
-%else
 %bcond_without        imap
-%endif
 
 %if 0%{?fedora} >= 27 || 0%{?rhel} >= 8
 # switch to bundled library using --without libpcre
@@ -114,7 +109,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.1.16
+%global upver          8.1.23
 #global rcver          RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -166,7 +161,7 @@ Patch10: php-7.0.7-curl.patch
 # Use system nikic/php-parser
 Patch41: php-8.1.0-parser.patch
 # use system tzdata
-Patch42: php-8.1.0-systzdata-v22.patch
+Patch42: php-8.1.0-systzdata-v23.patch
 # See http://bugs.php.net/53436
 Patch43: php-7.4.0-phpize.patch
 # Use -lldap_r for OpenLDAP
@@ -181,7 +176,6 @@ Patch47: php-8.1.0-phpinfo.patch
 Patch91: php-7.2.0-oci8conf.patch
 
 # Upstream fixes (100+)
-Patch100: upstream.patch
 
 # Security fixes (200+)
 
@@ -1031,9 +1025,9 @@ Summary: Internationalization extension for PHP applications
 # All files licensed under PHP version 3.01
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
-BuildRequires: pkgconfig(icu-i18n) >= 71
-BuildRequires: pkgconfig(icu-io)   >= 71
-BuildRequires: pkgconfig(icu-uc)   >= 71
+BuildRequires: pkgconfig(icu-i18n) >= 72
+BuildRequires: pkgconfig(icu-io)   >= 72
+BuildRequires: pkgconfig(icu-uc)   >= 72
 %if 0%{?rhel} == 7
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
 Obsoletes: php70u-intl, php70w-intl, php71u-intl, php71w-intl, php72u-intl, php72w-intl
@@ -1174,33 +1168,32 @@ in pure PHP.
 
 %setup -q -n php-%{upver}%{?rcver}
 
-%patch1 -p1 -b .mpmcheck
-%patch5 -p1 -b .includedir
-%patch6 -p1 -b .embed
-%patch8 -p1 -b .libdb
-%if 0%{?rhel}
-%patch10 -p1 -b .curltls
+%patch -P1 -p1 -b .mpmcheck
+%patch -P5 -p1 -b .includedir
+%patch -P6 -p1 -b .embed
+%patch -P8 -p1 -b .libdb
+%if 0%{?rhel} == 7
+%patch -P10 -p1 -b .curltls
 %endif
 
-%patch41 -p1 -b .syslib
+%patch -P41 -p1 -b .syslib
 %if %{with tzdata}
-%patch42 -p1 -b .systzdata
+%patch -P42 -p1 -b .systzdata
 %endif
-%patch43 -p1 -b .headers
-%patch45 -p1 -b .ldap_r
-%patch46 -p1 -b .argon2
-%patch47 -p1 -b .phpinfo
+%patch -P43 -p1 -b .headers
+%patch -P45 -p1 -b .ldap_r
+%patch -P46 -p1 -b .argon2
+%patch -P47 -p1 -b .phpinfo
 
-%patch91 -p1 -b .remi-oci8
+%patch -P91 -p1 -b .remi-oci8
 
 # upstream patches
-%patch100 -p1 -b .up
 
 # security patches
 
 # Fixes for tests related to tzdata
 %if %{with tzdata}
-%patch300 -p1 -b .datetests
+%patch -P300 -p1 -b .datetests
 %endif
 
 # WIP patch
@@ -1800,8 +1793,8 @@ install -m 755 -d $RPM_BUILD_ROOT/run/php-fpm
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/php-fpm.service.d
 install -Dm 644 %{SOURCE6}  $RPM_BUILD_ROOT%{_unitdir}/php-fpm.service
 %if 0%{?fedora} >= 27 || 0%{?rhel} >= 8
-install -Dm 644 %{SOURCE12} $RPM_BUILD_ROOT%{_unitdir}/httpd.service.d/php-fpm.conf
-install -Dm 644 %{SOURCE12} $RPM_BUILD_ROOT%{_unitdir}/nginx.service.d/php-fpm.conf
+install -Dm 644 %{SOURCE12} $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/httpd.service.d/php-fpm.conf
+install -Dm 644 %{SOURCE12} $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/nginx.service.d/php-fpm.conf
 %endif
 
 %if 0%{?fedora} >= 26 || 0%{?rhel} >= 8
@@ -1959,7 +1952,7 @@ sed -e "s/@PHP_APIVER@/%{apiver}-%{__isa_bits}/" \
 %endif
     < %{SOURCE3} > macros.php
 %if 0%{?fedora} >= 24 || 0%{?rhel} >= 8
-echo '%%pecl_xmldir   %{_localstatedir}/lib/php/peclxml' >>macros.php
+echo '%%pecl_xmldir   %%{_localstatedir}/lib/php/peclxml' >>macros.php
 %endif
 install -m 644 -D macros.php \
            $RPM_BUILD_ROOT%{macrosdir}/macros.php
@@ -2121,8 +2114,8 @@ fi
 %endif
 %{_unitdir}/php-fpm.service
 %if 0%{?fedora} >= 27 || 0%{?rhel} >= 8
-%{_unitdir}/httpd.service.d/php-fpm.conf
-%{_unitdir}/nginx.service.d/php-fpm.conf
+%config(noreplace) %{_sysconfdir}/systemd/system/httpd.service.d/php-fpm.conf
+%config(noreplace) %{_sysconfdir}/systemd/system/nginx.service.d/php-fpm.conf
 %endif
 %dir %{_sysconfdir}/systemd/system/php-fpm.service.d
 %dir %ghost /run/php-fpm
@@ -2201,6 +2194,57 @@ fi
 
 
 %changelog
+* Wed Aug 30 2023 Remi Collet <remi@remirepo.net> - 8.1.23-1
+- Update to 8.1.23 - http://www.php.net/releases/8_1_23.php
+
+* Thu Aug 17 2023 Remi Collet <remi@remirepo.net> - 8.1.23~RC1-1
+- update to 8.1.23RC1
+
+* Wed Aug  2 2023 Remi Collet <remi@remirepo.net> - 8.1.22-1
+- Update to 8.1.22 - http://www.php.net/releases/8_1_22.php
+
+* Wed Jul 19 2023 Remi Collet <remi@remirepo.net> - 8.1.22~RC1-1
+- update to 8.1.22RC1
+- move httpd/nginx wants directive to config files in /etc
+
+* Wed Jul  5 2023 Remi Collet <remi@remirepo.net> - 8.1.21-1
+- Update to 8.1.21 - http://www.php.net/releases/8_1_21.php
+
+* Tue Jun 20 2023 Remi Collet <remi@remirepo.net> - 8.1.21~RC1-1
+- update to 8.1.21RC1
+
+* Wed Jun  7 2023 Remi Collet <remi@remirepo.net> - 8.1.20-1
+- Update to 8.1.20 - http://www.php.net/releases/8_1_20.php
+
+* Wed May 24 2023 Remi Collet <remi@remirepo.net> - 8.1.20~RC1-1
+- update to 8.1.20RC1
+
+* Wed May 10 2023 Remi Collet <remi@remirepo.net> - 8.1.19-1
+- Update to 8.1.19 - http://www.php.net/releases/8_1_19.php
+
+* Tue Apr 25 2023 Remi Collet <remi@remirepo.net> - 8.1.19~RC1-2
+- define %%__phpize and %%__phpconfig
+
+* Tue Apr 25 2023 Remi Collet <remi@remirepo.net> - 8.1.19~RC1-1
+- update to 8.1.19RC1
+- use oracle client library version 21.10
+- use ICU 72.1
+
+* Wed Apr 12 2023 Remi Collet <remi@remirepo.net> - 8.1.18-1
+- Update to 8.1.18 - http://www.php.net/releases/8_1_18.php
+
+* Thu Mar 30 2023 Remi Collet <remi@remirepo.net> - 8.1.18~RC1-1
+- update to 8.1.18RC1
+
+* Wed Mar 15 2023 Remi Collet <remi@remirepo.net> - 8.1.17-1
+- Update to 8.1.17 - http://www.php.net/releases/8_1_17.php
+
+* Wed Mar  1 2023 Remi Collet <remi@remirepo.net> - 8.1.17~RC1-1
+- update to 8.1.17RC1
+
+* Tue Feb 21 2023 Remi Collet <remi@remirepo.net> - 8.1.16-2
+- F38: enable imap extension
+
 * Tue Feb 14 2023 Remi Collet <remi@remirepo.net> - 8.1.16-1
 - Update to 8.1.16 - http://www.php.net/releases/8_1_16.php
 
