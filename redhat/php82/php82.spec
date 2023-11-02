@@ -24,8 +24,15 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%global oraclever 21.10
+%ifarch aarch64
+%global oraclever 19.19
+%global oraclelib 19.1
+%global oracledir 19.19
+%else
+%global oraclever 21.11
 %global oraclelib 21.1
+%global oracledir 21
+%endif
 
 # Build for LiteSpeed Web Server (LSAPI), you can disable using --without tests
 %bcond_without        lsws
@@ -69,7 +76,11 @@
 %bcond_without        firebird
 
 # Build ZTS extension or only NTS using --without zts
+%ifarch x86_64
 %bcond_without        zts
+%else
+%bcond_with           zts
+%endif
 
 # Debug build, using --with debug
 %bcond_with           debug
@@ -109,7 +120,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.2.10
+%global upver          8.2.12
 #global rcver          RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -161,7 +172,7 @@ Patch10: php-8.2.0-curl.patch
 # Use system nikic/php-parser
 Patch41: php-8.2.0-parser.patch
 # use system tzdata
-Patch42: php-8.1.0-systzdata-v23.patch
+Patch42: php-8.1.0-systzdata-v24.patch
 # See http://bugs.php.net/53436
 Patch43: php-7.4.0-phpize.patch
 # Use -lldap_r for OpenLDAP
@@ -384,6 +395,9 @@ Summary: Common files for PHP
 # regex, libmagic are licensed under BSD
 License: PHP-3.01 AND BSD-2-Clause
 
+%if %{with tzdata}
+Requires:  tzdata
+%endif
 %if %{with libpcre}
 %global pcre2_buildver %(pkg-config --silence-errors --modversion libpcre2-8 2>/dev/null || echo 10.30)
 Requires:  pcre2%{?_isa} >= %{pcre2_buildver}
@@ -741,7 +755,14 @@ Interbase/Firebird databases.
 Summary:        A module for PHP applications that use OCI8 databases
 # All files licensed under PHP version 3.01
 License:        PHP-3.01
+%ifarch aarch64
+BuildRequires:  oracle-instantclient%{oraclever}-devel
+# Should requires libclntsh.so.19.1()(aarch-64), but it's not provided by Oracle RPM.
+Requires:       libclntsh.so.%{oraclelib}
+AutoReq:        0
+%else
 BuildRequires:  oracle-instantclient-devel >= %{oraclever}
+%endif
 Requires:       php-pdo%{?_isa} = %{version}-%{release}
 Provides:       php_database
 Provides:       php-pdo_oci
@@ -750,8 +771,6 @@ Obsoletes:      php-pecl-oci8         <= %{oci8ver}
 Conflicts:      php-pecl-oci8         >  %{oci8ver}
 Provides:       php-pecl(oci8)         = %{oci8ver}
 Provides:       php-pecl(oci8)%{?_isa} = %{oci8ver}
-# Should requires libclntsh.so.18.3, but it's not provided by Oracle RPM.
-AutoReq:        0
 %if 0%{?rhel} == 7
 Obsoletes:      php53-oci8, php53u-oci8, php54-oci8, php54w-oci8, php55u-oci8, php55w-oci8, php56u-oci8, php56w-oci8
 Obsoletes:      php70u-oci8, php70w-oci8, php71u-oci8, php71w-oci8, php72u-oci8, php72w-oci8
@@ -768,13 +787,9 @@ The extension is linked with Oracle client libraries %{oraclever}
 (Oracle Instant Client).  For details, see Oracle's note
 "Oracle Client / Server Interoperability Support" (ID 207303.1).
 
-You must install libclntsh.so.%{oraclelib} to use this package, provided
-in the database installation, or in the free Oracle Instant Client
-available from Oracle.
-
-Notice:
-- php-oci8 provides oci8 and pdo_oci extensions from php sources.
-- php-pecl-oci8 only provides oci8 extension.
+You must install libclntsh.so.%{oraclelib} to use this package,
+provided by Oracle Instant Client RPM available from Oracle on:
+https://www.oracle.com/database/technologies/instant-client/downloads.html
 
 Documentation is at http://php.net/oci8 and http://php.net/pdo_oci
 %endif
@@ -1469,13 +1484,8 @@ build --libdir=%{_libdir}/php \
       --with-mysqli=shared,mysqlnd \
       --with-mysql-sock=%{mysql_sock} \
 %if %{with oci8}
-%ifarch x86_64
-         --with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client64/lib,%{oraclever} \
-      --with-pdo-oci=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client64/lib,%{oraclever} \
-%else
-         --with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever} \
-      --with-pdo-oci=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever} \
-%endif
+         --with-oci8=shared,instantclient,%{_prefix}/lib/oracle/%{oracledir}/client64/lib,%{oraclever} \
+      --with-pdo-oci=shared,instantclient,%{_prefix}/lib/oracle/%{oracledir}/client64/lib,%{oraclever} \
 %endif
 %if %{with firebird}
       --with-pdo-firebird=shared \
@@ -1613,13 +1623,8 @@ build --includedir=%{_includedir}/php-zts \
       --with-mysql-sock=%{mysql_sock} \
       --enable-mysqlnd-threading \
 %if %{with oci8}
-%ifarch x86_64
-         --with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client64/lib,%{oraclever} \
-      --with-pdo-oci=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client64/lib,%{oraclever} \
-%else
-         --with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever} \
-      --with-pdo-oci=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever} \
-%endif
+         --with-oci8=shared,instantclient,%{_prefix}/lib/oracle/%{oracledir}/client64/lib,%{oraclever} \
+      --with-pdo-oci=shared,instantclient,%{_prefix}/lib/oracle/%{oracledir}/client64/lib,%{oraclever} \
 %endif
 %if %{with firebird}
       --with-pdo-firebird=shared \
@@ -2195,6 +2200,24 @@ fi
 
 
 %changelog
+* Wed Oct 25 2023 Remi Collet <remi@remirepo.net> - 8.2.12-1
+- Update to 8.2.12 - http://www.php.net/releases/8_2_12.php
+
+* Wed Oct 11 2023 Remi Collet <remi@remirepo.net> - 8.2.12~RC1-1
+- update to 8.2.12RC1
+- add internal UTC if tzdata is missing
+
+* Tue Sep 26 2023 Remi Collet <remi@remirepo.net> - 8.2.11-1
+- Update to 8.2.11 - http://www.php.net/releases/8_2_11.php
+
+* Thu Sep 21 2023 Remi Collet <remi@remirepo.net> - 8.2.11~RC1-2
+- use oracle client library version 19.19 on aarch64
+- use official Oracle Instant Client RPM
+
+* Tue Sep 12 2023 Remi Collet <remi@remirepo.net> - 8.2.11~RC1-1
+- update to 8.2.11RC1
+- use oracle client library version 21.11
+
 * Tue Aug 29 2023 Remi Collet <remi@remirepo.net> - 8.2.10-1
 - Update to 8.2.10 - http://www.php.net/releases/8_2_10.php
 
