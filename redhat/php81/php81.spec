@@ -29,7 +29,7 @@
 %global oraclelib 19.1
 %global oracledir 19.19
 %else
-%global oraclever 21.11
+%global oraclever 21.12
 %global oraclelib 21.1
 %global oracledir 21
 %endif
@@ -120,7 +120,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.1.25
+%global upver          8.1.26
 #global rcver          RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -1040,9 +1040,9 @@ Summary: Internationalization extension for PHP applications
 # All files licensed under PHP version 3.01
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
-BuildRequires: pkgconfig(icu-i18n) >= 72
-BuildRequires: pkgconfig(icu-io)   >= 72
-BuildRequires: pkgconfig(icu-uc)   >= 72
+BuildRequires: pkgconfig(icu-i18n) >= 73
+BuildRequires: pkgconfig(icu-io)   >= 73
+BuildRequires: pkgconfig(icu-uc)   >= 73
 %if 0%{?rhel} == 7
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
 Obsoletes: php70u-intl, php70w-intl, php71u-intl, php71w-intl, php72u-intl, php72w-intl
@@ -2199,6 +2199,14 @@ fi
 
 
 %changelog
+* Wed Nov 22 2023 Remi Collet <remi@remirepo.net> - 8.1.26-1
+- Update to 8.1.26 - http://www.php.net/releases/8_1_26.php
+
+* Wed Nov  8 2023 Remi Collet <remi@remirepo.net> - 8.1.26~RC1-1
+- update to 8.1.26RC1
+- use oracle client library version 21.12 on x86_64
+- use ICU 73.2
+
 * Wed Oct 25 2023 Remi Collet <remi@remirepo.net> - 8.1.25-1
 - Update to 8.1.25 - http://www.php.net/releases/8_1_25.php
 
