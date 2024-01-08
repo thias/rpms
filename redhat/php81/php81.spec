@@ -120,7 +120,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.1.26
+%global upver          8.1.27
 #global rcver          RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -165,6 +165,8 @@ Patch1: php-7.4.0-httpd.patch
 Patch5: php-7.2.0-includedir.patch
 Patch6: php-8.0.0-embed.patch
 Patch8: php-8.1.0-libdb.patch
+# For libxml 2.12 from 8.1
+Patch9: php-8.1.27-libxml212.patch
 # RHEL backports
 Patch10: php-7.0.7-curl.patch
 
@@ -1187,6 +1189,7 @@ in pure PHP.
 %patch -P5 -p1 -b .includedir
 %patch -P6 -p1 -b .embed
 %patch -P8 -p1 -b .libdb
+%patch -P9 -p1 -b .libxml212
 %if 0%{?rhel} == 7
 %patch -P10 -p1 -b .curltls
 %endif
@@ -2199,6 +2202,13 @@ fi
 
 
 %changelog
+* Wed Dec 20 2023 Remi Collet <remi@remirepo.net> - 8.1.27-1
+- Update to 8.1.27 - http://www.php.net/releases/8_1_27.php
+
+* Tue Dec  5 2023 Remi Collet <remi@remirepo.net> - 8.1.27~RC1-1
+- update to 8.1.27RC1
+- add fixes for libxml 2.12 from 8.2
+
 * Wed Nov 22 2023 Remi Collet <remi@remirepo.net> - 8.1.26-1
 - Update to 8.1.26 - http://www.php.net/releases/8_1_26.php
 
