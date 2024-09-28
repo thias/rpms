@@ -25,13 +25,15 @@
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
 %ifarch aarch64
-%global oraclever 19.19
+%global oraclever 19.24
+%global oraclemax 20
 %global oraclelib 19.1
-%global oracledir 19.19
+%global oracledir 19.24
 %else
-%global oraclever 21.12
-%global oraclelib 21.1
-%global oracledir 21
+%global oraclever 23.5
+%global oraclemax 24
+%global oraclelib 23.1
+%global oracledir 23
 %endif
 
 # Build for LiteSpeed Web Server (LSAPI), you can disable using --without tests
@@ -120,8 +122,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.1.27
-#global rcver          RC1
+%global upver          8.1.30
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
@@ -195,6 +196,7 @@ Patch91: php-7.2.0-oci8conf.patch
 # Fixes for tests (300+)
 # Factory is droped from system tzdata
 Patch300: php-7.4.0-datetests.patch
+Patch301: php-8.1.27-zlib-tests.patch
 
 # WIP
 
@@ -237,6 +239,9 @@ BuildRequires: libtool
 BuildRequires: libtool-ltdl-devel
 %if %{with dtrace}
 BuildRequires: %{?dtsprefix}systemtap-sdt-devel
+%if 0%{?fedora} >= 41
+BuildRequires: %{?dtsprefix}systemtap-sdt-dtrace
+%endif
 %endif
 #BuildRequires: bison
 #BuildRequires: re2c
@@ -761,7 +766,7 @@ BuildRequires:  oracle-instantclient%{oraclever}-devel
 Requires:       libclntsh.so.%{oraclelib}
 AutoReq:        0
 %else
-BuildRequires:  oracle-instantclient-devel >= %{oraclever}
+BuildRequires: (oracle-instantclient-devel >= %{oraclever} with oracle-instantclient-devel < %{oraclemax})
 %endif
 Requires:       php-pdo%{?_isa} = %{version}-%{release}
 Provides:       php_database
@@ -1042,9 +1047,9 @@ Summary: Internationalization extension for PHP applications
 # All files licensed under PHP version 3.01
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
-BuildRequires: pkgconfig(icu-i18n) >= 73
-BuildRequires: pkgconfig(icu-io)   >= 73
-BuildRequires: pkgconfig(icu-uc)   >= 73
+BuildRequires: pkgconfig(icu-i18n) >= 74
+BuildRequires: pkgconfig(icu-io)   >= 74
+BuildRequires: pkgconfig(icu-uc)   >= 74
 %if 0%{?rhel} == 7
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
 Obsoletes: php70u-intl, php70w-intl, php71u-intl, php71w-intl, php72u-intl, php72w-intl
@@ -1213,6 +1218,7 @@ in pure PHP.
 %if %{with tzdata}
 %patch -P300 -p1 -b .datetests
 %endif
+%patch -P301 -p1 -b .zlibng
 
 # WIP patch
 
@@ -2202,6 +2208,23 @@ fi
 
 
 %changelog
+* Fri Sep 27 2024 Remi Collet <remi@remirepo.net> - 8.1.30-1
+- Update to 8.1.30 - http://www.php.net/releases/8_1_30.php
+- use ICU 74.2
+
+* Wed Jul 31 2024 Remi Collet <remi@remirepo.net> - 8.1.29-2
+- use oracle client library version 23.5 on x86_64
+
+* Wed Jun  5 2024 Remi Collet <remi@remirepo.net> - 8.1.29-1
+- Update to 8.1.29 - http://www.php.net/releases/8_1_29.php
+
+* Wed Apr 10 2024 Remi Collet <remi@remirepo.net> - 8.1.28-1
+- Update to 8.1.28 - http://www.php.net/releases/8_1_28.php
+
+* Wed Mar  6 2024 Remi Collet <remi@remirepo.net> - 8.1.27-2
+- use oracle client library version 21.13 on x86_64
+- patch test suite for zlib-ng
+
 * Wed Dec 20 2023 Remi Collet <remi@remirepo.net> - 8.1.27-1
 - Update to 8.1.27 - http://www.php.net/releases/8_1_27.php
 
