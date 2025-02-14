@@ -80,8 +80,8 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.4.3
-#global rcver          RC1
+%global upver          8.4.4
+#global rcver          RC2
 # TODO set PHP_EXTRA_VERSION for EOL version
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -1704,6 +1704,15 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Feb 12 2025 Remi Collet <remi@remirepo.net> - 8.4.4-1
+- Update to 8.4.4 - http://www.php.net/releases/8_4_4.php
+
+* Fri Jan 31 2025 Remi Collet <remi@remirepo.net> - 8.4.4~RC2-1
+- Update to 8.4.4RC2
+
+* Wed Jan 29 2025 Remi Collet <remi@remirepo.net> - 8.4.4~RC1-1
+- Update to 8.4.4RC1
+
 * Wed Jan 15 2025 Remi Collet <remi@remirepo.net> - 8.4.3-1
 - Update to 8.4.3 - http://www.php.net/releases/8_4_3.php
 
