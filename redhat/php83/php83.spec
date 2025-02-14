@@ -25,13 +25,15 @@
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
 %ifarch aarch64
-%global oraclever 19.22
+%global oraclever 19.25
+%global oraclemax 20
 %global oraclelib 19.1
-%global oracledir 19.22
+%global oracledir 19.25
 %else
-%global oraclever 21.13
-%global oraclelib 21.1
-%global oracledir 21
+%global oraclever 23.7
+%global oraclemax 24
+%global oraclelib 23.1
+%global oracledir 23
 %endif
 
 # Build for LiteSpeed Web Server (LSAPI), you can disable using --without tests
@@ -73,7 +75,11 @@
 %endif
 
 # Build firebird extensions, you can disable using --without firebird
+%if 0%{?rhel} == 10
+%bcond_with           firebird
+%else
 %bcond_without        firebird
+%endif
 
 # Build ZTS extension or only NTS using --without zts
 %ifarch x86_64
@@ -91,6 +97,9 @@
 %else
 %bcond_with           tzdata
 %endif
+
+# /usr/sbin/a# build with libiodbc instead of unixODBC
+%bcond_with           iodbc
 
 # /usr/sbin/apsx with httpd < 2.4 and defined as /usr/bin/apxs with httpd >= 2.4
 %{!?_httpd_apxs:       %{expand: %%global _httpd_apxs       %%{_sbindir}/apxs}}
@@ -120,7 +129,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.3.7
+%global upver          8.3.17
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -173,7 +182,7 @@ Patch10: php-8.2.0-curl.patch
 # Use system nikic/php-parser
 Patch41: php-8.3.3-parser.patch
 # use system tzdata
-Patch42: php-8.3.0-systzdata-v24.patch
+Patch42: php-8.3.11-systzdata-v24.patch
 # See http://bugs.php.net/53436
 # + display PHP version backported from 8.4
 Patch43: php-7.4.0-phpize.patch
@@ -183,10 +192,12 @@ Patch45: php-7.4.0-ldap_r.patch
 Patch46: php-8.0.7-argon2.patch
 # drop "Configure command" from phpinfo output
 # and only use gcc (instead of full version)
-Patch47: php-8.1.0-phpinfo.patch
+Patch47: php-8.3.13-phpinfo.patch
 # Always warn about missing curve_name
 # Both Fedora and RHEL do not support arbitrary EC parameters
 Patch48: php-8.3.0-openssl-ec-param.patch
+# Fix libidobc headers path
+Patch49: php-8.2.0-iodbc.patch
 
 # RC Patch
 Patch91: php-7.2.0-oci8conf.patch
@@ -240,6 +251,9 @@ BuildRequires: libtool
 BuildRequires: libtool-ltdl-devel
 %if %{with dtrace}
 BuildRequires: %{?dtsprefix}systemtap-sdt-devel
+%if 0%{?fedora} >= 41
+BuildRequires: %{?dtsprefix}systemtap-sdt-dtrace
+%endif
 %endif
 #BuildRequires: bison
 #BuildRequires: re2c >= 1.0.3
@@ -697,8 +711,11 @@ License:  PHP-3.01
 Requires: php-pdo%{?_isa} = %{version}-%{release}
 Provides: php_database
 Provides: php-pdo_odbc, php-pdo_odbc%{?_isa}
-# EL-7 version don't have pkgconfig
-BuildRequires: unixODBC-devel
+%if %{with iodbc}
+BuildRequires: pkgconfig(libiodbc)
+%else
+BuildRequires: pkgconfig(odbc)
+%endif
 %if 0%{?rhel} == 7
 Obsoletes: php53-odbc, php53u-odbc, php54-odbc, php54w-odbc, php55u-odbc, php55w-odbc, php56u-odbc, php56w-odbc
 Obsoletes: php70u-odbc, php70w-odbc, php71u-odbc, php71w-odbc, php72u-odbc, php72w-odbc
@@ -715,6 +732,9 @@ data sources (which are often, but not always, databases). PHP is an
 HTML-embeddable scripting language. If you need ODBC support for PHP
 applications, you will need to install this package and the php
 package.
+%if %{with iodbc}
+Package build using libiodbc (instead of unixODBC).
+%endif
 
 %package soap
 Summary: A module for PHP applications that use the SOAP protocol
@@ -767,7 +787,7 @@ BuildRequires:  oracle-instantclient%{oraclever}-devel
 Requires:       libclntsh.so.%{oraclelib}
 AutoReq:        0
 %else
-BuildRequires:  oracle-instantclient-devel >= %{oraclever}
+BuildRequires: (oracle-instantclient-devel >= %{oraclever} with oracle-instantclient-devel < %{oraclemax})
 %endif
 Requires:       php-pdo%{?_isa} = %{version}-%{release}
 Provides:       php_database
@@ -1048,9 +1068,9 @@ Summary: Internationalization extension for PHP applications
 # All files licensed under PHP version 3.01
 License:  PHP-3.01
 Requires: php-common%{?_isa} = %{version}-%{release}
-BuildRequires: pkgconfig(icu-i18n) >= 73
-BuildRequires: pkgconfig(icu-io)   >= 73
-BuildRequires: pkgconfig(icu-uc)   >= 73
+BuildRequires: pkgconfig(icu-i18n) >= 74
+BuildRequires: pkgconfig(icu-io)   >= 74
+BuildRequires: pkgconfig(icu-uc)   >= 74
 %if 0%{?rhel} == 7
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
 Obsoletes: php70u-intl, php70w-intl, php71u-intl, php71w-intl, php72u-intl, php72w-intl
@@ -1208,6 +1228,7 @@ in pure PHP.
 %patch -P46 -p1 -b .argon2
 %patch -P47 -p1 -b .phpinfo
 %patch -P48 -p1 -b .ec-param
+%patch -P49 -p1 -b .iodbc
 
 %patch -P91 -p1 -b .remi-oci8
 
@@ -1228,7 +1249,7 @@ cp Zend/asm/LICENSE BOOST_LICENSE
 cp TSRM/LICENSE TSRM_LICENSE
 cp sapi/fpm/LICENSE fpm_LICENSE
 cp ext/mbstring/libmbfl/LICENSE libmbfl_LICENSE
-# cp ext/fileinfo/libmagic/LICENSE libmagic_LICENSE
+cp ext/fileinfo/libmagic/LICENSE libmagic_LICENSE
 cp ext/bcmath/libbcmath/LICENSE libbcmath_LICENSE
 cp ext/date/lib/LICENSE.rst timelib_LICENSE
 
@@ -1460,7 +1481,7 @@ build --libdir=%{_libdir}/php \
       --enable-opcache \
       --enable-opcache-file \
       --with-capstone \
-      --enable-phpdbg \
+      --enable-phpdbg --enable-phpdbg-readline \
 %if %{with imap}
       --with-imap=shared --with-imap-ssl \
 %endif
@@ -1484,7 +1505,7 @@ build --libdir=%{_libdir}/php \
                           --with-tcadb=%{_prefix} \
                           --with-lmdb=%{_prefix} \
 %if %{with qdbm}
-                          --with-qdbm=%{_root_prefix} \
+                          --with-qdbm=%{_prefix} \
 %endif
       --enable-exif=shared \
       --enable-ftp=shared \
@@ -1512,7 +1533,13 @@ build --libdir=%{_libdir}/php \
       --enable-xmlreader=shared --enable-xmlwriter=shared \
       --with-curl=shared \
       --enable-pdo=shared \
+%if %{with iodbc}
+      --with-iodbc=shared,%{_prefix} \
+      --with-pdo-odbc=shared,iodbc,%{_prefix} \
+%else
+      --with-unixODBC=shared,%{_prefix} \
       --with-pdo-odbc=shared,unixODBC,%{_prefix} \
+%endif
       --with-pdo-mysql=shared,mysqlnd \
       --with-pdo-pgsql=shared,%{_prefix} \
       --with-pdo-sqlite=shared \
@@ -1529,7 +1556,6 @@ build --libdir=%{_libdir}/php \
       --enable-sysvmsg=shared --enable-sysvshm=shared --enable-sysvsem=shared \
       --enable-shmop=shared \
       --enable-posix=shared \
-      --with-unixODBC=shared,%{_prefix} \
       --enable-fileinfo=shared \
       --with-ffi=shared \
       --with-sodium=shared \
@@ -1622,7 +1648,7 @@ build --includedir=%{_includedir}/php-zts \
                           --with-tcadb=%{_prefix} \
                           --with-lmdb=%{_prefix} \
 %if %{with qdbm}
-                          --with-qdbm=%{_root_prefix} \
+                          --with-qdbm=%{_prefix} \
 %endif
       --with-gettext=shared \
       --with-iconv=shared \
@@ -1651,7 +1677,13 @@ build --includedir=%{_includedir}/php-zts \
       --enable-xmlreader=shared --enable-xmlwriter=shared \
       --with-curl=shared \
       --enable-pdo=shared \
+%if %{with iodbc}
+      --with-iodbc=shared,%{_prefix} \
+      --with-pdo-odbc=shared,iodbc,%{_prefix} \
+%else
+      --with-unixODBC=shared,%{_prefix} \
       --with-pdo-odbc=shared,unixODBC,%{_prefix} \
+%endif
       --with-pdo-mysql=shared,mysqlnd \
       --with-pdo-pgsql=shared,%{_prefix} \
       --with-pdo-sqlite=shared \
@@ -1668,7 +1700,6 @@ build --includedir=%{_includedir}/php-zts \
       --enable-sysvmsg=shared --enable-sysvshm=shared --enable-sysvsem=shared \
       --enable-shmop=shared \
       --enable-posix=shared \
-      --with-unixODBC=shared,%{_prefix} \
       --enable-fileinfo=shared \
       --with-ffi=shared \
       --with-sodium=shared \
@@ -2061,7 +2092,7 @@ fi
 %files common -f files.common
 %doc EXTENSIONS NEWS UPGRADING* README.REDIST.BINS *md docs
 %license LICENSE TSRM_LICENSE ZEND_LICENSE BOOST_LICENSE
-#license libmagic_LICENSE
+%license libmagic_LICENSE
 %license timelib_LICENSE
 %doc php.ini-*
 %config(noreplace) %{_sysconfdir}/php.ini
@@ -2212,6 +2243,75 @@ fi
 
 
 %changelog
+* Wed Feb 12 2025 Remi Collet <remi@remirepo.net> - 8.3.17-1
+- Update to 8.3.17 - http://www.php.net/releases/8_3_17.php
+
+* Wed Jan 29 2025 Remi Collet <remi@remirepo.net> - 8.3.17~RC1-1
+- update to 8.3.17RC1
+
+* Wed Jan 15 2025 Remi Collet <remi@remirepo.net> - 8.3.16-1
+- Update to 8.3.16 - http://www.php.net/releases/8_3_16.php
+
+* Wed Jan  1 2025 Remi Collet <remi@remirepo.net> - 8.3.16~RC1-1
+- update to 8.3.16RC1
+
+* Wed Dec 18 2024 Remi Collet <remi@remirepo.net> - 8.3.15-1
+- Update to 8.3.15 - http://www.php.net/releases/8_3_15.php
+
+* Wed Dec  4 2024 Remi Collet <remi@remirepo.net> - 8.3.15~RC1-1
+- update to 8.3.15RC1
+
+* Tue Nov 19 2024 Remi Collet <remi@remirepo.net> - 8.3.14-1
+- Update to 8.3.14 - http://www.php.net/releases/8_3_14.php
+
+* Wed Nov  6 2024 Remi Collet <remi@remirepo.net> - 8.3.14~RC1-1
+- update to 8.3.14RC1
+
+* Wed Oct 23 2024 Remi Collet <remi@remirepo.net> - 8.3.13-1
+- Update to 8.3.13 - http://www.php.net/releases/8_3_13.php
+
+* Wed Oct  9 2024 Remi Collet <remi@remirepo.net> - 8.3.13~RC1-1
+- update to 8.3.13RC1
+
+* Wed Sep 25 2024 Remi Collet <remi@remirepo.net> - 8.3.12-1
+- Update to 8.3.12 - http://www.php.net/releases/8_3_12.php
+
+* Tue Sep 10 2024 Remi Collet <remi@remirepo.net> - 8.3.12~RC1-1
+- update to 8.3.12RC1
+- use ICU 74.2
+
+* Wed Aug 28 2024 Remi Collet <remi@remirepo.net> - 8.3.11-1
+- Update to 8.3.11 - http://www.php.net/releases/8_3_11.php
+
+* Thu Aug 22 2024 Remi Collet <remi@remirepo.net> - 8.3.11~RC2-1
+- update to 8.3.11RC2
+
+* Wed Aug 14 2024 Remi Collet <remi@remirepo.net> - 8.3.11~RC1-2
+- allow to build using libiodbc instead of unixODBC (--with iodbc)
+
+* Wed Aug 14 2024 Remi Collet <remi@remirepo.net> - 8.3.11~RC1-1
+- update to 8.3.11RC1
+
+* Tue Jul 30 2024 Remi Collet <remi@remirepo.net> - 8.3.10-1
+- Update to 8.3.10 - http://www.php.net/releases/8_3_10.php
+- use oracle client library version 23.5 on x86_64
+
+* Tue Jul 16 2024 Remi Collet <remi@remirepo.net> - 8.3.10~RC1-1
+- update to 8.3.10RC1
+- use oracle client library version 23.4 on x86_64, 19.23 on aarch64
+
+* Wed Jul  3 2024 Remi Collet <remi@remirepo.net> - 8.3.9-1
+- Update to 8.3.9 - http://www.php.net/releases/8_3_9.php
+
+* Fri Jun  7 2024 Remi Collet <remi@remirepo.net> - 8.3.8-2
+- Fix GH-14480 Method visibility issue introduced in version 8.3.8
+
+* Tue Jun  4 2024 Remi Collet <remi@remirepo.net> - 8.3.8-1
+- Update to 8.3.8 - http://www.php.net/releases/8_3_8.php
+
+* Wed May 22 2024 Remi Collet <remi@remirepo.net> - 8.3.8~RC1-1
+- update to 8.3.8RC1
+
 * Mon May 13 2024 Remi Collet <remi@remirepo.net> - 8.3.7-1
 - Update to 8.3.7 - http://www.php.net/releases/8_3_7.php
 
