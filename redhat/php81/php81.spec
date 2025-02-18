@@ -30,7 +30,7 @@
 %global oraclelib 19.1
 %global oracledir 19.24
 %else
-%global oraclever 23.5
+%global oraclever 23.6
 %global oraclemax 24
 %global oraclelib 23.1
 %global oracledir 23
@@ -75,7 +75,11 @@
 %endif
 
 # Build firebird extensions, you can disable using --without firebird
+%if 0%{?rhel} == 10
+%bcond_with           firebird
+%else
 %bcond_without        firebird
+%endif
 
 # Build ZTS extension or only NTS using --without zts
 %ifarch x86_64
@@ -122,7 +126,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.1.30
+%global upver          8.1.31
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
@@ -166,8 +170,6 @@ Patch1: php-7.4.0-httpd.patch
 Patch5: php-7.2.0-includedir.patch
 Patch6: php-8.0.0-embed.patch
 Patch8: php-8.1.0-libdb.patch
-# For libxml 2.12 from 8.1
-Patch9: php-8.1.27-libxml212.patch
 # RHEL backports
 Patch10: php-7.0.7-curl.patch
 
@@ -1194,7 +1196,6 @@ in pure PHP.
 %patch -P5 -p1 -b .includedir
 %patch -P6 -p1 -b .embed
 %patch -P8 -p1 -b .libdb
-%patch -P9 -p1 -b .libxml212
 %if 0%{?rhel} == 7
 %patch -P10 -p1 -b .curltls
 %endif
@@ -2208,6 +2209,9 @@ fi
 
 
 %changelog
+* Wed Nov 20 2024 Remi Collet <remi@remirepo.net> - 8.1.31-1
+- Update to 8.1.31 - http://www.php.net/releases/8_1_31.php
+
 * Fri Sep 27 2024 Remi Collet <remi@remirepo.net> - 8.1.30-1
 - Update to 8.1.30 - http://www.php.net/releases/8_1_30.php
 - use ICU 74.2
