@@ -24,17 +24,10 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%ifarch aarch64
-%global oraclever 19.24
-%global oraclemax 20
-%global oraclelib 19.1
-%global oracledir 19.24
-%else
-%global oraclever 23.6
+%global oraclever 23.7
 %global oraclemax 24
 %global oraclelib 23.1
 %global oracledir 23
-%endif
 
 # Build for LiteSpeed Web Server (LSAPI), you can disable using --without tests
 %bcond_without        lsws
@@ -126,7 +119,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.1.31
+%global upver          8.1.32
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
@@ -170,8 +163,8 @@ Patch1: php-7.4.0-httpd.patch
 Patch5: php-7.2.0-includedir.patch
 Patch6: php-8.0.0-embed.patch
 Patch8: php-8.1.0-libdb.patch
-# RHEL backports
-Patch10: php-7.0.7-curl.patch
+# For recent ICU from 8.2
+Patch11: php-8.1.31-icu.patch
 
 # Functional changes
 # Use system nikic/php-parser
@@ -198,7 +191,10 @@ Patch91: php-7.2.0-oci8conf.patch
 # Fixes for tests (300+)
 # Factory is droped from system tzdata
 Patch300: php-7.4.0-datetests.patch
+# for zlib-ng
 Patch301: php-8.1.27-zlib-tests.patch
+# for pcre2 10.45
+Patch302: php-8.1.32-pcretests.patch
 
 # WIP
 
@@ -762,14 +758,7 @@ Interbase/Firebird databases.
 Summary:        A module for PHP applications that use OCI8 databases
 # All files licensed under PHP version 3.01
 License:        PHP
-%ifarch aarch64
-BuildRequires:  oracle-instantclient%{oraclever}-devel
-# Should requires libclntsh.so.19.1()(aarch-64), but it's not provided by Oracle RPM.
-Requires:       libclntsh.so.%{oraclelib}
-AutoReq:        0
-%else
 BuildRequires: (oracle-instantclient-devel >= %{oraclever} with oracle-instantclient-devel < %{oraclemax})
-%endif
 Requires:       php-pdo%{?_isa} = %{version}-%{release}
 Provides:       php_database
 Provides:       php-pdo_oci
@@ -1196,9 +1185,7 @@ in pure PHP.
 %patch -P5 -p1 -b .includedir
 %patch -P6 -p1 -b .embed
 %patch -P8 -p1 -b .libdb
-%if 0%{?rhel} == 7
-%patch -P10 -p1 -b .curltls
-%endif
+%patch -P11 -p1 -b .icu74
 
 %patch -P41 -p1 -b .syslib
 %if %{with tzdata}
@@ -1220,6 +1207,7 @@ in pure PHP.
 %patch -P300 -p1 -b .datetests
 %endif
 %patch -P301 -p1 -b .zlibng
+%patch -P302 -p1 -b .pcretests
 
 # WIP patch
 
@@ -2209,6 +2197,13 @@ fi
 
 
 %changelog
+* Wed Mar 12 2025 Remi Collet <remi@remirepo.net> - 8.1.32-1
+- Update to 8.1.32 - http://www.php.net/releases/8_1_32.php
+- use oracle client library version 23.7 on x86_64 and arm64
+
+* Thu Feb 13 2025 Remi Collet <remi@remirepo.net> - 8.1.31-2
+- backport fix for ICU 74+
+
 * Wed Nov 20 2024 Remi Collet <remi@remirepo.net> - 8.1.31-1
 - Update to 8.1.31 - http://www.php.net/releases/8_1_31.php
 
