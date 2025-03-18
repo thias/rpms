@@ -13,7 +13,7 @@
 %global pdover      20240423
 # Extension version
 %global fileinfover 1.0.5
-%global zipver      1.22.4
+%global zipver      1.22.5
 
 # Adds -z now to the linker flags
 %global _hardened_build 1
@@ -80,8 +80,8 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.4.4
-#global rcver          RC2
+%global upver          8.4.5
+#global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -1704,6 +1704,12 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Mar 12 2025 Remi Collet <remi@remirepo.net> - 8.4.5-1
+- Update to 8.4.5 - http://www.php.net/releases/8_4_5.php
+
+* Tue Feb 25 2025 Remi Collet <remi@remirepo.net> - 8.4.5~RC1-1
+- Update to 8.4.5RC1
+
 * Wed Feb 12 2025 Remi Collet <remi@remirepo.net> - 8.4.4-1
 - Update to 8.4.4 - http://www.php.net/releases/8_4_4.php
 
