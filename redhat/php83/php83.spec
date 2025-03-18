@@ -24,17 +24,10 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%ifarch aarch64
-%global oraclever 19.25
-%global oraclemax 20
-%global oraclelib 19.1
-%global oracledir 19.25
-%else
 %global oraclever 23.7
 %global oraclemax 24
 %global oraclelib 23.1
 %global oracledir 23
-%endif
 
 # Build for LiteSpeed Web Server (LSAPI), you can disable using --without tests
 %bcond_without        lsws
@@ -129,7 +122,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.3.17
+%global upver          8.3.19
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -781,14 +774,7 @@ Interbase/Firebird databases.
 Summary:        A module for PHP applications that use OCI8 databases
 # All files licensed under PHP version 3.01
 License:        PHP-3.01
-%ifarch aarch64
-BuildRequires:  oracle-instantclient%{oraclever}-devel
-# Should requires libclntsh.so.19.1()(aarch-64), but it's not provided by Oracle RPM.
-Requires:       libclntsh.so.%{oraclelib}
-AutoReq:        0
-%else
 BuildRequires: (oracle-instantclient-devel >= %{oraclever} with oracle-instantclient-devel < %{oraclemax})
-%endif
 Requires:       php-pdo%{?_isa} = %{version}-%{release}
 Provides:       php_database
 Provides:       php-pdo_oci
@@ -2243,6 +2229,16 @@ fi
 
 
 %changelog
+* Wed Mar 12 2025 Remi Collet <remi@remirepo.net> - 8.3.19-1
+- Update to 8.3.19 - http://www.php.net/releases/8_3_19.php
+
+* Wed Mar 12 2025 Remi Collet <remi@remirepo.net> - 8.3.18-1
+- Update to 8.3.18 - http://www.php.net/releases/8_3_18.php
+- use oracle client library version 23.7 on arm64
+
+* Wed Feb 26 2025 Remi Collet <remi@remirepo.net> - 8.3.18~RC1-1
+- update to 8.3.18RC1
+
 * Wed Feb 12 2025 Remi Collet <remi@remirepo.net> - 8.3.17-1
 - Update to 8.3.17 - http://www.php.net/releases/8_3_17.php
 
