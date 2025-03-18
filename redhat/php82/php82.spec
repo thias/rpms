@@ -24,15 +24,10 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%ifarch aarch64
-%global oraclever 19.19
-%global oraclelib 19.1
-%global oracledir 19.19
-%else
-%global oraclever 21.12
-%global oraclelib 21.1
-%global oracledir 21
-%endif
+%global oraclever 23.7
+%global oraclemax 24
+%global oraclelib 23.1
+%global oracledir 23
 
 # Build for LiteSpeed Web Server (LSAPI), you can disable using --without tests
 %bcond_without        lsws
@@ -73,7 +68,11 @@
 %endif
 
 # Build firebird extensions, you can disable using --without firebird
+%if 0%{?rhel} == 10
+%bcond_with           firebird
+%else
 %bcond_without        firebird
+%endif
 
 # Build ZTS extension or only NTS using --without zts
 %ifarch x86_64
@@ -120,7 +119,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.2.14
+%global upver          8.2.28
 #global rcver          RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -172,7 +171,7 @@ Patch10: php-8.2.0-curl.patch
 # Use system nikic/php-parser
 Patch41: php-8.2.0-parser.patch
 # use system tzdata
-Patch42: php-8.1.0-systzdata-v24.patch
+Patch42: php-8.2.23-systzdata-v24.patch
 # See http://bugs.php.net/53436
 Patch43: php-7.4.0-phpize.patch
 # Use -lldap_r for OpenLDAP
@@ -181,7 +180,7 @@ Patch45: php-7.4.0-ldap_r.patch
 Patch46: php-8.0.7-argon2.patch
 # drop "Configure command" from phpinfo output
 # and only use gcc (instead of full version)
-Patch47: php-8.1.0-phpinfo.patch
+Patch47: php-8.2.25-phpinfo.patch
 
 # RC Patch
 Patch91: php-7.2.0-oci8conf.patch
@@ -193,6 +192,10 @@ Patch91: php-7.2.0-oci8conf.patch
 # Fixes for tests (300+)
 # Factory is droped from system tzdata
 Patch300: php-7.4.0-datetests.patch
+# for pcre2 10.45 (F42)
+Patch301: php-8.2.28-pcretests.patch
+# for zlib-ng
+Patch302: php-8.2.28-zlibtests.patch
 
 # WIP
 
@@ -235,6 +238,9 @@ BuildRequires: libtool
 BuildRequires: libtool-ltdl-devel
 %if %{with dtrace}
 BuildRequires: %{?dtsprefix}systemtap-sdt-devel
+%if 0%{?fedora} >= 41
+BuildRequires: %{?dtsprefix}systemtap-sdt-dtrace
+%endif
 %endif
 #BuildRequires: bison
 #BuildRequires: re2c
@@ -755,14 +761,7 @@ Interbase/Firebird databases.
 Summary:        A module for PHP applications that use OCI8 databases
 # All files licensed under PHP version 3.01
 License:        PHP-3.01
-%ifarch aarch64
-BuildRequires:  oracle-instantclient%{oraclever}-devel
-# Should requires libclntsh.so.19.1()(aarch-64), but it's not provided by Oracle RPM.
-Requires:       libclntsh.so.%{oraclelib}
-AutoReq:        0
-%else
-BuildRequires:  oracle-instantclient-devel >= %{oraclever}
-%endif
+BuildRequires: (oracle-instantclient-devel >= %{oraclever} with oracle-instantclient-devel < %{oraclemax})
 Requires:       php-pdo%{?_isa} = %{version}-%{release}
 Provides:       php_database
 Provides:       php-pdo_oci
@@ -1042,9 +1041,9 @@ Summary: Internationalization extension for PHP applications
 # All files licensed under PHP version 3.01
 License:  PHP-3.01
 Requires: php-common%{?_isa} = %{version}-%{release}
-BuildRequires: pkgconfig(icu-i18n) >= 73
-BuildRequires: pkgconfig(icu-io)   >= 73
-BuildRequires: pkgconfig(icu-uc)   >= 73
+BuildRequires: pkgconfig(icu-i18n) >= 74
+BuildRequires: pkgconfig(icu-io)   >= 74
+BuildRequires: pkgconfig(icu-uc)   >= 74
 %if 0%{?rhel} == 7
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
 Obsoletes: php70u-intl, php70w-intl, php71u-intl, php71w-intl, php72u-intl, php72w-intl
@@ -1212,6 +1211,8 @@ in pure PHP.
 %if %{with tzdata}
 %patch -P300 -p1 -b .datetests
 %endif
+%patch -P301 -p1 -b .pcretests
+%patch -P302 -p1 -b .zlibtests
 
 # WIP patch
 
@@ -1447,7 +1448,7 @@ build --libdir=%{_libdir}/php \
       --enable-pcntl \
       --enable-opcache \
       --enable-opcache-file \
-      --enable-phpdbg \
+      --enable-phpdbg --enable-phpdbg-readline \
 %if %{with imap}
       --with-imap=shared --with-imap-ssl \
 %endif
@@ -2200,6 +2201,96 @@ fi
 
 
 %changelog
+* Wed Mar 12 2025 Remi Collet <remi@remirepo.net> - 8.2.28-1
+- Update to 8.2.28 - http://www.php.net/releases/8_2_28.php
+- use oracle client library version 23.7 on x86_64 and arm64
+
+* Tue Dec 17 2024 Remi Collet <remi@remirepo.net> - 8.2.27-1
+- Update to 8.2.27 - http://www.php.net/releases/8_2_27.php
+
+* Tue Dec  3 2024 Remi Collet <remi@remirepo.net> - 8.2.27~RC1-1
+- update to 8.2.27RC1
+
+* Wed Nov 20 2024 Remi Collet <remi@remirepo.net> - 8.2.26-1
+- Update to 8.2.26 - http://www.php.net/releases/8_2_26.php
+
+* Wed Nov  6 2024 Remi Collet <remi@remirepo.net> - 8.2.26~RC1-1
+- update to 8.2.26RC1
+
+* Wed Oct 23 2024 Remi Collet <remi@remirepo.net> - 8.2.25-1
+- Update to 8.2.25 - http://www.php.net/releases/8_2_25.php
+
+* Wed Oct  9 2024 Remi Collet <remi@remirepo.net> - 8.2.25~RC1-1
+- update to 8.2.25RC1
+
+* Wed Sep 25 2024 Remi Collet <remi@remirepo.net> - 8.2.24-1
+- Update to 8.2.24 - http://www.php.net/releases/8_2_24.php
+
+* Wed Sep 11 2024 Remi Collet <remi@remirepo.net> - 8.2.24~RC1-1
+- update to 8.2.24RC1
+- use ICU 74.2
+
+* Wed Aug 28 2024 Remi Collet <remi@remirepo.net> - 8.2.23-1
+- Update to 8.2.23 - http://www.php.net/releases/8_2_23.php
+
+* Wed Aug 14 2024 Remi Collet <remi@remirepo.net> - 8.2.23~RC1-1
+- update to 8.2.23RC1
+
+* Tue Jul 30 2024 Remi Collet <remi@remirepo.net> - 8.2.22-1
+- Update to 8.2.22 - http://www.php.net/releases/8_2_22.php
+- use oracle client library version 23.5 on x86_64
+
+* Wed Jul 17 2024 Remi Collet <remi@remirepo.net> - 8.2.22~RC1-1
+- update to 8.2.22RC1
+- use oracle client library version 23.4 on x86_64, 19.23 on aarch64
+
+* Tue Jul  2 2024 Remi Collet <remi@remirepo.net> - 8.2.21-1
+- Update to 8.2.21 - http://www.php.net/releases/8_2_21.php
+
+* Fri Jun  7 2024 Remi Collet <remi@remirepo.net> - 8.2.20-2
+- Fix GH-14480 Method visibility issue introduced in version 8.2.20
+
+* Tue Jun  4 2024 Remi Collet <remi@remirepo.net> - 8.2.20-1
+- Update to 8.2.20 - http://www.php.net/releases/8_2_20.php
+
+* Wed May 22 2024 Remi Collet <remi@remirepo.net> - 8.2.20~RC1-1
+- update to 8.2.20RC1
+
+* Mon May 13 2024 Remi Collet <remi@remirepo.net> - 8.2.19-1
+- Update to 8.2.19 - http://www.php.net/releases/8_2_19.php
+
+* Wed Apr 24 2024 Remi Collet <remi@remirepo.net> - 8.2.19~RC1-1
+- update to 8.2.19RC1
+- use oracle client library version 19.22 on aarch64
+
+* Wed Apr 10 2024 Remi Collet <remi@remirepo.net> - 8.2.18-1
+- Update to 8.2.18 - http://www.php.net/releases/8_2_18.php
+
+* Tue Mar 26 2024 Remi Collet <remi@remirepo.net> - 8.2.18~RC1-1
+- update to 8.2.18RC1
+
+* Tue Mar 12 2024 Remi Collet <remi@remirepo.net> - 8.2.17-1
+- Update to 8.2.17 - http://www.php.net/releases/8_2_17.php
+
+* Wed Feb 28 2024 Remi Collet <remi@remirepo.net> - 8.2.17~RC2-1
+- update to 8.2.17RC2
+
+* Tue Feb 27 2024 Remi Collet <remi@remirepo.net> - 8.2.17~RC1-1
+- update to 8.2.17RC1
+
+* Wed Feb 14 2024 Remi Collet <remi@remirepo.net> - 8.2.16-1
+- Update to 8.2.16 - http://www.php.net/releases/8_2_16.php
+- use oracle client library version 21.13 on x86_64
+
+* Wed Jan 31 2024 Remi Collet <remi@remirepo.net> - 8.2.16~RC1-1
+- update to 8.2.16RC1
+
+* Tue Jan 16 2024 Remi Collet <remi@remirepo.net> - 8.2.15-1
+- Update to 8.2.15 - http://www.php.net/releases/8_2_15.php
+
+* Tue Jan  2 2024 Remi Collet <remi@remirepo.net> - 8.2.15~RC1-1
+- update to 8.2.15RC1
+
 * Wed Dec 20 2023 Remi Collet <remi@remirepo.net> - 8.2.14-1
 - Update to 8.2.14 - http://www.php.net/releases/8_2_14.php
 
