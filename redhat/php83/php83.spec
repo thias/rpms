@@ -122,7 +122,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.3.19
+%global upver          8.3.20
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -166,7 +166,7 @@ Source53: 20-ffi.ini
 # Build fixes
 Patch1: php-7.4.0-httpd.patch
 Patch5: php-7.2.0-includedir.patch
-Patch6: php-8.0.0-embed.patch
+Patch6: php-8.3.20-embed.patch
 Patch8: php-8.1.0-libdb.patch
 # RHEL backports
 Patch10: php-8.2.0-curl.patch
@@ -2229,6 +2229,12 @@ fi
 
 
 %changelog
+* Wed Apr  9 2025 Remi Collet <remi@remirepo.net> - 8.3.20-1
+- Update to 8.3.20 - http://www.php.net/releases/8_3_20.php
+
+* Wed Mar 26 2025 Remi Collet <remi@remirepo.net> - 8.3.20~RC1-1
+- update to 8.3.20RC1
+
 * Wed Mar 12 2025 Remi Collet <remi@remirepo.net> - 8.3.19-1
 - Update to 8.3.19 - http://www.php.net/releases/8_3_19.php
 
