@@ -80,7 +80,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.4.5
+%global upver          8.4.6
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -121,7 +121,7 @@ Source53: 20-ffi.ini
 # Build fixes
 Patch1: php-8.4.0-httpd.patch
 Patch5: php-8.4.0-includedir.patch
-Patch6: php-8.4.0-embed.patch
+Patch6: php-8.4.6-embed.patch
 Patch8: php-8.4.0-libdb.patch
 
 # Functional changes
@@ -1704,6 +1704,12 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Apr  9 2025 Remi Collet <remi@remirepo.net> - 8.4.6-1
+- Update to 8.4.6 - http://www.php.net/releases/8_4_6.php
+
+* Wed Mar 26 2025 Remi Collet <remi@remirepo.net> - 8.4.6~RC1-1
+- Update to 8.4.6RC1
+
 * Wed Mar 12 2025 Remi Collet <remi@remirepo.net> - 8.4.5-1
 - Update to 8.4.5 - http://www.php.net/releases/8_4_5.php
 
