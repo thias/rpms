@@ -13,7 +13,7 @@
 %global pdover      20240423
 # Extension version
 %global fileinfover 1.0.5
-%global zipver      1.22.5
+%global zipver      1.22.6
 
 # Adds -z now to the linker flags
 %global _hardened_build 1
@@ -80,8 +80,8 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.4.7
-#global rcver          RC2
+%global upver          8.4.8
+#global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -858,7 +858,10 @@ cp ext/bcmath/libbcmath/LICENSE libbcmath_LICENSE
 cp ext/date/lib/LICENSE.rst timelib_LICENSE
 
 # Multiple builds for multiple SAPIs
-mkdir build-cgi build-apache build-embedded \
+# mod_php (apache2handler) and libphp (embed) can not be built from same tree
+mkdir \
+    build-cgi \
+    build-apache \
 %if %{with zts}
     build-ztscli \
 %endif
@@ -1072,11 +1075,10 @@ fi
 make %{?_smp_mflags}
 }
 
-# Build /usr/bin/php-cgi with the CGI SAPI, and most shared extensions
+# Build cli and cgi SAPI, and most shared extensions
 pushd build-cgi
 
-build --libdir=%{_libdir}/php \
-      --enable-pcntl \
+build --enable-pcntl \
       --enable-opcache \
       --enable-opcache-file \
       --with-capstone \
@@ -1156,6 +1158,8 @@ popd
 
 without_shared="--disable-gd \
       --disable-dom --disable-dba --without-unixODBC \
+      --without-mysqli \
+      --disable-pdo \
       --disable-opcache \
       --disable-phpdbg \
       --without-ffi \
@@ -1168,35 +1172,23 @@ without_shared="--disable-gd \
       --disable-shmop --disable-tokenizer \
       --disable-sysvmsg --disable-sysvshm --disable-sysvsem"
 
-# Build Apache module, and the CLI SAPI, /usr/bin/php
+# Build Apache module
+# use separate build to avoid libedit, libncurses...
 pushd build-apache
 build --with-apxs2=%{_httpd_apxs} \
-      --libdir=%{_libdir}/php \
 %if %{with lsws}
       --enable-litespeed \
 %endif
-      --without-mysqli \
-      --disable-pdo \
       ${without_shared}
 popd
 
-# Build php-fpm
+# Build php-fpm and embed
 pushd build-fpm
 build --enable-fpm \
       --with-fpm-systemd \
       --with-fpm-selinux \
       --with-fpm-acl \
-      --libdir=%{_libdir}/php \
-      --without-mysqli \
-      --disable-pdo \
-      ${without_shared}
-popd
-
-# Build for inclusion as embedded script language into applications,
-# /usr/lib[64]/libphp.so
-pushd build-embedded
-build --enable-embed \
-      --without-mysqli --disable-pdo \
+      --enable-embed \
       ${without_shared}
 popd
 
@@ -1336,7 +1328,7 @@ make -C build-ztscli install \
 %endif
 
 # Install the version for embedded script language in applications + php_embed.h
-make -C build-embedded install-sapi install-headers \
+make -C build-fpm install-sapi install-headers \
      INSTALL_ROOT=$RPM_BUILD_ROOT
 
 # Install the php-fpm binary
@@ -1348,7 +1340,7 @@ make -C build-cgi install \
      INSTALL_ROOT=$RPM_BUILD_ROOT
 
 # Use php-config from embed SAPI to reduce used libs
-install -m 755 build-embedded/scripts/php-config $RPM_BUILD_ROOT%{_bindir}/php-config
+install -m 755 build-fpm/scripts/php-config $RPM_BUILD_ROOT%{_bindir}/php-config
 
 # Install the default configuration file
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/
@@ -1379,7 +1371,7 @@ install -m 755 -d $RPM_BUILD_ROOT%{_docdir}/pecl
 install -m 755 -d $RPM_BUILD_ROOT%{_datadir}/tests/pecl
 
 %if %{with lsws}
-install -m 755 build-apache/sapi/litespeed/php $RPM_BUILD_ROOT%{_bindir}/lsphp
+install -m 755 build-apache/sapi/litespeed/lsphp $RPM_BUILD_ROOT%{_bindir}/lsphp
 %endif
 
 # PHP-FPM stuff
@@ -1704,6 +1696,13 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Jun  4 2025 Remi Collet <remi@remirepo.net> - 8.4.8-1
+- Update to 8.4.8 - http://www.php.net/releases/8_4_8.php
+
+* Wed May 21 2025 Remi Collet <remi@remirepo.net> - 8.4.8~RC1-1
+- Update to 8.4.8RC1
+- use same build tree for fpm and embed
+
 * Tue May  6 2025 Remi Collet <remi@remirepo.net> - 8.4.7-1
 - Update to 8.4.7 - http://www.php.net/releases/8_4_7.php
 
