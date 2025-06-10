@@ -122,7 +122,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.3.21
+%global upver          8.3.22
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -1800,7 +1800,7 @@ install -m 755 -d $RPM_BUILD_ROOT%{_datadir}/tests/pecl
 %endif
 
 %if %{with lsws}
-install -m 755 build-apache/sapi/litespeed/php $RPM_BUILD_ROOT%{_bindir}/lsphp
+install -m 755 build-apache/sapi/litespeed/lsphp $RPM_BUILD_ROOT%{_bindir}/lsphp
 %endif
 
 # PHP-FPM stuff
@@ -2229,11 +2229,17 @@ fi
 
 
 %changelog
+* Wed Jun  4 2025 Remi Collet <remi@remirepo.net> - 8.3.22-1
+- Update to 8.3.22 - http://www.php.net/releases/8_3_22.php
+
+* Wed May 21 2025 Remi Collet <remi@remirepo.net> - 8.3.22~RC1-1
+- update to 8.3.22RC1
+
 * Tue May  6 2025 Remi Collet <remi@remirepo.net> - 8.3.21-1
 - Update to 8.3.21 - http://www.php.net/releases/8_3_21.php
 
 * Tue Apr 22 2025 Remi Collet <remi@remirepo.net> - 8.3.21~RC1-1
-- update to 8.3.20RC1
+- update to 8.3.21RC1
 
 * Wed Apr  9 2025 Remi Collet <remi@remirepo.net> - 8.3.20-1
 - Update to 8.3.20 - http://www.php.net/releases/8_3_20.php
