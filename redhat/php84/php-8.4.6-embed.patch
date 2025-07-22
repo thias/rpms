@@ -1,12 +1,17 @@
 diff -up ./sapi/embed/config.m4.embed ./sapi/embed/config.m4
---- ./sapi/embed/config.m4.embed	2025-03-26 07:14:03.223791152 +0100
-+++ ./sapi/embed/config.m4	2025-03-26 07:16:43.185955159 +0100
-@@ -15,7 +15,8 @@ if test "$PHP_EMBED" != "no"; then
+--- ./sapi/embed/config.m4.embed	2025-06-03 18:29:26.000000000 +0200
++++ ./sapi/embed/config.m4	2025-06-05 07:18:33.662824247 +0200
+@@ -10,12 +10,12 @@ AC_MSG_CHECKING([for embedded SAPI libra
+ if test "$PHP_EMBED" != "no"; then
+   AS_CASE([$PHP_EMBED],
+     [yes|shared], [
+-      LIBPHP_CFLAGS="-shared"
++      LIBPHP_CFLAGS="-shared -release \$(PHP_MAJOR_VERSION).\$(PHP_MINOR_VERSION)"
+       AS_CASE(["$host_alias"], [*darwin*], [
          SAPI_SHARED="libs/libphp.dylib"
          PHP_EMBED_TYPE=shared-dylib
        ], [PHP_EMBED_TYPE=shared])
 -      INSTALL_IT="\$(mkinstalldirs) \$(INSTALL_ROOT)\$(orig_libdir); \$(INSTALL) -m 0755 $SAPI_SHARED \$(INSTALL_ROOT)\$(orig_libdir)"
-+      EXTRA_LDFLAGS="$EXTRA_LDFLAGS -release \$(PHP_MAJOR_VERSION).\$(PHP_MINOR_VERSION)"
 +      INSTALL_IT="\$(mkinstalldirs) \$(INSTALL_ROOT)\$(orig_libdir); \$(LIBTOOL) --mode=install \$(INSTALL) -m 0755 \$(OVERALL_TARGET) \$(INSTALL_ROOT)\$(orig_libdir)"
      ],
      [static], [
