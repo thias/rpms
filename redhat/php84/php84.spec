@@ -80,14 +80,14 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.4.11
+%global upver          8.4.12
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{rcver}}
-Release: 1%{?dist}
+Release: 2%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -615,7 +615,11 @@ License:  PHP-3.01 and MIT
 %endif
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if %{with libgd}
+%if 0%{?rhel} < 10
+BuildRequires: gd3php-devel >= 2.3.3
+%else
 BuildRequires: pkgconfig(gdlib) >= 2.3.3
+%endif
 %else
 # Required to build the bundled GD library
 BuildRequires: pkgconfig(zlib)
@@ -1696,6 +1700,15 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Thu Aug 28 2025 Remi Collet <remi@remirepo.net> - 8.4.12-2
+- rebuild using gd3php on EL-10
+
+* Wed Aug 27 2025 Remi Collet <remi@remirepo.net> - 8.4.12-1
+- Update to 8.4.12 - http://www.php.net/releases/8_4_12.php
+
+* Wed Aug 13 2025 Remi Collet <remi@remirepo.net> - 8.4.12~RC1-1
+- Update to 8.4.12RC1
+
 * Wed Jul 30 2025 Remi Collet <remi@remirepo.net> - 8.4.11-1
 - Update to 8.4.11 - http://www.php.net/releases/8_4_11.php
 
