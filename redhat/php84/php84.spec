@@ -13,7 +13,7 @@
 %global pdover      20240423
 # Extension version
 %global fileinfover 1.0.5
-%global zipver      1.22.6
+%global zipver      1.22.7
 
 # Adds -z now to the linker flags
 %global _hardened_build 1
@@ -80,14 +80,14 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.4.12
+%global upver          8.4.14
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{rcver}}
-Release: 2%{?dist}
+Release: 1%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -230,6 +230,12 @@ Recommends: php-pdo%{?_isa}      = %{version}-%{release}
 Recommends: php-sodium%{?_isa}   = %{version}-%{release}
 Recommends: php-xml%{?_isa}      = %{version}-%{release}
 
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4         < %{version}-%{release}
+Provides:  php8.4         = %{version}-%{release}
+Provides:  php8.4%{?_isa} = %{version}-%{release}
+%endif
+
 
 %description
 PHP is an HTML-embedded scripting language. PHP attempts to make it
@@ -250,6 +256,11 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 Provides: php-cgi = %{version}-%{release}, php-cgi%{?_isa} = %{version}-%{release}
 Provides: php-pcntl, php-pcntl%{?_isa}
 Provides: php-readline, php-readline%{?_isa}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-cli         < %{version}-%{release}
+Provides:  php8.4-cli         = %{version}-%{release}
+Provides:  php8.4-cli%{?_isa} = %{version}-%{release}
+%endif
 
 %description cli
 The php-cli package contains the command-line interface
@@ -259,6 +270,11 @@ executing PHP scripts, /usr/bin/php, and the CGI interface.
 %package dbg
 Summary: The interactive PHP debugger
 Requires: php-common%{?_isa} = %{version}-%{release}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-dbg         < %{version}-%{release}
+Provides:  php8.4-dbg         = %{version}-%{release}
+Provides:  php8.4-dbg%{?_isa} = %{version}-%{release}
+%endif
 
 %description dbg
 The php-dbg package contains the interactive PHP debugger.
@@ -285,6 +301,11 @@ Provides: php(httpd)
 # for /etc/nginx ownership
 # Temporarily not mandatory to allow nginx for nginx repo
 Recommends: nginx-filesystem
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-fpm         < %{version}-%{release}
+Provides:  php8.4-fpm         = %{version}-%{release}
+Provides:  php8.4-fpm%{?_isa} = %{version}-%{release}
+%endif
 
 %description fpm
 PHP-FPM (FastCGI Process Manager) is an alternative PHP FastCGI
@@ -295,6 +316,11 @@ any size, especially busier sites.
 %package litespeed
 Summary: LiteSpeed Web Server PHP support
 Requires: php-common%{?_isa} = %{version}-%{release}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-litespeed         < %{version}-%{release}
+Provides:  php8.4-litespeed         = %{version}-%{release}
+Provides:  php8.4-litespeed%{?_isa} = %{version}-%{release}
+%endif
 
 %description litespeed
 The php-litespeed package provides the %{_bindir}/lsphp command
@@ -359,6 +385,11 @@ Obsoletes: php-pecl-Fileinfo < 1.0.5
 Provides:  php-pecl-Fileinfo = %{fileinfover}, php-pecl-Fileinfo%{?_isa} = %{fileinfover}
 Provides:  php-pecl(Fileinfo) = %{fileinfover}, php-pecl(Fileinfo)%{?_isa} = %{fileinfover}
 Obsoletes: php-mhash < 5.3.0
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-common         < %{version}-%{release}
+Provides:  php8.4-common         = %{version}-%{release}
+Provides:  php8.4-common%{?_isa} = %{version}-%{release}
+%endif
 
 %description common
 The php-common package contains files used by both the php
@@ -389,6 +420,11 @@ Provides: php-zts-devel = %{version}-%{release}
 Provides: php-zts-devel%{?_isa} = %{version}-%{release}
 %endif
 Recommends: php-nikic-php-parser5 >= 5.0.0
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-devel         < %{version}-%{release}
+Provides:  php8.4-devel         = %{version}-%{release}
+Provides:  php8.4-devel%{?_isa} = %{version}-%{release}
+%endif
 
 %description devel
 The php-devel package contains the files needed for building PHP
@@ -405,6 +441,11 @@ Provides:  php-pecl-zendopcache = %{version}
 Provides:  php-pecl-zendopcache%{?_isa} = %{version}
 Provides:  php-pecl(opcache) = %{version}
 Provides:  php-pecl(opcache)%{?_isa} = %{version}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-opcache         < %{version}-%{release}
+Provides:  php8.4-opcache         = %{version}-%{release}
+Provides:  php8.4-opcache%{?_isa} = %{version}-%{release}
+%endif
 
 %description opcache
 The Zend OPcache provides faster PHP execution through opcode caching and
@@ -421,6 +462,11 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: pkgconfig(libsasl2)
 BuildRequires: openldap-devel
 BuildRequires: openssl-devel >= 1.0.2
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-ldap         < %{version}-%{release}
+Provides:  php8.4-ldap         = %{version}-%{release}
+Provides:  php8.4-ldap%{?_isa} = %{version}-%{release}
+%endif
 
 %description ldap
 The php-ldap adds Lightweight Directory Access Protocol (LDAP)
@@ -438,6 +484,11 @@ Provides: php-pdo-abi  = %{pdover}-%{__isa_bits}
 Provides: php(pdo-abi) = %{pdover}-%{__isa_bits}
 Provides: php-sqlite3, php-sqlite3%{?_isa}
 Provides: php-pdo_sqlite, php-pdo_sqlite%{?_isa}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-pdo         < %{version}-%{release}
+Provides:  php8.4-pdo         = %{version}-%{release}
+Provides:  php8.4-pdo%{?_isa} = %{version}-%{release}
+%endif
 
 %description pdo
 The php-pdo package contains a dynamic shared object that will add
@@ -455,6 +506,11 @@ Provides: php-mysqli = %{version}-%{release}
 Provides: php-mysqli%{?_isa} = %{version}-%{release}
 Provides: php-pdo_mysql, php-pdo_mysql%{?_isa}
 Obsoletes: php-mysql < %{version}-%{release}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-mysqlnd         < %{version}-%{release}
+Provides:  php8.4-mysqlnd         = %{version}-%{release}
+Provides:  php8.4-mysqlnd%{?_isa} = %{version}-%{release}
+%endif
 
 %description mysqlnd
 The php-mysqlnd package contains a dynamic shared object that will add
@@ -475,6 +531,11 @@ Provides: php-pdo_pgsql, php-pdo_pgsql%{?_isa}
 BuildRequires: krb5-devel
 BuildRequires: openssl-devel >= 1.0.2
 BuildRequires: postgresql-devel
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-pgsql         < %{version}-%{release}
+Provides:  php8.4-pgsql         = %{version}-%{release}
+Provides:  php8.4-pgsql%{?_isa} = %{version}-%{release}
+%endif
 
 %description pgsql
 The php-pgsql package add PostgreSQL database support to PHP.
@@ -494,6 +555,11 @@ Provides: php-shmop, php-shmop%{?_isa}
 Provides: php-sysvsem, php-sysvsem%{?_isa}
 Provides: php-sysvshm, php-sysvshm%{?_isa}
 Provides: php-sysvmsg, php-sysvmsg%{?_isa}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-process         < %{version}-%{release}
+Provides:  php8.4-process         = %{version}-%{release}
+Provides:  php8.4-process%{?_isa} = %{version}-%{release}
+%endif
 
 %description process
 The php-process package contains dynamic shared objects which add
@@ -512,6 +578,11 @@ Provides: php-pdo_odbc, php-pdo_odbc%{?_isa}
 BuildRequires: pkgconfig(libiodbc)
 %else
 BuildRequires: pkgconfig(odbc)
+%endif
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-odbc         < %{version}-%{release}
+Provides:  php8.4-odbc         = %{version}-%{release}
+Provides:  php8.4-odbc%{?_isa} = %{version}-%{release}
 %endif
 
 %description odbc
@@ -532,6 +603,11 @@ Summary: A module for PHP applications that use the SOAP protocol
 License:  PHP-3.01
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: pkgconfig(libxml-2.0)
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-soap         < %{version}-%{release}
+Provides:  php8.4-soap         = %{version}-%{release}
+Provides:  php8.4-soap%{?_isa} = %{version}-%{release}
+%endif
 
 %description soap
 The php-soap package contains a dynamic shared object that will add
@@ -546,6 +622,11 @@ BuildRequires:  firebird-devel
 Requires: php-pdo%{?_isa} = %{version}-%{release}
 Provides: php_database
 Provides: php-pdo_firebird, php-pdo_firebird%{?_isa}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-pdo-firebird         < %{version}-%{release}
+Provides:  php8.4-pdo-firebird         = %{version}-%{release}
+Provides:  php8.4-pdo-firebird%{?_isa} = %{version}-%{release}
+%endif
 
 %description pdo-firebird
 The php-pdo-firebird package contains the PDO driver for
@@ -558,6 +639,11 @@ Summary: A module for PHP applications that query SNMP-managed devices
 License:  PHP-3.01
 Requires: php-common%{?_isa} = %{version}-%{release}, net-snmp
 BuildRequires: net-snmp-devel
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-snmp         < %{version}-%{release}
+Provides:  php8.4-snmp         = %{version}-%{release}
+Provides:  php8.4-snmp%{?_isa} = %{version}-%{release}
+%endif
 
 %description snmp
 The php-snmp package contains a dynamic shared object that will add
@@ -579,6 +665,11 @@ Provides: php-xsl, php-xsl%{?_isa}
 BuildRequires: pkgconfig(libxslt)  >= 1.1
 BuildRequires: pkgconfig(libexslt)
 BuildRequires: pkgconfig(libxml-2.0)  >= 2.7.6
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-xml         < %{version}-%{release}
+Provides:  php8.4-xml         = %{version}-%{release}
+Provides:  php8.4-xml%{?_isa} = %{version}-%{release}
+%endif
 
 %description xml
 The php-xml package contains dynamic shared objects which add support
@@ -599,6 +690,11 @@ BuildRequires: oniguruma-devel
 %endif
 Provides: bundled(libmbfl) = 1.3.2
 Requires: php-common%{?_isa} = %{version}-%{release}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-mbstring         < %{version}-%{release}
+Provides:  php8.4-mbstring         = %{version}-%{release}
+Provides:  php8.4-mbstring%{?_isa} = %{version}-%{release}
+%endif
 
 %description mbstring
 The php-mbstring package contains a dynamic shared object that will add
@@ -615,7 +711,7 @@ License:  PHP-3.01 and MIT
 %endif
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if %{with libgd}
-%if 0%{?rhel} < 10
+%if 0%{?rhel}
 BuildRequires: gd3php-devel >= 2.3.3
 %else
 BuildRequires: pkgconfig(gdlib) >= 2.3.3
@@ -631,6 +727,11 @@ BuildRequires: pkgconfig(libwebp)
 BuildRequires: pkgconfig(libavif)
 Provides: bundled(gd) = 2.0.35
 %endif
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-gd         < %{version}-%{release}
+Provides:  php8.4-gd         = %{version}-%{release}
+Provides:  php8.4-gd%{?_isa} = %{version}-%{release}
+%endif
 
 %description gd
 The php-gd package contains a dynamic shared object that will add
@@ -643,6 +744,11 @@ Summary: A module for PHP applications for using the bcmath library
 License:  PHP-3.01 AND LGPL-2.1-or-later
 Requires: php-common%{?_isa} = %{version}-%{release}
 Provides: bundled(libbcmath)
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-bcmath         < %{version}-%{release}
+Provides:  php8.4-bcmath         = %{version}-%{release}
+Provides:  php8.4-bcmath%{?_isa} = %{version}-%{release}
+%endif
 
 %description bcmath
 The php-bcmath package contains a dynamic shared object that will add
@@ -654,6 +760,11 @@ Summary: A module for PHP applications for using the GNU MP library
 License:  PHP-3.01
 BuildRequires: gmp-devel
 Requires: php-common%{?_isa} = %{version}-%{release}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-gmp         < %{version}-%{release}
+Provides:  php8.4-gmp         = %{version}-%{release}
+Provides:  php8.4-gmp%{?_isa} = %{version}-%{release}
+%endif
 
 %description gmp
 These functions allow you to work with arbitrary-length integers
@@ -670,6 +781,11 @@ BuildRequires: lmdb-devel
 BuildRequires: qdbm-devel
 %endif
 Requires: php-common%{?_isa} = %{version}-%{release}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-dba         < %{version}-%{release}
+Provides:  php8.4-dba         = %{version}-%{release}
+Provides:  php8.4-dba%{?_isa} = %{version}-%{release}
+%endif
 
 %description dba
 The php-dba package contains a dynamic shared object that will add
@@ -681,6 +797,11 @@ Summary: Standard PHP module provides tidy library support
 License:  PHP-3.01
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: libtidy-devel
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-tidy         < %{version}-%{release}
+Provides:  php8.4-tidy         = %{version}-%{release}
+Provides:  php8.4-tidy%{?_isa} = %{version}-%{release}
+%endif
 
 %description tidy
 The php-tidy package contains a dynamic shared object that will add
@@ -694,6 +815,11 @@ Requires: php-pdo%{?_isa} = %{version}-%{release}
 BuildRequires: freetds-devel >= 0.91
 Provides: php-pdo_dblib, php-pdo_dblib%{?_isa}
 Obsoletes: php-mssql < %{version}-%{release}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-pdo-dblib         < %{version}-%{release}
+Provides:  php8.4-pdo-dblib         = %{version}-%{release}
+Provides:  php8.4-pdo-dblib%{?_isa} = %{version}-%{release}
+%endif
 
 %description pdo-dblib
 The php-pdo-dblib package contains a dynamic shared object
@@ -706,6 +832,11 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 # doing a real -devel package for just the .so symlink is a bit overkill
 Provides: php-embedded-devel = %{version}-%{release}
 Provides: php-embedded-devel%{?_isa} = %{version}-%{release}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-embedded         < %{version}-%{release}
+Provides:  php8.4-embedded         = %{version}-%{release}
+Provides:  php8.4-embedded%{?_isa} = %{version}-%{release}
+%endif
 
 %description embedded
 The php-embedded package contains a library which can be embedded
@@ -719,6 +850,11 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: pkgconfig(icu-i18n) >= 74
 BuildRequires: pkgconfig(icu-io)   >= 74
 BuildRequires: pkgconfig(icu-uc)   >= 74
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-intl         < %{version}-%{release}
+Provides:  php8.4-intl         = %{version}-%{release}
+Provides:  php8.4-intl%{?_isa} = %{version}-%{release}
+%endif
 
 %description intl
 The php-intl package contains a dynamic shared object that will add
@@ -730,6 +866,11 @@ Summary: Enchant spelling extension for PHP applications
 License:  PHP-3.01
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: pkgconfig(enchant-2)
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-enchant         < %{version}-%{release}
+Provides:  php8.4-enchant         = %{version}-%{release}
+Provides:  php8.4-enchant%{?_isa} = %{version}-%{release}
+%endif
 
 %description enchant
 The php-enchant package contains a dynamic shared object that will add
@@ -764,6 +905,11 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 Obsoletes: php-pecl-libsodium2 < 3
 Provides:  php-pecl(libsodium)         = %{version}
 Provides:  php-pecl(libsodium)%{?_isa} = %{version}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-sodium         < %{version}-%{release}
+Provides:  php8.4-sodium         = %{version}-%{release}
+Provides:  php8.4-sodium%{?_isa} = %{version}-%{release}
+%endif
 
 %description sodium
 The php-sodium package provides a simple,
@@ -777,6 +923,11 @@ License:  PHP-3.01
 BuildRequires:  pkgconfig(libffi)
 
 Requires: php-common%{?_isa} = %{version}-%{release}
+%if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
+Obsoletes: php8.4-ffi         < %{version}-%{release}
+Provides:  php8.4-ffi         = %{version}-%{release}
+Provides:  php8.4-ffi%{?_isa} = %{version}-%{release}
+%endif
 
 %description ffi
 FFI is one of the features that made Python and LuaJIT very useful for fast
@@ -1700,6 +1851,18 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Oct 22 2025 Remi Collet <remi@remirepo.net> - 8.4.14-1
+- Update to 8.4.14 - http://www.php.net/releases/8_4_14.php
+
+* Wed Oct  8 2025 Remi Collet <remi@remirepo.net> - 8.4.14~RC1-1
+- Update to 8.4.14RC1
+
+* Wed Sep 24 2025 Remi Collet <remi@remirepo.net> - 8.4.13-1
+- Update to 8.4.13 - http://www.php.net/releases/8_4_13.php
+
+* Wed Sep 10 2025 Remi Collet <remi@remirepo.net> - 8.4.13~RC1-1
+- Update to 8.4.13RC1
+
 * Thu Aug 28 2025 Remi Collet <remi@remirepo.net> - 8.4.12-2
 - rebuild using gd3php on EL-10
 
