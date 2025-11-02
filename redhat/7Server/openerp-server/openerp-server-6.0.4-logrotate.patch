@@ -1,0 +1,9 @@
+diff -Naupr openerp-server-6.0.4.orig/doc/openerp-server.logrotate openerp-server-6.0.4/doc/openerp-server.logrotate
+--- openerp-server-6.0.4.orig/doc/openerp-server.logrotate	2011-03-24 11:51:54.000000000 +0100
++++ openerp-server-6.0.4/doc/openerp-server.logrotate	2021-06-28 09:57:00.103335288 +0200
+@@ -1,4 +1,5 @@
+ /var/log/openerp/*.log {
++    su openerp openerp
+     copytruncate
+     missingok
+     notifempty
