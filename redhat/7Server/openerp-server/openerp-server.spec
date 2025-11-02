@@ -1,6 +1,8 @@
+%define __python /usr/bin/python2
+
 Name:      openerp-server
 Version:   6.0.4
-Release:   1%{?dist}
+Release:   2%{?dist}
 License:   AGPLv3 and GPLv2 and LGPLv2+ and MIT
 Group:     System Environment/Daemons
 Summary:   OpenERP Server
@@ -8,6 +10,7 @@ URL:       https://www.odoo.com/
 Source0:   https://nightly.odoo.com/old/openerp-6.0/%{version}/openerp-server-%{version}.tar.gz
 Source1:   openerp-server.service
 Patch0:    openerp-server-6.0.4-logrotate.patch
+Patch1:    openerp-server-6.0.4-qr-encode-fix.patch
 BuildArch:      noarch
 BuildRequires:  python
 BuildRequires:  python-setuptools
@@ -54,7 +57,8 @@ or  http://apps.openerp.com/
 
 %prep
 %setup -q
-%patch0 -p1 -b .logrotate
+%patch -P 0 -p1 -b .logrotate
+%patch -P 1 -p1 -b .qr-encode-fix
 
 
 %build
@@ -130,6 +134,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Nov  2 2025 Matthias Saou <matthias@saou.eu> 6.0.4-2
+- Fix QR code character encoding.
+
 * Mon Jun 28 2021 Matthias Saou <matthias@saou.eu> 6.0.4-1
 - Fix logrotate by adding missing "su" directive.
 

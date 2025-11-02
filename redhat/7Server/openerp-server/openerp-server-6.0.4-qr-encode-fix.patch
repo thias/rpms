@@ -1,0 +1,12 @@
+diff -Naupr openerp-server-6.0.4.orig/bin/report/render/rml2pdf/trml2pdf.py openerp-server-6.0.4/bin/report/render/rml2pdf/trml2pdf.py
+--- openerp-server-6.0.4.orig/bin/report/render/rml2pdf/trml2pdf.py	2011-12-17 04:06:33.000000000 +0100
++++ openerp-server-6.0.4/bin/report/render/rml2pdf/trml2pdf.py	2025-11-02 14:21:51.861180015 +0100
+@@ -756,7 +756,7 @@ class _rml_flowable(object):
+                 'fim': lambda x: usps.FIM(x, **args),
+                 'postnet': lambda x: usps.POSTNET(x, **args),
+                 'ean13': lambda x: createBarcodeDrawing('EAN13', value=str(x), **args),
+-                'qrcode': lambda x: createBarcodeDrawing('QR', value=x, **args),
++                'qrcode': lambda x: createBarcodeDrawing('QR', value=utils.xml2str(x), **args),
+             }
+             code = 'code128'
+             if node.get('code'):
