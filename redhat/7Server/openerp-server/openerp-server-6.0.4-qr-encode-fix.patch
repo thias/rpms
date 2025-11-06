@@ -1,6 +1,15 @@
 diff -Naupr openerp-server-6.0.4.orig/bin/report/render/rml2pdf/trml2pdf.py openerp-server-6.0.4/bin/report/render/rml2pdf/trml2pdf.py
 --- openerp-server-6.0.4.orig/bin/report/render/rml2pdf/trml2pdf.py	2011-12-17 04:06:33.000000000 +0100
-+++ openerp-server-6.0.4/bin/report/render/rml2pdf/trml2pdf.py	2025-11-02 14:21:51.861180015 +0100
++++ openerp-server-6.0.4/bin/report/render/rml2pdf/trml2pdf.py	2025-11-06 09:49:38.840443852 +0100
+@@ -742,7 +742,7 @@ class _rml_flowable(object):
+             except ImportError:
+                 self._logger.warning("Cannot use barcode renderers:", exc_info=True)
+                 return None
+-            args = utils.attr_get(node, [], {'ratio':'float','xdim':'unit','height':'unit','checksum':'int','quiet':'int','width':'unit','stop':'bool','bearers':'int','barWidth':'float','barHeight':'float'})
++            args = utils.attr_get(node, [], {'ratio':'float','xdim':'unit','height':'unit','checksum':'int','quiet':'int','width':'unit','stop':'bool','bearers':'int','barWidth':'float','barHeight':'float','barLevel':'str'})
+             codes = {
+                 'codabar': lambda x: common.Codabar(x, **args),
+                 'code11': lambda x: common.Code11(x, **args),
 @@ -756,7 +756,7 @@ class _rml_flowable(object):
                  'fim': lambda x: usps.FIM(x, **args),
                  'postnet': lambda x: usps.POSTNET(x, **args),

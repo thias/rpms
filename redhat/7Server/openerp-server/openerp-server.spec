@@ -2,7 +2,7 @@
 
 Name:      openerp-server
 Version:   6.0.4
-Release:   2%{?dist}
+Release:   3%{?dist}
 License:   AGPLv3 and GPLv2 and LGPLv2+ and MIT
 Group:     System Environment/Daemons
 Summary:   OpenERP Server
@@ -134,6 +134,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Nov  6 2025 Matthias Saou <matthias@saou.eu> 6.0.4-3
+- Improve QR code fix to allow barLevel tweaking.
+
 * Sun Nov  2 2025 Matthias Saou <matthias@saou.eu> 6.0.4-2
 - Fix QR code character encoding.
 
