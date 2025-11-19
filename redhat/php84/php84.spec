@@ -80,7 +80,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.4.14
+%global upver          8.4.15
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -98,7 +98,7 @@ Release: 1%{?dist}
 License: PHP-3.01 AND Zend-2.0 AND BSD-2-Clause AND MIT AND Apache-1.0 AND NCSA AND BSL-1.0
 URL: http://www.php.net/
 
-Source0: http://www.php.net/distributions/php-%{upver}%{?rcver}.tar.xz
+Source0: http://www.php.net/distributions/php-%{upver}%{?rcver}.tar.bz2
 Source1: php.conf
 Source2: php.ini
 Source3: macros.php
@@ -112,7 +112,7 @@ Source13: nginx-fpm.conf
 Source14: nginx-php.conf
 # See https://secure.php.net/gpg-keys.php
 Source20: https://www.php.net/distributions/php-keyring.gpg
-Source21: https://www.php.net/distributions/php-%{upver}%{?rcver}.tar.xz.asc
+Source21: https://www.php.net/distributions/php-%{upver}%{?rcver}.tar.bz2.asc
 # Configuration files for some extensions
 Source50: 10-opcache.ini
 Source51: opcache-default.blacklist
@@ -231,7 +231,7 @@ Recommends: php-sodium%{?_isa}   = %{version}-%{release}
 Recommends: php-xml%{?_isa}      = %{version}-%{release}
 
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4         < %{version}-%{release}
+Obsoletes: php8.4        <= %{version}
 Provides:  php8.4         = %{version}-%{release}
 Provides:  php8.4%{?_isa} = %{version}-%{release}
 %endif
@@ -257,7 +257,7 @@ Provides: php-cgi = %{version}-%{release}, php-cgi%{?_isa} = %{version}-%{releas
 Provides: php-pcntl, php-pcntl%{?_isa}
 Provides: php-readline, php-readline%{?_isa}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-cli         < %{version}-%{release}
+Obsoletes: php8.4-cli        <= %{version}
 Provides:  php8.4-cli         = %{version}-%{release}
 Provides:  php8.4-cli%{?_isa} = %{version}-%{release}
 %endif
@@ -271,7 +271,7 @@ executing PHP scripts, /usr/bin/php, and the CGI interface.
 Summary: The interactive PHP debugger
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-dbg         < %{version}-%{release}
+Obsoletes: php8.4-dbg        <= %{version}
 Provides:  php8.4-dbg         = %{version}-%{release}
 Provides:  php8.4-dbg%{?_isa} = %{version}-%{release}
 %endif
@@ -302,7 +302,7 @@ Provides: php(httpd)
 # Temporarily not mandatory to allow nginx for nginx repo
 Recommends: nginx-filesystem
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-fpm         < %{version}-%{release}
+Obsoletes: php8.4-fpm        <= %{version}
 Provides:  php8.4-fpm         = %{version}-%{release}
 Provides:  php8.4-fpm%{?_isa} = %{version}-%{release}
 %endif
@@ -317,7 +317,7 @@ any size, especially busier sites.
 Summary: LiteSpeed Web Server PHP support
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-litespeed         < %{version}-%{release}
+Obsoletes: php8.4-litespeed        <= %{version}
 Provides:  php8.4-litespeed         = %{version}-%{release}
 Provides:  php8.4-litespeed%{?_isa} = %{version}-%{release}
 %endif
@@ -386,7 +386,7 @@ Provides:  php-pecl-Fileinfo = %{fileinfover}, php-pecl-Fileinfo%{?_isa} = %{fil
 Provides:  php-pecl(Fileinfo) = %{fileinfover}, php-pecl(Fileinfo)%{?_isa} = %{fileinfover}
 Obsoletes: php-mhash < 5.3.0
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-common         < %{version}-%{release}
+Obsoletes: php8.4-common        <= %{version}
 Provides:  php8.4-common         = %{version}-%{release}
 Provides:  php8.4-common%{?_isa} = %{version}-%{release}
 %endif
@@ -421,7 +421,7 @@ Provides: php-zts-devel%{?_isa} = %{version}-%{release}
 %endif
 Recommends: php-nikic-php-parser5 >= 5.0.0
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-devel         < %{version}-%{release}
+Obsoletes: php8.4-devel        <= %{version}
 Provides:  php8.4-devel         = %{version}-%{release}
 Provides:  php8.4-devel%{?_isa} = %{version}-%{release}
 %endif
@@ -442,7 +442,7 @@ Provides:  php-pecl-zendopcache%{?_isa} = %{version}
 Provides:  php-pecl(opcache) = %{version}
 Provides:  php-pecl(opcache)%{?_isa} = %{version}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-opcache         < %{version}-%{release}
+Obsoletes: php8.4-opcache        <= %{version}
 Provides:  php8.4-opcache         = %{version}-%{release}
 Provides:  php8.4-opcache%{?_isa} = %{version}-%{release}
 %endif
@@ -463,7 +463,7 @@ BuildRequires: pkgconfig(libsasl2)
 BuildRequires: openldap-devel
 BuildRequires: openssl-devel >= 1.0.2
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-ldap         < %{version}-%{release}
+Obsoletes: php8.4-ldap        <= %{version}
 Provides:  php8.4-ldap         = %{version}-%{release}
 Provides:  php8.4-ldap%{?_isa} = %{version}-%{release}
 %endif
@@ -485,7 +485,7 @@ Provides: php(pdo-abi) = %{pdover}-%{__isa_bits}
 Provides: php-sqlite3, php-sqlite3%{?_isa}
 Provides: php-pdo_sqlite, php-pdo_sqlite%{?_isa}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-pdo         < %{version}-%{release}
+Obsoletes: php8.4-pdo        <= %{version}
 Provides:  php8.4-pdo         = %{version}-%{release}
 Provides:  php8.4-pdo%{?_isa} = %{version}-%{release}
 %endif
@@ -507,7 +507,7 @@ Provides: php-mysqli%{?_isa} = %{version}-%{release}
 Provides: php-pdo_mysql, php-pdo_mysql%{?_isa}
 Obsoletes: php-mysql < %{version}-%{release}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-mysqlnd         < %{version}-%{release}
+Obsoletes: php8.4-mysqlnd        <= %{version}
 Provides:  php8.4-mysqlnd         = %{version}-%{release}
 Provides:  php8.4-mysqlnd%{?_isa} = %{version}-%{release}
 %endif
@@ -532,7 +532,7 @@ BuildRequires: krb5-devel
 BuildRequires: openssl-devel >= 1.0.2
 BuildRequires: postgresql-devel
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-pgsql         < %{version}-%{release}
+Obsoletes: php8.4-pgsql        <= %{version}
 Provides:  php8.4-pgsql         = %{version}-%{release}
 Provides:  php8.4-pgsql%{?_isa} = %{version}-%{release}
 %endif
@@ -556,7 +556,7 @@ Provides: php-sysvsem, php-sysvsem%{?_isa}
 Provides: php-sysvshm, php-sysvshm%{?_isa}
 Provides: php-sysvmsg, php-sysvmsg%{?_isa}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-process         < %{version}-%{release}
+Obsoletes: php8.4-process        <= %{version}
 Provides:  php8.4-process         = %{version}-%{release}
 Provides:  php8.4-process%{?_isa} = %{version}-%{release}
 %endif
@@ -580,7 +580,7 @@ BuildRequires: pkgconfig(libiodbc)
 BuildRequires: pkgconfig(odbc)
 %endif
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-odbc         < %{version}-%{release}
+Obsoletes: php8.4-odbc        <= %{version}
 Provides:  php8.4-odbc         = %{version}-%{release}
 Provides:  php8.4-odbc%{?_isa} = %{version}-%{release}
 %endif
@@ -604,7 +604,7 @@ License:  PHP-3.01
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: pkgconfig(libxml-2.0)
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-soap         < %{version}-%{release}
+Obsoletes: php8.4-soap        <= %{version}
 Provides:  php8.4-soap         = %{version}-%{release}
 Provides:  php8.4-soap%{?_isa} = %{version}-%{release}
 %endif
@@ -623,7 +623,7 @@ Requires: php-pdo%{?_isa} = %{version}-%{release}
 Provides: php_database
 Provides: php-pdo_firebird, php-pdo_firebird%{?_isa}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-pdo-firebird         < %{version}-%{release}
+Obsoletes: php8.4-pdo-firebird        <= %{version}
 Provides:  php8.4-pdo-firebird         = %{version}-%{release}
 Provides:  php8.4-pdo-firebird%{?_isa} = %{version}-%{release}
 %endif
@@ -640,7 +640,7 @@ License:  PHP-3.01
 Requires: php-common%{?_isa} = %{version}-%{release}, net-snmp
 BuildRequires: net-snmp-devel
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-snmp         < %{version}-%{release}
+Obsoletes: php8.4-snmp        <= %{version}
 Provides:  php8.4-snmp         = %{version}-%{release}
 Provides:  php8.4-snmp%{?_isa} = %{version}-%{release}
 %endif
@@ -666,7 +666,7 @@ BuildRequires: pkgconfig(libxslt)  >= 1.1
 BuildRequires: pkgconfig(libexslt)
 BuildRequires: pkgconfig(libxml-2.0)  >= 2.7.6
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-xml         < %{version}-%{release}
+Obsoletes: php8.4-xml        <= %{version}
 Provides:  php8.4-xml         = %{version}-%{release}
 Provides:  php8.4-xml%{?_isa} = %{version}-%{release}
 %endif
@@ -691,7 +691,7 @@ BuildRequires: oniguruma-devel
 Provides: bundled(libmbfl) = 1.3.2
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-mbstring         < %{version}-%{release}
+Obsoletes: php8.4-mbstring        <= %{version}
 Provides:  php8.4-mbstring         = %{version}-%{release}
 Provides:  php8.4-mbstring%{?_isa} = %{version}-%{release}
 %endif
@@ -728,7 +728,7 @@ BuildRequires: pkgconfig(libavif)
 Provides: bundled(gd) = 2.0.35
 %endif
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-gd         < %{version}-%{release}
+Obsoletes: php8.4-gd        <= %{version}
 Provides:  php8.4-gd         = %{version}-%{release}
 Provides:  php8.4-gd%{?_isa} = %{version}-%{release}
 %endif
@@ -745,7 +745,7 @@ License:  PHP-3.01 AND LGPL-2.1-or-later
 Requires: php-common%{?_isa} = %{version}-%{release}
 Provides: bundled(libbcmath)
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-bcmath         < %{version}-%{release}
+Obsoletes: php8.4-bcmath        <= %{version}
 Provides:  php8.4-bcmath         = %{version}-%{release}
 Provides:  php8.4-bcmath%{?_isa} = %{version}-%{release}
 %endif
@@ -761,7 +761,7 @@ License:  PHP-3.01
 BuildRequires: gmp-devel
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-gmp         < %{version}-%{release}
+Obsoletes: php8.4-gmp        <= %{version}
 Provides:  php8.4-gmp         = %{version}-%{release}
 Provides:  php8.4-gmp%{?_isa} = %{version}-%{release}
 %endif
@@ -782,7 +782,7 @@ BuildRequires: qdbm-devel
 %endif
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-dba         < %{version}-%{release}
+Obsoletes: php8.4-dba        <= %{version}
 Provides:  php8.4-dba         = %{version}-%{release}
 Provides:  php8.4-dba%{?_isa} = %{version}-%{release}
 %endif
@@ -798,7 +798,7 @@ License:  PHP-3.01
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: libtidy-devel
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-tidy         < %{version}-%{release}
+Obsoletes: php8.4-tidy        <= %{version}
 Provides:  php8.4-tidy         = %{version}-%{release}
 Provides:  php8.4-tidy%{?_isa} = %{version}-%{release}
 %endif
@@ -816,7 +816,7 @@ BuildRequires: freetds-devel >= 0.91
 Provides: php-pdo_dblib, php-pdo_dblib%{?_isa}
 Obsoletes: php-mssql < %{version}-%{release}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-pdo-dblib         < %{version}-%{release}
+Obsoletes: php8.4-pdo-dblib        <= %{version}
 Provides:  php8.4-pdo-dblib         = %{version}-%{release}
 Provides:  php8.4-pdo-dblib%{?_isa} = %{version}-%{release}
 %endif
@@ -833,7 +833,7 @@ Requires: php-common%{?_isa} = %{version}-%{release}
 Provides: php-embedded-devel = %{version}-%{release}
 Provides: php-embedded-devel%{?_isa} = %{version}-%{release}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-embedded         < %{version}-%{release}
+Obsoletes: php8.4-embedded        <= %{version}
 Provides:  php8.4-embedded         = %{version}-%{release}
 Provides:  php8.4-embedded%{?_isa} = %{version}-%{release}
 %endif
@@ -851,7 +851,7 @@ BuildRequires: pkgconfig(icu-i18n) >= 74
 BuildRequires: pkgconfig(icu-io)   >= 74
 BuildRequires: pkgconfig(icu-uc)   >= 74
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-intl         < %{version}-%{release}
+Obsoletes: php8.4-intl        <= %{version}
 Provides:  php8.4-intl         = %{version}-%{release}
 Provides:  php8.4-intl%{?_isa} = %{version}-%{release}
 %endif
@@ -867,7 +867,7 @@ License:  PHP-3.01
 Requires: php-common%{?_isa} = %{version}-%{release}
 BuildRequires: pkgconfig(enchant-2)
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-enchant         < %{version}-%{release}
+Obsoletes: php8.4-enchant        <= %{version}
 Provides:  php8.4-enchant         = %{version}-%{release}
 Provides:  php8.4-enchant%{?_isa} = %{version}-%{release}
 %endif
@@ -906,7 +906,7 @@ Obsoletes: php-pecl-libsodium2 < 3
 Provides:  php-pecl(libsodium)         = %{version}
 Provides:  php-pecl(libsodium)%{?_isa} = %{version}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-sodium         < %{version}-%{release}
+Obsoletes: php8.4-sodium        <= %{version}
 Provides:  php8.4-sodium         = %{version}-%{release}
 Provides:  php8.4-sodium%{?_isa} = %{version}-%{release}
 %endif
@@ -924,7 +924,7 @@ BuildRequires:  pkgconfig(libffi)
 
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if 0%{?rhel} >= 10 && "%{?vendeur}" == "remi"
-Obsoletes: php8.4-ffi         < %{version}-%{release}
+Obsoletes: php8.4-ffi        <= %{version}
 Provides:  php8.4-ffi         = %{version}-%{release}
 Provides:  php8.4-ffi%{?_isa} = %{version}-%{release}
 %endif
@@ -1851,6 +1851,13 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Nov 19 2025 Remi Collet <remi@remirepo.net> - 8.4.15-1
+- Update to 8.4.15 - http://www.php.net/releases/8_4_15.php
+- switch to bz2 archive to workaround RHEL-125143
+
+* Wed Nov  5 2025 Remi Collet <remi@remirepo.net> - 8.4.15~RC1-1
+- Update to 8.4.15RC1
+
 * Wed Oct 22 2025 Remi Collet <remi@remirepo.net> - 8.4.14-1
 - Update to 8.4.14 - http://www.php.net/releases/8_4_14.php
 
