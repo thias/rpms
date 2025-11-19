@@ -24,7 +24,7 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%global oraclever 23.7
+%global oraclever 23.9
 %global oraclemax 24
 %global oraclelib 23.1
 %global oracledir 23
@@ -122,7 +122,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.3.22
+%global upver          8.3.28
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -140,7 +140,7 @@ Release: 1%{?dist}
 License: PHP-3.01 AND Zend-2.0 AND BSD-2-Clause AND MIT AND Apache-1.0 AND NCSA AND BSL-1.0
 URL: http://www.php.net/
 
-Source0: http://www.php.net/distributions/php-%{upver}%{?rcver}.tar.xz
+Source0: http://www.php.net/distributions/php-%{upver}%{?rcver}.tar.bz2
 Source1: php.conf
 Source2: php.ini
 Source3: macros.php
@@ -156,7 +156,7 @@ Source13: nginx-fpm.conf
 Source14: nginx-php.conf
 # See https://secure.php.net/gpg-keys.php
 Source20: https://www.php.net/distributions/php-keyring.gpg
-Source21: https://www.php.net/distributions/php-%{upver}%{?rcver}.tar.xz.asc
+Source21: https://www.php.net/distributions/php-%{upver}%{?rcver}.tar.bz2.asc
 # Configuration files for some extensions
 Source50: 10-opcache.ini
 Source51: opcache-default.blacklist
@@ -890,7 +890,11 @@ License:  PHP-3.01 and MIT
 %endif
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if %{with libgd}
+%if 0%{?rhel}
+BuildRequires: gd3php-devel >= 2.3.3
+%else
 BuildRequires: pkgconfig(gdlib) >= 2.3.3
+%endif
 %else
 # Required to build the bundled GD library
 BuildRequires: pkgconfig(zlib)
@@ -2229,6 +2233,46 @@ fi
 
 
 %changelog
+* Wed Nov 19 2025 Remi Collet <remi@remirepo.net> - 8.3.28-1
+- Update to 8.3.28 - http://www.php.net/releases/8_3_28.php
+- switch to bz2 archive to workaround RHEL-125143
+
+* Tue Nov  4 2025 Remi Collet <remi@remirepo.net> - 8.3.28~RC1-1
+- update to 8.3.28RC1
+
+* Wed Oct 22 2025 Remi Collet <remi@remirepo.net> - 8.3.27-1
+- Update to 8.3.27 - http://www.php.net/releases/8_3_27.php
+
+* Tue Oct  7 2025 Remi Collet <remi@remirepo.net> - 8.3.27~RC1-1
+- update to 8.3.27RC1
+
+* Wed Sep 24 2025 Remi Collet <remi@remirepo.net> - 8.3.26-1
+- Update to 8.3.26 - http://www.php.net/releases/8_3_26.php
+
+* Wed Sep 10 2025 Remi Collet <remi@remirepo.net> - 8.3.26~RC1-1
+- update to 8.3.26RC1
+
+* Thu Aug 28 2025 Remi Collet <remi@remirepo.net> - 8.3.25-2
+- rebuild using gd3php on EL-10
+
+* Wed Aug 27 2025 Remi Collet <remi@remirepo.net> - 8.3.25-1
+- Update to 8.3.25 - http://www.php.net/releases/8_3_25.php
+
+* Thu Aug 14 2025 Remi Collet <remi@remirepo.net> - 8.3.25~RC1-1
+- update to 8.3.25RC1
+
+* Wed Jul 30 2025 Remi Collet <remi@remirepo.net> - 8.3.24-1
+- Update to 8.3.24 - http://www.php.net/releases/8_3_24.php
+
+* Wed Jul 16 2025 Remi Collet <remi@remirepo.net> - 8.3.24~RC1-1
+- update to 8.3.24RC1
+
+* Wed Jul  2 2025 Remi Collet <remi@remirepo.net> - 8.3.23-1
+- Update to 8.3.23 - http://www.php.net/releases/8_3_23.php
+
+* Wed Jun 18 2025 Remi Collet <remi@remirepo.net> - 8.3.23~RC1-1
+- update to 8.3.23RC1
+
 * Wed Jun  4 2025 Remi Collet <remi@remirepo.net> - 8.3.22-1
 - Update to 8.3.22 - http://www.php.net/releases/8_3_22.php
 
