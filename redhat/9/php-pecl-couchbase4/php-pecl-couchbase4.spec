@@ -1,13 +1,14 @@
 # remirepo spec file for php-pecl-couchbase4
 #
-# Copyright (c) 2013-2024 Remi Collet
-# License: CC-BY-SA-4.0
-# http://creativecommons.org/licenses/by-sa/4.0/
+# SPDX-FileCopyrightText:  Copyright 2013-2025 Remi Collet
+# SPDX-License-Identifier: CECILL-2.1
+# http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
 #
 # Please, preserve the changelog entries
 #
 
-# NOTICE: mock requires --enable-network
+# NOTICE: mock requires:   --enable-network
+#         may help:        --cleanup-after
 
 # Disable RPATH check (no more needed)
 #global __arch_install_post /bin/true
@@ -26,7 +27,7 @@
 
 Summary:       Couchbase Server PHP extension
 Name:          %{?scl_prefix}php-pecl-couchbase4
-Version:       4.2.4
+Version:       4.4.0
 Release:       1%{?dist}%{!?scl:%{!?nophptag:%(%{__php} -r 'echo ".".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}}
 # Apache-2.0
 # src
@@ -230,6 +231,22 @@ install -D -m 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
 
 
 %changelog
+* Wed Oct  1 2025 Remi Collet <remi@remirepo.net> - 4.4.0-1
+- update to 4.4.0
+
+* Wed Jun 18 2025 Remi Collet <remi@remirepo.net> - 4.3.0-1
+- update to 4.3.0
+
+* Wed Mar 19 2025 Remi Collet <remi@remirepo.net> - 4.2.7-1
+- update to 4.2.7
+
+* Thu Jan 30 2025 Remi Collet <remi@remirepo.net> - 4.2.6-1
+- update to 4.2.6
+- re-license spec file to CECILL-2.1
+
+* Mon Nov 25 2024 Remi Collet <remi@remirepo.net> - 4.2.5-1
+- update to 4.2.5
+
 * Wed Oct 23 2024 Remi Collet <remi@remirepo.net> - 4.2.4-1
 - update to 4.2.4
 
