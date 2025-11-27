@@ -1,0 +1,12 @@
+diff -up ./config/getlib.sh.old ./config/getlib.sh
+--- ./config/getlib.sh.old	2021-12-02 10:39:08.156110846 +0100
++++ ./config/getlib.sh	2021-12-02 10:39:11.003100629 +0100
+@@ -8,7 +8,7 @@ GDLIB_REVISION=$("${GETVER}" RELEASE)
+ # Dynamic library version information
+ # See http://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
+ 
+-GDLIB_LT_CURRENT=3
++GDLIB_LT_CURRENT=103
+ # This is the version where the soname (current above) changes.  We use it
+ # to reset the revision base back to zero.  It's a bit of a pain, but some
+ # systems restrict the revision range below to [0..255] (like OS X).
