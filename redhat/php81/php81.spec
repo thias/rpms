@@ -24,7 +24,7 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%global oraclever 23.7
+%global oraclever 23.9
 %global oraclemax 24
 %global oraclelib 23.1
 %global oracledir 23
@@ -119,7 +119,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.1.32
+%global upver          8.1.34
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
@@ -163,8 +163,8 @@ Patch1: php-7.4.0-httpd.patch
 Patch5: php-7.2.0-includedir.patch
 Patch6: php-8.0.0-embed.patch
 Patch8: php-8.1.0-libdb.patch
-# For recent ICU from 8.2
-Patch11: php-8.1.31-icu.patch
+# Fix for bash 5.3 (Fedora 43)
+Patch13: php-7.4.33-bash53.patch
 
 # Functional changes
 # Use system nikic/php-parser
@@ -874,7 +874,11 @@ License: PHP and BSD
 %endif
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if %{with libgd}
+%if 0%{?rhel}
+BuildRequires: gd3php-devel >= 2.3.3
+%else
 BuildRequires: pkgconfig(gdlib) >= 2.3.3
+%endif
 %else
 # Required to build the bundled GD library
 BuildRequires: pkgconfig(zlib)
@@ -1185,7 +1189,7 @@ in pure PHP.
 %patch -P5 -p1 -b .includedir
 %patch -P6 -p1 -b .embed
 %patch -P8 -p1 -b .libdb
-%patch -P11 -p1 -b .icu74
+%patch -P13 -p1 -b .bash53
 
 %patch -P41 -p1 -b .syslib
 %if %{with tzdata}
@@ -2197,6 +2201,15 @@ fi
 
 
 %changelog
+* Wed Dec 17 2025 Remi Collet <remi@remirepo.net> - 8.1.34-1
+- Update to 8.1.34 - http://www.php.net/releases/8_1_34.php
+
+* Thu Aug 28 2025 Remi Collet <remi@remirepo.net> - 8.1.33-2
+- rebuild using gd3php on EL-10
+
+* Wed Jul  2 2025 Remi Collet <remi@remirepo.net> - 8.1.33-1
+- Update to 8.1.33 - http://www.php.net/releases/8_1_33.php
+
 * Wed Mar 12 2025 Remi Collet <remi@remirepo.net> - 8.1.32-1
 - Update to 8.1.32 - http://www.php.net/releases/8_1_32.php
 - use oracle client library version 23.7 on x86_64 and arm64
