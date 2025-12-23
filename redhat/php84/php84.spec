@@ -80,7 +80,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.4.15
+%global upver          8.4.16
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -98,7 +98,7 @@ Release: 1%{?dist}
 License: PHP-3.01 AND Zend-2.0 AND BSD-2-Clause AND MIT AND Apache-1.0 AND NCSA AND BSL-1.0
 URL: http://www.php.net/
 
-Source0: http://www.php.net/distributions/php-%{upver}%{?rcver}.tar.bz2
+Source0: http://www.php.net/distributions/php-%{upver}%{?rcver}.tar.xz
 Source1: php.conf
 Source2: php.ini
 Source3: macros.php
@@ -112,7 +112,7 @@ Source13: nginx-fpm.conf
 Source14: nginx-php.conf
 # See https://secure.php.net/gpg-keys.php
 Source20: https://www.php.net/distributions/php-keyring.gpg
-Source21: https://www.php.net/distributions/php-%{upver}%{?rcver}.tar.bz2.asc
+Source21: https://www.php.net/distributions/php-%{upver}%{?rcver}.tar.xz.asc
 # Configuration files for some extensions
 Source50: 10-opcache.ini
 Source51: opcache-default.blacklist
@@ -1556,7 +1556,7 @@ install -D -m 644 %{SOURCE14} $RPM_BUILD_ROOT%{_sysconfdir}/nginx/default.d/php.
 
 TESTCMD="$RPM_BUILD_ROOT%{_bindir}/php --no-php-ini"
 # Ensure all provided extensions are really there
-for mod in core date filter hash json libxml openssl pcntl pcre readline reflection session spl standard zlib
+for mod in core date filter hash json libxml openssl pcntl pcre random readline reflection session sockets spl standard zlib
 do
      $TESTCMD --modules | grep -i "$mod\$"
 done
@@ -1851,6 +1851,17 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Dec 17 2025 Remi Collet <remi@remirepo.net> - 8.4.16-1
+- Update to 8.4.16 - http://www.php.net/releases/8_4_16.php
+
+* Wed Dec  3 2025 Remi Collet <remi@remirepo.net> - 8.4.16~RC1-1
+- update to 8.4.16RC1
+- switch back to xz archive
+
+* Fri Nov 21 2025 Remi Collet <remi@remirepo.net> - 8.4.15-2
+- Fix GH-20528 regression breaks mysql connexion using an IPv6 address enclosed
+  in square brackets (upstream patch)
+
 * Wed Nov 19 2025 Remi Collet <remi@remirepo.net> - 8.4.15-1
 - Update to 8.4.15 - http://www.php.net/releases/8_4_15.php
 - switch to bz2 archive to workaround RHEL-125143
