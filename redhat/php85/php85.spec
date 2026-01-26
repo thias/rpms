@@ -64,8 +64,10 @@
 %else
 %bcond_with          openssl32
 %endif
-%if 0
-# liburiparser version 0.9.10 required
+
+%global liburiparser_ver 1.0.0
+%if 0%{?fedora} >= 42
+# use system liburiparser when available
 %bcond_without       liburiparser
 %else
 # use bundled library instead
@@ -87,8 +89,8 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.5.1
-#global rcver          RC2
+%global upver          8.5.2
+#global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -207,9 +209,9 @@ BuildRequires: %{?dtsprefix}systemtap-sdt-dtrace
 %endif
 %endif
 %if %{with liburiparser}
-BuildRequires: pkgconfig(liburiparser) >= 0.9.10
+BuildRequires: pkgconfig(liburiparser) >= %{liburiparser_ver}
 %else
-Provides:      bundled(liburiparser) = 0.9.10
+Provides:      bundled(liburiparser) = %{liburiparser_ver}
 %endif
 #BuildRequires: bison
 #BuildRequires: re2c >= 1.0.3
@@ -1869,6 +1871,15 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Jan 14 2026 Remi Collet <remi@remirepo.net> - 8.5.2-1
+- Update to 8.5.2 - http://www.php.net/releases/8_5_2.php
+
+* Mon Jan  5 2026 Remi Collet <remi@remirepo.net> - 8.5.2~RC1-2
+- Fedora: use system liburiparser
+
+* Wed Dec 31 2025 Remi Collet <remi@remirepo.net> - 8.5.2~RC1-1
+- update to 8.5.2RC1
+
 * Wed Dec 17 2025 Remi Collet <remi@remirepo.net> - 8.5.1-1
 - Update to 8.5.1 - http://www.php.net/releases/8_5_1.php
 
