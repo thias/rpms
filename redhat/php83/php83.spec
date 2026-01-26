@@ -122,7 +122,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.3.29
+%global upver          8.3.30
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -2233,6 +2233,12 @@ fi
 
 
 %changelog
+* Wed Jan 14 2026 Remi Collet <remi@remirepo.net> - 8.3.30-1
+- Update to 8.3.30 - http://www.php.net/releases/8_3_30.php
+
+* Mon Jan  5 2026 Remi Collet <remi@remirepo.net> - 8.3.30~RC1-1
+- update to 8.3.30RC1
+
 * Tue Dec 16 2025 Remi Collet <remi@remirepo.net> - 8.3.29-1
 - Update to 8.3.29 - http://www.php.net/releases/8_3_29.php
 
