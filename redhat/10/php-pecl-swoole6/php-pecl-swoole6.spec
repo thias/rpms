@@ -37,7 +37,8 @@
 
 
 %if 0%{?fedora} || 0%{?rhel} >= 9
-%bcond_without     uring
+# See https://github.com/swoole/swoole-src/issues/6002
+%bcond_with        uring
 %else
 %bcond_with        uring
 %endif
@@ -47,9 +48,15 @@
 %bcond_without     zstd
 %bcond_without     curl
 %bcond_without     nghttpd2
+# See https://github.com/swoole/swoole-src/issues/6003
+%bcond_with        ssh2
+%bcond_with        ftp
+# Disabled by default to avoid dependencies (pdo_firebird and libfbclient)
+# See https://github.com/swoole/swoole-src/issues/6004
+%bcond_with        firebird
 
-%global upstream_version 6.1.3
-#global upstream_prever  RC2
+%global upstream_version 6.2.0
+%global upstream_prever  RC1
 %global sources          %{pecl_name}-%{upstream_version}%{?upstream_prever}
 %global _configure       ../%{sources}/configure
 
@@ -67,14 +74,14 @@ Source0:        https://pecl.php.net/get/%{pecl_name}-%{upstream_version}%{?upst
 BuildRequires:  make
 BuildRequires:  %{?dtsprefix}gcc
 BuildRequires:  %{?dtsprefix}gcc-c++
-BuildRequires: (%{?scl_prefix}php-devel >= 8.1 with %{?scl_prefix}php-devel < 8.5)
+BuildRequires: (%{?scl_prefix}php-devel >= 8.2 with %{?scl_prefix}php-devel < 8.6)
 BuildRequires:  %{?scl_prefix}php-pear
 BuildRequires:  %{?scl_prefix}php-curl
 BuildRequires:  %{?scl_prefix}php-json
 BuildRequires:  %{?scl_prefix}php-sockets
 BuildRequires:  %{?scl_prefix}php-mysqlnd
 BuildRequires:  %{?scl_prefix}php-pdo
-BuildRequires:  openssl-devel >= 1.0.2
+BuildRequires:  openssl-devel >= 1.1.0
 BuildRequires:  zlib-devel
 %if %{with curl}
 BuildRequires:  pkgconfig(libcurl)
@@ -96,7 +103,13 @@ BuildRequires:  pkgconfig(libpq)
 BuildRequires:  pkgconfig(libnghttp2)
 %endif
 %if %{with uring}
-BuildRequires:  pkgconfig(liburing) >= 2.5
+BuildRequires:  pkgconfig(liburing) >= 2.8
+%endif
+%if %{with ssh2}
+BuildRequires:  pkgconfig(libssh2) >= 1.2
+%endif
+%if %{with firebird}
+BuildRequires:  firebird-devel
 %endif
 BuildRequires:  pkgconfig(odbc)
 BuildRequires:  pkgconfig(sqlite3)
@@ -119,7 +132,9 @@ Requires:       %{?scl_prefix}php-json%{?_isa}
 Requires:       %{?scl_prefix}php-sockets%{?_isa}
 Requires:       %{?scl_prefix}php-mysqlnd%{?_isa}
 Requires:       %{?scl_prefix}php-pdo%{?_isa}
-
+%if %{with firebird}
+Requires:       %{?scl_prefix}php-pdo-firebird%{?_isa}
+%endif
 # Extension
 Provides:       %{?scl_prefix}php-%{pecl_name}                 = %{version}
 Provides:       %{?scl_prefix}php-%{pecl_name}%{?_isa}         = %{version}
@@ -193,6 +208,7 @@ sed \
    -e '/Makefile/s/role="doc"/role="src"/' \
    -e '/samples/s/role="doc"/role="src"/' \
    -e '/name="library/s/role="doc"/role="src"/' \
+   -e '/php-cs-fix/s/role="doc"/role="src"/' \
    -e '/LICENSE/s/role="doc"/role="src"/' \
    -e '/COPYING/s/role="doc"/role="src"/' \
    -i package.xml
@@ -233,12 +249,17 @@ extension=%{pecl_name}.so
 ;swoole.enable_preemptive_scheduler = Off
 ;swoole.display_errors = On
 :swoole.use_shortname = On
-;swoole.unixsock_buffer_size = 8388608
+;swoole.socket_buffer_size = 8388608
+;swoole.blocking_detection = Off
+;swoole.blocking_threshold = 100000
+;swoole.profile = Off
+;swoole.leak_detection = Off
 EOF
 
 
 %build
 %{?dtsenable}
+export PHP_RPATH=no
 
 peclbuild() {
 %configure \
@@ -246,8 +267,10 @@ peclbuild() {
     --enable-swoole-stdext \
     --enable-sockets \
     --enable-trace-log \
-    --enable-openssl \
     --enable-mysqlnd \
+%if %{with ftp}
+    --enable-swoole-ftp \
+%endif
 %if %{with pgsql}
     --enable-swoole-pgsql \
 %endif
@@ -274,6 +297,12 @@ peclbuild() {
 %if %{with uring}
     --enable-iouring \
 %endif
+%if %{with ssh2}
+    --with-swoole-ssh2=%{_root_prefix} \
+%endif
+%if %{with firebird}
+    --with-swoole-firebird \
+%endif
 %if %{with oracle}
     --with-swoole-oracle=instantclient,%{_root_prefix}/lib/oracle/%{oracledir}/client64/lib \
 %endif
@@ -281,9 +310,6 @@ peclbuild() {
     --enable-swoole-sqlite \
     --with-libdir=%{_lib} \
     --with-php-config=$*
-
-# See https://bugzilla.redhat.com/show_bug.cgi?id=2345743
-sed -e 's:-Wl,-rpath,/usr/usr/lib64 -L/usr/usr/lib64::' -i Makefile
 
 %make_build
 }
@@ -334,10 +360,11 @@ rm %{buildroot}%{pecl_docdir}/%{pecl_name}/examples/process/echo.py
 
 %check
 OPT="--no-php-ini"
-[ -f %{php_extdir}/curl.so ]    && OPT="$OPT -d extension=curl"
-[ -f %{php_extdir}/sockets.so ] && OPT="$OPT -d extension=sockets"
-[ -f %{php_extdir}/mysqlnd.so ] && OPT="$OPT -d extension=mysqlnd"
-[ -f %{php_extdir}/pdo.so ]     && OPT="$OPT -d extension=pdo"
+[ -f %{php_extdir}/curl.so ]         && OPT="$OPT -d extension=curl"
+[ -f %{php_extdir}/sockets.so ]      && OPT="$OPT -d extension=sockets"
+[ -f %{php_extdir}/mysqlnd.so ]      && OPT="$OPT -d extension=mysqlnd"
+[ -f %{php_extdir}/pdo.so ]          && OPT="$OPT -d extension=pdo"
+[ -f %{php_extdir}/pdo_firebird.so ] && OPT="$OPT -d extension=pdo_firebird"
 
 cd NTS
 : Minimal load test for NTS extension
@@ -385,6 +412,27 @@ cd ../ZTS
 
 
 %changelog
+* Tue Feb 17 2026 Remi Collet <remi@remirepo.net> - 6.2.0~RC1-1
+- update to 6.2.0RC1
+- disable io_uring feature
+- don't enable new ssh2, ftp and firebird features
+- open https://github.com/swoole/swoole-src/issues/6002
+  build failure (uring_socket.cc)
+- open https://github.com/swoole/swoole-src/issues/6003
+  Warning: Function registration failed (related to ssh2 and ftp)
+- open https://github.com/swoole/swoole-src/issues/6004
+  undefined symbol: fb_encode_date
+
+* Mon Dec 29 2025 Remi Collet <remi@remirepo.net> - 6.1.6-1
+- update to 6.1.6
+
+* Mon Dec 22 2025 Remi Collet <remi@remirepo.net> - 6.1.5-1
+- update to 6.1.5
+- open https://github.com/swoole/swoole-src/issues/5966 build failure with PHP 8.1
+
+* Mon Dec  8 2025 Remi Collet <remi@remirepo.net> - 6.1.4-1
+- update to 6.1.4
+
 * Wed Nov 26 2025 Remi Collet <remi@remirepo.net> - 6.1.3-1
 - update to 6.1.3
 
