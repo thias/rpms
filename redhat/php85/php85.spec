@@ -89,7 +89,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.5.3
+%global upver          8.5.4
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -1871,6 +1871,12 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Mar 11 2026 Remi Collet <remi@remirepo.net> - 8.5.4-1
+- Update to 8.5.4 - http://www.php.net/releases/8_5_4.php
+
+* Wed Feb 25 2026 Remi Collet <remi@remirepo.net> - 8.5.4~RC1-1
+- update to 8.5.4RC1
+
 * Wed Feb 11 2026 Remi Collet <remi@remirepo.net> - 8.5.3-1
 - Update to 8.5.3 - http://www.php.net/releases/8_5_3.php
 
