@@ -13,7 +13,7 @@
 %global pdover      20240423
 # Extension version
 %global fileinfover 1.0.5
-%global zipver      1.22.7
+%global zipver      1.22.8
 
 # Adds -z now to the linker flags
 %global _hardened_build 1
@@ -89,7 +89,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.5.4
+%global upver          8.5.5
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -104,7 +104,8 @@ Release: 1%{?dist}
 # ext/date/lib is MIT
 # Zend/zend_sort is NCSA
 # Zend/asm is Boost
-License: PHP-3.01 AND Zend-2.0 AND BSD-2-Clause AND MIT AND Apache-1.0 AND NCSA AND BSL-1.0
+# lexbor is Apache-2.0
+License: PHP-3.01 AND Zend-2.0 AND BSD-2-Clause AND MIT AND Apache-1.0 AND Apache-2.0 AND NCSA AND BSL-1.0
 URL: http://www.php.net/
 
 Source0: http://www.php.net/distributions/php-%{upver}%{?rcver}.tar.xz
@@ -266,7 +267,7 @@ which adds support for the PHP language to Apache HTTP Server.
 %package cli
 Summary: Command-line interface for PHP
 # sapi/cli/ps_title.c is PostgreSQL
-License:  PHP-3.01 AND Zend-2.0 AND BSD-2-Clause AND MIT AND Apache-1.0 AND NCSA AND PostgreSQL
+License:  PHP-3.01 AND Zend-2.0 AND BSD-2-Clause AND MIT AND Apache-1.0 AND Apache-2.0 AND NCSA AND BSL-1.0 AND PostgreSQL
 Requires: php-common%{?_isa} = %{version}-%{release}
 Provides: php-cgi = %{version}-%{release}, php-cgi%{?_isa} = %{version}-%{release}
 Provides: php-pcntl, php-pcntl%{?_isa}
@@ -381,6 +382,8 @@ Provides: php-ftp, php-ftp%{?_isa}
 Provides: php-gettext, php-gettext%{?_isa}
 Provides: php-hash, php-hash%{?_isa}
 Provides: php-lexbor, php-lexbor%{?_isa}
+# See ext/lexbor/patches/README.md
+Provides: bundled(lexbor) = 2.5.0
 Provides: php-mhash = %{version}, php-mhash%{?_isa} = %{version}
 Provides: php-iconv, php-iconv%{?_isa}
 Obsoletes: php-json < 8
@@ -1037,6 +1040,7 @@ cp ext/mbstring/libmbfl/LICENSE libmbfl_LICENSE
 cp ext/fileinfo/libmagic/LICENSE libmagic_LICENSE
 cp ext/bcmath/libbcmath/LICENSE libbcmath_LICENSE
 cp ext/date/lib/LICENSE.rst timelib_LICENSE
+cp ext/lexbor/LICENSE lexbor_LICENSE
 
 # Multiple builds for multiple SAPIs
 # mod_php (apache2handler) and libphp (embed) can not be built from same tree
@@ -1744,6 +1748,7 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 %license LICENSE TSRM_LICENSE ZEND_LICENSE BOOST_LICENSE
 %license libmagic_LICENSE
 %license timelib_LICENSE
+%license lexbor_LICENSE
 %doc php.ini-*
 %config(noreplace) %{_sysconfdir}/php.ini
 %config(noreplace) %{_sysconfdir}/php.d/10-opcache.ini
@@ -1871,6 +1876,12 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Apr  8 2026 Remi Collet <remi@remirepo.net> - 8.5.5-1
+- Update to 8.5.5 - http://www.php.net/releases/8_5_5.php
+
+* Wed Mar 25 2026 Remi Collet <remi@remirepo.net> - 8.5.5~RC1-1
+- update to 8.5.5RC1
+
 * Wed Mar 11 2026 Remi Collet <remi@remirepo.net> - 8.5.4-1
 - Update to 8.5.4 - http://www.php.net/releases/8_5_4.php
 
