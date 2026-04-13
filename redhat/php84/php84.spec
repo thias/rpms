@@ -13,7 +13,7 @@
 %global pdover      20240423
 # Extension version
 %global fileinfover 1.0.5
-%global zipver      1.22.7
+%global zipver      1.22.8
 
 # Adds -z now to the linker flags
 %global _hardened_build 1
@@ -80,7 +80,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.4.19
+%global upver          8.4.20
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -654,7 +654,8 @@ will need to install this package and the php package.
 %package xml
 Summary: A module for PHP applications which use XML
 # All files licensed under PHP version 3.01
-License:  PHP-3.01
+# lexbor is Apache-2.0
+License:  PHP-3.01 AND Apache-2.0
 Requires: php-common%{?_isa} = %{version}-%{release}
 Provides: php-dom, php-dom%{?_isa}
 Provides: php-domxml, php-domxml%{?_isa}
@@ -662,6 +663,8 @@ Provides: php-simplexml, php-simplexml%{?_isa}
 Provides: php-xmlreader, php-xmlreader%{?_isa}
 Provides: php-xmlwriter, php-xmlwriter%{?_isa}
 Provides: php-xsl, php-xsl%{?_isa}
+# See ext/dom/lexbor/patches/README.md
+Provides: bundled(lexbor) = 2.5.0
 BuildRequires: pkgconfig(libxslt)  >= 1.1
 BuildRequires: pkgconfig(libexslt)
 BuildRequires: pkgconfig(libxml-2.0)  >= 2.7.6
@@ -1011,6 +1014,7 @@ cp ext/mbstring/libmbfl/LICENSE libmbfl_LICENSE
 cp ext/fileinfo/libmagic/LICENSE libmagic_LICENSE
 cp ext/bcmath/libbcmath/LICENSE libbcmath_LICENSE
 cp ext/date/lib/LICENSE.rst timelib_LICENSE
+cp ext/dom/lexbor/LICENSE lexbor_LICENSE
 
 # Multiple builds for multiple SAPIs
 # mod_php (apache2handler) and libphp (embed) can not be built from same tree
@@ -1819,6 +1823,7 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 %files ldap -f files.ldap
 %files snmp -f files.snmp
 %files xml -f files.xml
+%license lexbor_LICENSE
 %files mbstring -f files.mbstring
 %license libmbfl_LICENSE
 %files gd -f files.gd
@@ -1851,6 +1856,12 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Apr  8 2026 Remi Collet <remi@remirepo.net> - 8.4.20-1
+- Update to 8.4.20 - http://www.php.net/releases/8_4_20.php
+
+* Wed Mar 25 2026 Remi Collet <remi@remirepo.net> - 8.4.20~RC1-1
+- update to 8.4.20RC1
+
 * Wed Mar 11 2026 Remi Collet <remi@remirepo.net> - 8.4.19-1
 - Update to 8.4.19 - http://www.php.net/releases/8_4_19.php
 
