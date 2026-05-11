@@ -65,7 +65,8 @@
 %bcond_with          openssl32
 %endif
 
-%global liburiparser_ver 1.0.0
+%global liburiparser_minver 1.0.0
+%global liburiparser_bunver 1.0.1
 %if 0%{?fedora} >= 42
 # use system liburiparser when available
 %bcond_without       liburiparser
@@ -89,8 +90,8 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.5.5
-#global rcver          RC1
+%global upver          8.5.6
+#global rcver          RC3
 # TODO set PHP_EXTRA_VERSION for EOL version
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -210,9 +211,9 @@ BuildRequires: %{?dtsprefix}systemtap-sdt-dtrace
 %endif
 %endif
 %if %{with liburiparser}
-BuildRequires: pkgconfig(liburiparser) >= %{liburiparser_ver}
+BuildRequires: pkgconfig(liburiparser) >= %{liburiparser_minver}
 %else
-Provides:      bundled(liburiparser) = %{liburiparser_ver}
+Provides:      bundled(liburiparser) = %{liburiparser_bunver}
 %endif
 #BuildRequires: bison
 #BuildRequires: re2c >= 1.0.3
@@ -383,7 +384,8 @@ Provides: php-gettext, php-gettext%{?_isa}
 Provides: php-hash, php-hash%{?_isa}
 Provides: php-lexbor, php-lexbor%{?_isa}
 # See ext/lexbor/patches/README.md
-Provides: bundled(lexbor) = 2.5.0
+%global lexborver 2.7.0
+Provides: bundled(lexbor) = %{lexborver}
 Provides: php-mhash = %{version}, php-mhash%{?_isa} = %{version}
 Provides: php-iconv, php-iconv%{?_isa}
 Obsoletes: php-json < 8
@@ -1118,6 +1120,13 @@ ver=$(sed -n '/#define PHP_ZIP_VERSION /{s/.* "//;s/".*$//;p}' ext/zip/php_zip.h
 if test "$ver" != "%{zipver}"; then
    : Error: Upstream ZIP version is now ${ver}, expecting %{zipver}.
    : Update the %{zipver} macro and rebuild.
+   exit 1
+fi
+
+vlexbor=`sed -n '/Lexbor version/{s/.* is //;s/\.$//;p}' ext/lexbor/patches/README.md`
+if test "x${vlexbor}" != "x%{lexborver}"; then
+   : Error: Upstream Lexbor version is now ${vlexbor}, expecting %{lexborver}.
+   : Update the lexborver macro and rebuild.
    exit 1
 fi
 
@@ -1876,6 +1885,18 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed May  6 2026 Remi Collet <remi@remirepo.net> - 8.5.6-1
+- Update to 8.5.6 - http://www.php.net/releases/8_5_6.php
+
+* Thu Apr 30 2026 Remi Collet <remi@remirepo.net> - 8.5.6~RC3-1
+- update to 8.5.6RC3
+
+* Wed Apr 29 2026 Remi Collet <remi@remirepo.net> - 8.5.6~RC2-1
+- update to 8.5.6RC2
+
+* Wed Apr 22 2026 Remi Collet <remi@remirepo.net> - 8.5.6~RC1-1
+- update to 8.5.6RC1
+
 * Wed Apr  8 2026 Remi Collet <remi@remirepo.net> - 8.5.5-1
 - Update to 8.5.5 - http://www.php.net/releases/8_5_5.php
 
