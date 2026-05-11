@@ -80,7 +80,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.4.20
+%global upver          8.4.21
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -664,7 +664,8 @@ Provides: php-xmlreader, php-xmlreader%{?_isa}
 Provides: php-xmlwriter, php-xmlwriter%{?_isa}
 Provides: php-xsl, php-xsl%{?_isa}
 # See ext/dom/lexbor/patches/README.md
-Provides: bundled(lexbor) = 2.5.0
+%global lexborver 2.7.0
+Provides: bundled(lexbor) = %{lexborver}
 BuildRequires: pkgconfig(libxslt)  >= 1.1
 BuildRequires: pkgconfig(libexslt)
 BuildRequires: pkgconfig(libxml-2.0)  >= 2.7.6
@@ -1087,6 +1088,13 @@ vpdo=$(sed -n '/#define PDO_DRIVER_API/{s/.*[ 	]//;p}' ext/pdo/php_pdo_driver.h)
 if test "x${vpdo}" != "x%{pdover}"; then
    : Error: Upstream PDO ABI version is now ${vpdo}, expecting %{pdover}.
    : Update the pdover macro and rebuild.
+   exit 1
+fi
+
+vlexbor=`sed -n '/Lexbor version/{s/.* is //;s/\.$//;p}' ext/dom/lexbor/patches/README.md`
+if test "x${vlexbor}" != "x%{lexborver}"; then
+   : Error: Upstream Lexbor version is now ${vlexbor}, expecting %{lexborver}.
+   : Update the lexborver macro and rebuild.
    exit 1
 fi
 
@@ -1856,6 +1864,12 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed May  6 2026 Remi Collet <remi@remirepo.net> - 8.4.21-1
+- Update to 8.4.21 - http://www.php.net/releases/8_4_21.php
+
+* Wed Apr 22 2026 Remi Collet <remi@remirepo.net> - 8.4.21~RC1-1
+- update to 8.4.21RC1
+
 * Wed Apr  8 2026 Remi Collet <remi@remirepo.net> - 8.4.20-1
 - Update to 8.4.20 - http://www.php.net/releases/8_4_20.php
 
