@@ -24,7 +24,7 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%global oraclever 23.9
+%global oraclever 23.26.1
 %global oraclemax 24
 %global oraclelib 23.1
 %global oracledir 23
@@ -122,7 +122,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.3.30
+%global upver          8.3.31
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -2233,6 +2233,9 @@ fi
 
 
 %changelog
+* Tue May  5 2026 Remi Collet <remi@remirepo.net> - 8.3.31-1
+- Update to 8.3.31 - http://www.php.net/releases/8_3_31.php
+
 * Wed Jan 14 2026 Remi Collet <remi@remirepo.net> - 8.3.30-1
 - Update to 8.3.30 - http://www.php.net/releases/8_3_30.php
 
