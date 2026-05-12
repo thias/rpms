@@ -24,7 +24,7 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%global oraclever 23.9
+%global oraclever 23.26.1
 %global oraclemax 24
 %global oraclelib 23.1
 %global oracledir 23
@@ -119,7 +119,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.2.30
+%global upver          8.2.31
 #global rcver          RC1
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -2203,6 +2203,9 @@ fi
 
 
 %changelog
+* Wed May  6 2026 Remi Collet <remi@remirepo.net> - 8.2.31-1
+- Update to 8.2.31 - http://www.php.net/releases/8_2_31.php
+
 * Wed Dec 17 2025 Remi Collet <remi@remirepo.net> - 8.2.30-1
 - Update to 8.2.30 - http://www.php.net/releases/8_2_30.php
 
