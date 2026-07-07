@@ -40,7 +40,7 @@
 %bcond_without        libxcrypt
 
 # Build firebird extensions, you can disable using --without firebird
-%if 0%{?rhel} == 10
+%if 0%{?rhel} >= 11
 %bcond_with           firebird
 %else
 %bcond_without        firebird
@@ -80,7 +80,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.4.21
+%global upver          8.4.23
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -128,7 +128,7 @@ Patch8: php-8.4.0-libdb.patch
 # Use system nikic/php-parser
 Patch41: php-8.3.3-parser.patch
 # use system tzdata
-Patch42: php-8.4.0-systzdata-v24.patch
+Patch42: php-8.4.22-systzdata-v24.patch
 # See http://bugs.php.net/53436
 # + display PHP version backported from 8.4
 Patch43: php-8.4.0-phpize.patch
@@ -1864,6 +1864,18 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Jul  1 2026 Remi Collet <remi@remirepo.net> - 8.4.23-1
+- Update to 8.4.23 - http://www.php.net/releases/8_4_23.php
+
+* Wed Jun 17 2026 Remi Collet <remi@remirepo.net> - 8.4.23~RC1-1
+- update to 8.4.23RC1
+
+* Wed Jun  3 2026 Remi Collet <remi@remirepo.net> - 8.4.22-1
+- Update to 8.4.22 - http://www.php.net/releases/8_4_22.php
+
+* Wed May 20 2026 Remi Collet <remi@remirepo.net> - 8.4.22~RC1-1
+- update to 8.4.22RC1
+
 * Wed May  6 2026 Remi Collet <remi@remirepo.net> - 8.4.21-1
 - Update to 8.4.21 - http://www.php.net/releases/8_4_21.php
 
