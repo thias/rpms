@@ -40,7 +40,7 @@
 %bcond_without        libxcrypt
 
 # Build firebird extensions, you can disable using --without firebird
-%if 0%{?rhel} == 10
+%if 0%{?rhel} >= 11
 %bcond_with           firebird
 %else
 %bcond_without        firebird
@@ -66,8 +66,8 @@
 %endif
 
 %global liburiparser_minver 1.0.0
-%global liburiparser_bunver 1.0.1
-%if 0%{?fedora} >= 42
+%global liburiparser_bunver 1.0.2
+%if 0%{?fedora} >= 42 || 0%{?rhel} >= 11
 # use system liburiparser when available
 %bcond_without       liburiparser
 %else
@@ -90,8 +90,8 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.5.6
-#global rcver          RC3
+%global upver          8.5.8
+#global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
 Summary: PHP scripting language for creating dynamic web sites
@@ -1130,6 +1130,15 @@ if test "x${vlexbor}" != "x%{lexborver}"; then
    exit 1
 fi
 
+vurimaj=$(sed  -n '/define URI_VER_MAJ/{s/.* //;s/\.$//;p}' ext/uri/uriparser/include/uriparser/UriBase.h)
+vurimin=$(sed  -n '/define URI_VER_MIN/{s/.* //;s/\.$//;p}' ext/uri/uriparser/include/uriparser/UriBase.h)
+vurirel=$(sed  -n '/define URI_VER_REL/{s/.* //;s/\.$//;p}' ext/uri/uriparser/include/uriparser/UriBase.h)
+if test "x${vurimaj}.${vurimin}.${vurirel}" != "x%{liburiparser_bunver}"; then
+   : Error: Upstream uriparser version is now ${vurimaj}.${vurimin}.${vurirel}, expecting %{liburiparser_bunver}.
+   : Update the liburiparser_bunver macro and rebuild.
+   exit 1
+fi
+
 # https://bugs.php.net/63362 - Not needed but installed headers.
 # Drop some Windows specific headers to avoid installation,
 # before build to ensure they are really not needed.
@@ -1885,6 +1894,21 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Jul  1 2026 Remi Collet <remi@remirepo.net> - 8.5.8-1
+- Update to 8.5.8 - http://www.php.net/releases/8_5_8.php
+
+* Wed Jun 17 2026 Remi Collet <remi@remirepo.net> - 8.5.8~RC1-1
+- update to 8.5.8RC1
+
+* Wed Jun  3 2026 Remi Collet <remi@remirepo.net> - 8.5.7-1
+- Update to 8.5.7 - http://www.php.net/releases/8_5_7.php
+
+* Wed May 27 2026 Remi Collet <remi@remirepo.net> - 8.5.7~RC2-1
+- update to 8.5.7RC2
+
+* Wed May 20 2026 Remi Collet <remi@remirepo.net> - 8.5.7~RC1-1
+- update to 8.5.7RC1
+
 * Wed May  6 2026 Remi Collet <remi@remirepo.net> - 8.5.6-1
 - Update to 8.5.6 - http://www.php.net/releases/8_5_6.php
 
