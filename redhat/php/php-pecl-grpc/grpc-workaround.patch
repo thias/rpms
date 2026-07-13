@@ -1,0 +1,13 @@
+diff -up grpc-1.65.1/third_party/abseil-cpp/absl/log/internal/log_sink_set.cc.old grpc-1.65.1/third_party/abseil-cpp/absl/log/internal/log_sink_set.cc
+--- grpc-1.65.1/third_party/abseil-cpp/absl/log/internal/log_sink_set.cc.old	2024-07-17 14:08:10.982474321 +0200
++++ grpc-1.65.1/third_party/abseil-cpp/absl/log/internal/log_sink_set.cc	2024-07-17 14:12:26.562502991 +0200
+@@ -90,8 +90,7 @@ class StderrLogSink final : public LogSi
+   ~StderrLogSink() override = default;
+ 
+   void Send(const absl::LogEntry& entry) override {
+-    if (entry.log_severity() < absl::StderrThreshold() &&
+-        absl::log_internal::IsInitialized()) {
++    if (entry.log_severity() < absl::StderrThreshold()) {
+       return;
+     }
+ 
