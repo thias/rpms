@@ -24,7 +24,7 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%global oraclever 23.26.1
+%global oraclever 23.26.3
 %global oraclemax 24
 %global oraclelib 23.1
 %global oracledir 23
@@ -42,7 +42,11 @@
 # Optional Oracle extensions; pass "--with oci8" etc to rpmbuild.
 %bcond_with           oci8
 
+%if 0%{?fedora} >= 45 || 0%{?rhel} >= 21
+%bcond_with           imap
+%else
 %bcond_without        imap
+%endif
 
 %if 0%{?fedora} >= 27 || 0%{?rhel} >= 8
 # switch to bundled library using --without libpcre
@@ -68,7 +72,7 @@
 %endif
 
 # Build firebird extensions, you can disable using --without firebird
-%if 0%{?rhel} == 10
+%if 0%{?rhel} >= 11
 %bcond_with           firebird
 %else
 %bcond_without        firebird
@@ -119,8 +123,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.2.31
-#global rcver          RC1
+%global upver          8.2.34
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
@@ -2203,6 +2206,15 @@ fi
 
 
 %changelog
+* Tue Sep 22 2026 Remi Collet <remi@remirepo.net> - 8.2.34-1
+- Update to 8.2.34 - http://www.php.net/releases/8_2_34.php
+
+* Tue Jul 28 2026 Remi Collet <remi@remirepo.net> - 8.2.33-1
+- Update to 8.2.33 - http://www.php.net/releases/8_2_33.php
+
+* Wed Jul  1 2026 Remi Collet <remi@remirepo.net> - 8.2.32-1
+- Update to 8.2.32 - http://www.php.net/releases/8_2_32.php
+
 * Wed May  6 2026 Remi Collet <remi@remirepo.net> - 8.2.31-1
 - Update to 8.2.31 - http://www.php.net/releases/8_2_31.php
 
