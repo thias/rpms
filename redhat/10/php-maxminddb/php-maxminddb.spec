@@ -1,11 +1,16 @@
 # remirepo spec file for php-maxminddb
 #
-# SPDX-FileCopyrightText:  Copyright 2018-2025 Remi Collet
+# SPDX-FileCopyrightText:  Copyright 2018-2026 Remi Collet
 # SPDX-License-Identifier: CECILL-2.1
 # http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
 #
 # Please, preserve the changelog entries
 #
+
+# TODO build --without test for 7.x (because of phpunit and symfony/polyfill-php80)
+# mockit ...  all  80 85
+# mockit ...  all  72 74 --without tests
+
 %if 0%{?scl:1}
 %scl_package        php-maxminddb
 %global with_lib    0
@@ -13,10 +18,16 @@
 %global pkg_name    %{name}
 %global with_lib    1
 %endif
-%bcond_without       tests
 
-%global gh_commit   2194f58d0f024ce923e685cdf92af3daf9951908
-%global gh_short    %(c=%{gh_commit}; echo ${c:0:7})
+# Disable library tests (phpunit)
+# Extension is always tested
+%bcond_without      tests
+
+# use bundled or system libmaxminddb
+# prefer bundled for full features
+#   EL-8 has 1.2, EL-9 has 1.5, EL-10 has 1.9, Fedora has 1.13
+%bcond_with         syslib
+
 %global gh_owner    maxmind
 %global gh_project  MaxMind-DB-Reader-php
 # Extension
@@ -30,20 +41,23 @@
 %global pk_project   reader
 %global _configure   ../ext/configure
 
-Summary:       MaxMind DB Reader extension
 Name:          %{?scl_prefix}php-maxminddb
-Version:       1.13.1
-Release:       1%{?dist}
+Summary:       MaxMind DB Reader extension
 License:       Apache-2.0
+Version:       1.14.0
+Release:       1%{?dist}
 URL:           https://github.com/%{gh_owner}/%{gh_project}
 
 # keep using git snapshot to retrieve extension + library + test
-Source0:       %{pkg_name}-%{version}-%{gh_short}.tgz
+Source0:       %{pkg_name}-%{version}.tgz
 Source1:       makesrc.sh
 
 BuildRequires: %{?scl_prefix}php-devel >= 7.2
-BuildRequires: %{?scl_prefix}php-pear  >= 1.10
+%if %{with syslib}
 BuildRequires: pkgconfig(libmaxminddb) >= 1.0.0
+%else
+Provides:      bundled(libmaxminddb) = %{version}
+%endif
 
 Requires:      %{?scl_prefix}php(zend-abi) = %{php_zend_api}
 Requires:      %{?scl_prefix}php(api) = %{php_core_api}
@@ -88,7 +102,7 @@ BuildRequires: php-gmp
 #        "php-coveralls/php-coveralls": "^2.1",
 #        "phpunit/phpcov": ">=6.0.0",
 #        "squizlabs/php_codesniffer": "3.*"
-BuildRequires: phpunit8
+BuildRequires: phpunit9
 %endif
 
 # from composer.json "require": {
@@ -105,7 +119,7 @@ Recommends:    php-maxminddb
 Recommends:    geolite2-country
 Suggests:      geolite2-city
 # from composer.json "conflict": {
-#        "ext-maxminddb": "<1.11.1,>=2.0.0"
+#        "ext-maxminddb": "<1.14.0,>=2.0.0"
 Conflicts:     php-maxminddb < %{version}
 # From phpcompatifo report for 1.3.0
 Requires:      php-filter
@@ -132,7 +146,7 @@ Autoloader: %{_datadir}/php/MaxMind/Db/Reader/autoload.php
 
 
 %prep
-%setup -q -n %{gh_project}-%{gh_commit}
+%setup -q -n %{gh_project}-%{version}
 
 %if %{with_lib}
 %{_bindir}/phpab \
@@ -174,6 +188,9 @@ cd ../NTS
 %configure \
     --with-php-config=%{__phpconfig} \
     --with-libdir=%{_lib} \
+%if %{without syslib}
+    --with-maxminddb-bundled \
+%endif
     --with-maxminddb
 
 %make_build
@@ -183,6 +200,9 @@ cd ../ZTS
 %configure \
     --with-php-config=%{__ztsphpconfig} \
     --with-libdir=%{_lib} \
+%if %{without syslib}
+    --with-maxminddb-bundled \
+%endif
     --with-maxminddb
 
 %make_build
@@ -191,9 +211,6 @@ cd ../ZTS
 
 %install
 %{?dtsenable}
-# Install XML package description
-install -D -m 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
-
 # Install the NTS stuff
 %make_install -C NTS
 install -D -m 644 %{ini_name} %{buildroot}%{php_inidir}/%{ini_name}
@@ -240,18 +257,27 @@ REPORT_EXIT_STATUS=1 \
 
 %if %{with_lib} && %{with tests}
 cd ..
+mkdir vendor
+%{_bindir}/phpab \
+    --template fedora \
+    --output vendor/autoload.php \
+    tests
+
+cat << 'EOF' | tee -a vendor/autoload.php
+require_once "%{buildroot}%{_datadir}/php/MaxMind/Db/Reader/autoload.php";
+EOF
+
 : Upstream test suite for the library
-for cmd in php php81 php82 php83 php84 php85; do
+for cmd in php php82 php83 php84 php85 php86; do
   if which $cmd; then
-    $cmd %{_bindir}/phpunit8 \
-      --bootstrap %{buildroot}%{_datadir}/php/MaxMind/Db/Reader/autoload.php \
+    $cmd %{_bindir}/phpunit9 \
       --verbose || ret=1
   fi
 done
 
 : Upstream test suite for the library with the extension
 php --define extension=%{buildroot}%{php_extdir}/%{pecl_name}.so \
-  %{_bindir}/phpunit8 \
+  %{_bindir}/phpunit9 \
     --bootstrap %{buildroot}%{_datadir}/php/MaxMind/Db/Reader/autoload.php \
     --verbose || ret=1
 %endif
@@ -261,7 +287,6 @@ exit $ret
 %files
 %license LICENSE
 %doc *.md
-%{pecl_xmldir}/%{name}.xml
 
 %config(noreplace) %{php_inidir}/%{ini_name}
 %{php_extdir}/%{pecl_name}.so
@@ -284,6 +309,19 @@ exit $ret
 # when using pkgup, CHECK Release!
 
 %changelog
+* Fri Sep 11 2026 Remi Collet <remi@remirepo.net> - 1.14.0-1
+- update to 1.14.0
+- drop patch merged upstream
+- use bundled libmaxminddb
+- switch to phpunit9
+
+* Fri Jul 17 2026 Remi Collet <remi@remirepo.net> - 1.13.1-3
+- fix build with PHP 8.6.0alpha2 using patch from
+  https://github.com/maxmind/MaxMind-DB-Reader-php/pull/252
+
+* Tue Mar 17 2026 Remi Collet <remi@remirepo.net> - 1.13.1-2
+- drop pear/pecl dependency
+
 * Sat Nov 22 2025 Remi Collet <remi@remirepo.net> - 1.13.1-1
 - update to 1.13.1 (no changes)
 - add pie virtual provides
