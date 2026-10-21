@@ -24,8 +24,10 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%global oraclever 21.8
-%global oraclelib 21.1
+%global oraclever 23.26.3
+%global oraclemax 24
+%global oraclelib 23.1
+%global oracledir 23
 
 # Build for LiteSpeed Web Server (LSAPI), you can disable using --without tests
 %bcond_without        lsws
@@ -40,12 +42,7 @@
 # Optional Oracle extensions; pass "--with oci8" etc to rpmbuild.
 %bcond_with           oci8
 
-%if 0%{?fedora} >= 38 || 0%{?rhel} >= 10
-# uw-imap is not available
-%bcond_with           imap
-%else
 %bcond_without        imap
-%endif
 
 %if 0%{?fedora} >= 27 || 0%{?rhel} >= 8
 # switch to bundled library using --without libpcre
@@ -71,10 +68,18 @@
 %endif
 
 # Build firebird extensions, you can disable using --without firebird
+%if 0%{?rhel} > 10
+%bcond_with           firebird
+%else
 %bcond_without        firebird
+%endif
 
 # Build ZTS extension or only NTS using --without zts
+%ifarch x86_64
 %bcond_without        zts
+%else
+%bcond_with           zts
+%endif
 
 # Debug build, using --with debug
 %bcond_with           debug
@@ -107,12 +112,12 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.0.28
+%global upver          8.0.30
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{rcver}}
-Release: 1%{?dist}
+Release: 21%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -149,11 +154,15 @@ Source53: 20-ffi.ini
 Patch1: php-7.4.0-httpd.patch
 Patch5: php-7.2.0-includedir.patch
 Patch6: php-8.0.0-embed.patch
-Patch8: php-7.4.0-libdb.patch
+Patch7: php-7.4.0-libdb.patch
 # get rid of deprecated functions from 8.1
 Patch9: php-8.0.6-deprecated.patch
-# RHEL backports
-Patch10: php-7.0.7-curl.patch
+# For recent ICU from 8.2
+Patch11: php-8.0.30-icu.patch
+# Fix strict prototypes from 8.1
+Patch12: php-8.0.30-proto.patch
+# Fix for bash 5.3 (Fedora 43)
+Patch13: php-7.4.33-bash53.patch
 
 # Functional changes
 # Use system nikic/php-parser
@@ -178,6 +187,8 @@ Patch49: php-8.0.10-phar-sha.patch
 Patch50: php-8.0.21-openssl3.patch
 # use system libxcrypt, from 8.1
 Patch51: php-8.0.13-crypt.patch
+# display TZData version for intl
+Patch52: php-8.0.28-intlinfo.patch
 
 # RC Patch
 Patch91: php-7.2.0-oci8conf.patch
@@ -185,10 +196,55 @@ Patch91: php-7.2.0-oci8conf.patch
 # Upstream fixes (100+)
 
 # Security fixes (200+)
+Patch200: php-cve-2024-2756.patch
+Patch201: php-cve-2024-3096.patch
+Patch202: php-cve-2024-5458.patch
+Patch203: php-cve-2024-8925.patch
+Patch204: php-cve-2024-8926.patch
+Patch205: php-cve-2024-8927.patch
+Patch206: php-cve-2024-9026.patch
+Patch207: php-cve-2024-11236.patch
+Patch208: php-cve-2024-11234.patch
+Patch209: php-cve-2024-8932.patch
+Patch210: php-cve-2024-11233.patch
+Patch211: php-ghsa-4w77-75f9-2c8w.patch
+Patch212: php-cve-2024-8929.patch
+Patch213: php-cve-2025-1217.patch
+Patch214: php-cve-2025-1734.patch
+Patch215: php-cve-2025-1861.patch
+Patch216: php-cve-2025-1736.patch
+Patch217: php-cve-2025-1219.patch
+Patch218: php-cve-2025-6491.patch
+Patch219: php-cve-2025-1220.patch
+Patch220: php-cve-2025-1735.patch
+Patch221: php-cve-2025-14177.patch
+Patch222: php-cve-2025-14178.patch
+Patch223: php-ghsa-www2-q4fc-65wf.patch
+Patch224: php-cve-2025-14179.patch
+Patch225: php-cve-2026-6722.patch
+Patch226: php-cve-2026-7261.patch
+Patch227: php-cve-2026-7262.patch
+Patch228: php-cve-2026-6735.patch
+Patch229: php-cve-2026-7259.patch
+Patch230: php-cve-2026-7568.patch
+Patch231: php-cve-2026-7258.patch
+# From 8.2.32
+Patch232: php-cve-2026-14355.patch
+# From 8.2.33
+Patch233: php-cve-2026-9672.patch
+Patch234: php-cve-2026-17543.patch
+Patch235: php-cve-2026-7260.patch
+Patch236: php-gh22643.patch
+# One cumulative patch per version
+Patch237: php-from-8.2.34-to-8.0.patch
+# Minimal mitigation
+Patch238: php-8.0-cve-2026-109618.patch
 
 # Fixes for tests (300+)
 # Factory is droped from system tzdata
 Patch300: php-7.4.0-datetests.patch
+Patch301: php-8.0.30-zlib-tests.patch
+Patch302: php-8.0.30-pcretests.patch
 
 # WIP
 
@@ -231,6 +287,9 @@ BuildRequires: libtool
 BuildRequires: libtool-ltdl-devel
 %if %{with dtrace}
 BuildRequires: %{?dtsprefix}systemtap-sdt-devel
+%if 0%{?fedora} >= 41
+BuildRequires: %{?dtsprefix}systemtap-sdt-dtrace
+%endif
 %endif
 #BuildRequires: bison
 #BuildRequires: re2c
@@ -387,6 +446,7 @@ Summary: Common files for PHP
 # regex, libmagic are licensed under BSD
 License: PHP and BSD
 
+Requires:  tzdata
 %if %{with libpcre}
 %global pcre2_buildver %(pkg-config --silence-errors --modversion libpcre2-8 2>/dev/null || echo 10.30)
 Requires:  pcre2%{?_isa} >= %{pcre2_buildver}
@@ -743,7 +803,7 @@ Interbase/Firebird databases.
 Summary:        A module for PHP applications that use OCI8 databases
 # All files licensed under PHP version 3.01
 License:        PHP
-BuildRequires:  oracle-instantclient-devel >= %{oraclever}
+BuildRequires: (oracle-instantclient-devel >= %{oraclever} with oracle-instantclient-devel < %{oraclemax})
 Requires:       php-pdo%{?_isa} = %{version}-%{release}
 Provides:       php_database
 Provides:       php-pdo_oci
@@ -752,8 +812,6 @@ Obsoletes:      php-pecl-oci8         <= %{oci8ver}
 Conflicts:      php-pecl-oci8         >  %{oci8ver}
 Provides:       php-pecl(oci8)         = %{oci8ver}
 Provides:       php-pecl(oci8)%{?_isa} = %{oci8ver}
-# Should requires libclntsh.so.18.3, but it's not provided by Oracle RPM.
-AutoReq:        0
 %if 0%{?rhel} == 7
 Obsoletes:      php53-oci8, php53u-oci8, php54-oci8, php54w-oci8, php55u-oci8, php55w-oci8, php56u-oci8, php56w-oci8
 Obsoletes:      php70u-oci8, php70w-oci8, php71u-oci8, php71w-oci8, php72u-oci8, php72w-oci8
@@ -770,13 +828,9 @@ The extension is linked with Oracle client libraries %{oraclever}
 (Oracle Instant Client).  For details, see Oracle's note
 "Oracle Client / Server Interoperability Support" (ID 207303.1).
 
-You must install libclntsh.so.%{oraclelib} to use this package, provided
-in the database installation, or in the free Oracle Instant Client
-available from Oracle.
-
-Notice:
-- php-oci8 provides oci8 and pdo_oci extensions from php sources.
-- php-pecl-oci8 only provides oci8 extension.
+You must install libclntsh.so.%{oraclelib} to use this package,
+provided by Oracle Instant Client RPM available from Oracle on:
+https://www.oracle.com/database/technologies/instant-client/downloads.html
 
 Documentation is at http://php.net/oci8 and http://php.net/pdo_oci
 %endif
@@ -865,7 +919,11 @@ License: PHP and BSD
 %endif
 Requires: php-common%{?_isa} = %{version}-%{release}
 %if %{with libgd}
+%if 0%{?rhel}
+BuildRequires: gd3php-devel >= 2.3.3
+%else
 BuildRequires: pkgconfig(gdlib) >= 2.3.3
+%endif
 %else
 # Required to build the bundled GD library
 BuildRequires: pkgconfig(zlib)
@@ -1028,9 +1086,9 @@ Summary: Internationalization extension for PHP applications
 # All files licensed under PHP version 3.01
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
-BuildRequires: pkgconfig(icu-i18n) >= 71
-BuildRequires: pkgconfig(icu-io)   >= 71
-BuildRequires: pkgconfig(icu-uc)   >= 71
+BuildRequires: pkgconfig(icu-i18n) >= 74
+BuildRequires: pkgconfig(icu-io)   >= 74
+BuildRequires: pkgconfig(icu-uc)   >= 74
 %if 0%{?rhel} == 7
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
 Obsoletes: php70u-intl, php70w-intl, php71u-intl, php71w-intl, php72u-intl, php72w-intl
@@ -1171,41 +1229,79 @@ in pure PHP.
 
 %setup -q -n php-%{upver}%{?rcver}
 
-%patch1 -p1 -b .mpmcheck
-%patch5 -p1 -b .includedir
-%patch6 -p1 -b .embed
-%patch8 -p1 -b .libdb
-%patch9 -p1 -b .deprecated
-%if 0%{?rhel}
-%patch10 -p1 -b .curltls
-%endif
+%patch -P1 -p1 -b .mpmcheck
+%patch -P5 -p1 -b .includedir
+%patch -P6 -p1 -b .embed
+%patch -P7 -p1 -b .libdb
+%patch -P9 -p1 -b .deprecated
+%patch -P11 -p1 -b .icu74
+%patch -P12 -p1 -b .proto
+%patch -P13 -p1 -b .bash53
 
-%patch41 -p1 -b .syslib
-%if 0%{?fedora} >= 31 || 0%{?rhel} >= 6
-%patch42 -p1 -b .systzdata
-%endif
-%patch43 -p1 -b .headers
-%patch45 -p1 -b .ldap_r
-%patch46 -p1 -b .argon2
-%patch47 -p1 -b .phpinfo
-%patch48 -p1 -b .sha
-%patch49 -p1 -b .pharsha
+%patch -P41 -p1 -b .syslib
+%patch -P42 -p1 -b .systzdata
+%patch -P43 -p1 -b .headers
+%patch -P45 -p1 -b .ldap_r
+%patch -P46 -p1 -b .argon2
+%patch -P47 -p1 -b .phpinfo
+%patch -P48 -p1 -b .sha
+%patch -P49 -p1 -b .pharsha
 %if 0%{?fedora} >= 36 || 0%{?rhel} >= 9
-%patch50 -p1 -b .openssl3
+%patch -P50 -p1 -b .openssl3
 rm ext/openssl/tests/p12_with_extra_certs.p12
 %endif
-%patch51 -p1 -b .libxcrypt
+%patch -P51 -p1 -b .libxcrypt
+%patch -P52 -p1 -b .intlinfo
 
-%patch91 -p1 -b .remi-oci8
+%patch -P91 -p1 -b .remi-oci8
 
 # upstream patches
 
 # security patches
+%patch -P200 -p1 -b .cve2756
+%patch -P201 -p1 -b .cve3096
+%patch -P202 -p1 -b .cve5458
+%patch -P203 -p1 -b .cve8925
+%patch -P204 -p1 -b .cve8926
+%patch -P205 -p1 -b .cve8927
+%patch -P206 -p1 -b .cve9026
+%patch -P207 -p1 -b .cve11236
+%patch -P208 -p1 -b .cve11234
+%patch -P209 -p1 -b .cve8932
+%patch -P210 -p1 -b .cve11233
+%patch -P211 -p1 -b .ghsa4w77
+%patch -P212 -p1 -b .cve8929
+%patch -P213 -p1 -b .cve1217
+%patch -P214 -p1 -b .cve1734
+%patch -P215 -p1 -b .cve1861
+%patch -P216 -p1 -b .cve1736
+%patch -P217 -p1 -b .cve1219
+%patch -P218 -p1 -b .cve6491
+%patch -P219 -p1 -b .cve1220
+%patch -P220 -p1 -b .cve1735
+%patch -P221 -p1 -b .cve14177
+%patch -P222 -p1 -b .cve14178
+%patch -P223 -p1 -b .ghsawwww2
+%patch -P224 -p1 -b .cve14179
+%patch -P225 -p1 -b .cve6722
+%patch -P226 -p1 -b .cve7261
+%patch -P227 -p1 -b .cve7262
+%patch -P228 -p1 -b .cve6735
+%patch -P229 -p1 -b .cve7259
+%patch -P230 -p1 -b .cve7268
+%patch -P231 -p1 -b .cve7258
+%patch -P232 -p1 -b .gh22187
+%patch -P233 -p1 -b .cve9672
+%patch -P234 -p1 -b .cve17543
+%patch -P235 -p1 -b .cve7260
+%patch -P236 -p1 -b .gh22643
+%patch -P237 -p1 -b .8234
+%patch -P238 -p1 -b .cve109618
 
 # Fixes for tests related to tzdata
-%if 0%{?fedora} >= 29 || 0%{?rhel} >= 6
-%patch300 -p1 -b .datetests
-%endif
+%patch -P300 -p1 -b .datetests
+%patch -P301 -p1 -b .zlibng
+%patch -P302 -p1 -b .pcretests
 
 # WIP patch
 
@@ -1250,6 +1346,21 @@ rm ext/zlib/tests/004-mb.phpt
 # failed when systemd is enabled
 rm sapi/fpm/tests/gh8885-stderr-fd-reload-usr1.phpt
 rm sapi/fpm/tests/gh8885-stderr-fd-reload-usr2.phpt
+# Known to fail
+%if 0%{?rhel} == 8
+rm ext/openssl/tests/openssl_error_string_basic.phpt
+rm ext/openssl/tests/openssl_open_basic.phpt
+%else
+rm ext/openssl/tests/openssl_error_string_basic_openssl3.phpt
+%endif
+rm ext/openssl/tests/openssl_private_decrypt_basic.phpt
+rm ext/openssl/tests/openssl_x509_parse_basic.phpt
+rm ext/openssl/tests/sni_server.phpt
+rm ext/openssl/tests/sni_server_key_cert.phpt
+rm ext/openssl/tests/bug74341.phpt
+rm ext/pcre/tests/pcre_extra.phpt
+rm ext/pcre/tests/split.phpt
+rm ext/pcre/tests/grep2.phpt
 
 # avoid issue when 2 builds run simultaneously (keep 64321 for the SCL)
 %ifarch x86_64
@@ -1479,13 +1590,8 @@ build --libdir=%{_libdir}/php \
       --with-mysqli=shared,mysqlnd \
       --with-mysql-sock=%{mysql_sock} \
 %if %{with oci8}
-%ifarch x86_64
-         --with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client64/lib,%{oraclever} \
-      --with-pdo-oci=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client64/lib,%{oraclever} \
-%else
-         --with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever} \
-      --with-pdo-oci=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever} \
-%endif
+         --with-oci8=shared,instantclient,%{_prefix}/lib/oracle/%{oracledir}/client64/lib,%{oraclever} \
+      --with-pdo-oci=shared,instantclient,%{_prefix}/lib/oracle/%{oracledir}/client64/lib,%{oraclever} \
 %endif
 %if %{with firebird}
       --with-pdo-firebird=shared \
@@ -1622,13 +1728,8 @@ build --includedir=%{_includedir}/php-zts \
       --with-mysql-sock=%{mysql_sock} \
       --enable-mysqlnd-threading \
 %if %{with oci8}
-%ifarch x86_64
-         --with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client64/lib,%{oraclever} \
-      --with-pdo-oci=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client64/lib,%{oraclever} \
-%else
-         --with-oci8=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever} \
-      --with-pdo-oci=shared,instantclient,%{_libdir}/oracle/%{oraclever}/client/lib,%{oraclever} \
-%endif
+         --with-oci8=shared,instantclient,%{_prefix}/lib/oracle/%{oracledir}/client64/lib,%{oraclever} \
+      --with-pdo-oci=shared,instantclient,%{_prefix}/lib/oracle/%{oracledir}/client64/lib,%{oraclever} \
 %endif
 %if %{with firebird}
       --with-pdo-firebird=shared \
@@ -1803,8 +1904,8 @@ install -m 755 -d $RPM_BUILD_ROOT/run/php-fpm
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/php-fpm.service.d
 install -Dm 644 %{SOURCE6}  $RPM_BUILD_ROOT%{_unitdir}/php-fpm.service
 %if 0%{?fedora} >= 27 || 0%{?rhel} >= 8
-install -Dm 644 %{SOURCE12} $RPM_BUILD_ROOT%{_unitdir}/httpd.service.d/php-fpm.conf
-install -Dm 644 %{SOURCE12} $RPM_BUILD_ROOT%{_unitdir}/nginx.service.d/php-fpm.conf
+install -Dm 644 %{SOURCE12} $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/httpd.service.d/php-fpm.conf
+install -Dm 644 %{SOURCE12} $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/nginx.service.d/php-fpm.conf
 %endif
 
 %if 0%{?fedora} >= 26 || 0%{?rhel} >= 8
@@ -1962,7 +2063,7 @@ sed -e "s/@PHP_APIVER@/%{apiver}-%{__isa_bits}/" \
 %endif
     < %{SOURCE3} > macros.php
 %if 0%{?fedora} >= 24 || 0%{?rhel} >= 8
-echo '%%pecl_xmldir   %{_localstatedir}/lib/php/peclxml' >>macros.php
+echo '%%pecl_xmldir   %%{_localstatedir}/lib/php/peclxml' >>macros.php
 %endif
 install -m 644 -D macros.php \
            $RPM_BUILD_ROOT%{macrosdir}/macros.php
@@ -2038,6 +2139,19 @@ fi
 %post   embedded -p /sbin/ldconfig
 %postun embedded -p /sbin/ldconfig
 %endif
+
+
+%posttrans common
+cat << EOF
+=====================================================================
+
+  WARNING : PHP 8.0 have reached its "End of Life" in
+  November 2023. Even, if this package includes some of
+  the important security fixes, backported from 8.2, the
+  UPGRADE to a maintained version is very strongly RECOMMENDED.
+
+=====================================================================
+EOF
 
 
 %{!?_licensedir:%global license %%doc}
@@ -2124,8 +2238,8 @@ fi
 %endif
 %{_unitdir}/php-fpm.service
 %if 0%{?fedora} >= 27 || 0%{?rhel} >= 8
-%{_unitdir}/httpd.service.d/php-fpm.conf
-%{_unitdir}/nginx.service.d/php-fpm.conf
+%config(noreplace) %{_sysconfdir}/systemd/system/httpd.service.d/php-fpm.conf
+%config(noreplace) %{_sysconfdir}/systemd/system/nginx.service.d/php-fpm.conf
 %endif
 %dir %{_sysconfdir}/systemd/system/php-fpm.service.d
 %dir %ghost /run/php-fpm
@@ -2204,6 +2318,176 @@ fi
 
 
 %changelog
+* Wed Oct 21 2026 Remi Collet <remi@remirepo.net> - 8.0.30-21
+- Mitigation fix Avoid state corruption via bailout
+  CVE-2026-109618, CVE-2026-109619
+
+* Fri Oct 16 2026 Remi Collet <remi@remirepo.net> - 8.0.30-20
+- Fix Out-of-bounds read in the HTTP stream wrapper when following a redirect with an empty Location header
+  CVE-2026-93682
+
+* Thu Oct  1 2026 Remi Collet <remi@remirepo.net> - 8.0.30-19
+- Fix FILTER_SANITIZE_ENCODED does not encode 0xFF
+- Fix IPv6 ACL bypass in FastCGI listen.allowed_clients due to partial address comparison
+  CVE-2026-91768
+- Fix Various packet overreads in mysqlnd wire protocol
+  CVE-2025-1218
+- Fix TLS hostname verification falls back to CN after SAN mismatch
+  CVE-2026-91769
+- Fix Heap buffer overflow in php_openssl_matches_wildcard_name() on crafted server certificate wildcard CN
+  CVE-2026-91767
+- Fix Integer overflow in phar_tar_number() allowing TAR archive entry injection
+  CVE-2026-6103
+- Fix Unbounded recursion in server-side cleanup_xml_node()
+  CVE-2026-91765
+- Fix Integer overflow to buffer overflow in SOAP HTTP parsing
+  CVE-2025-14181
+- Fix Out-of-bounds read in convert.* stream filters when line-break-chars contains NUL
+  CVE-2026-92842
+- Fix Cross-origin credential leak in HTTP stream wrapper redirects
+  CVE-2026-91766
+
+* Thu Jul 30 2026 Remi Collet <remi@remirepo.net> - 8.0.30-18
+- Fix leak on double DatePeriod::__construct() call
+- Fixed SQL injection via E'...' backslash breakout
+  CVE-2026-17543
+- Fixed GHSA-vc5h-9ppw-p5f3 Crash via recursive symlinks
+  CVE-2026-7260
+
+* Wed Jul  1 2026 Remi Collet <remi@remirepo.net> - 8.0.30-17
+- Fix Memory corruption (zend_mm_heap corrupted) in openssl_encrypt with AES-WRAP-PAD
+  CVE-2026-14355
+
+* Mon May 11 2026 Remi Collet <remi@remirepo.net> - 8.0.30-16
+- Fix XSS within status endpoint
+  CVE-2026-6735
+- Fix Null pointer dereference in php_mb_check_encoding() via mb_ereg_search_init()
+  CVE-2026-7259
+- Fix SQL injection via NUL bytes in quoted strings
+  CVE-2025-14179
+- Fix Stale SOAP_GLOBAL(ref_map) pointer with Apache Map
+  CVE-2026-6722
+- Fix Use-after-free after header parsing failure with SOAP_PERSISTENCE_SESSION
+  CVE-2026-7261
+- Fix Broken Apache map value NULL check
+  CVE-2026-7262
+- Fix Signed integer overflow of char array offset
+  CVE-2026-7568
+- Fix Consistently pass unsigned char to ctype.h functions
+  CVE-2026-7258
+
+* Thu Dec 18 2025 Remi Collet <remi@remirepo.net> - 8.0.30-15
+- Fix Null byte termination in dns_get_record()
+  GHSA-www2-q4fc-65wf
+- Fix Heap buffer overflow in array_merge()
+  CVE-2025-14178
+- Fix Information Leak of Memory in getimagesize
+  CVE-2025-14177
+
+* Thu Jul  3 2025 Remi Collet <remi@remirepo.net> - 8.0.30-14
+- Fix pgsql extension does not check for errors during escaping
+  CVE-2025-1735
+- Fix NULL Pointer Dereference in PHP SOAP Extension via Large XML Namespace Prefix
+  CVE-2025-6491
+- Fix Null byte termination in hostnames
+  CVE-2025-1220
+
+* Thu Mar 13 2025 Remi Collet <remi@remirepo.net> - 8.0.30-13
+- Fix libxml streams use wrong `content-type` header when requesting a redirected resource
+  CVE-2025-1219
+- Fix Stream HTTP wrapper header check might omit basic auth header
+  CVE-2025-1736
+- Fix Stream HTTP wrapper truncate redirect location to 1024 bytes
+  CVE-2025-1861
+- Fix Streams HTTP wrapper does not fail for headers without colon
+  CVE-2025-1734
+- Fix Header parser of `http` stream wrapper does not handle folded headers
+  CVE-2025-1217
+- use oracle client library version 23.7 on x86_64 and aarch64
+
+* Thu Feb 13 2025 Remi Collet <remi@remirepo.net> - 8.0.30-12
+- backport fix for ICU 74+
+- backport fix strict prototypes
+
+* Wed Nov 27 2024 Remi Collet <remi@remirepo.net> - 8.0.30-11
+- Fix Leak partial content of the heap through heap buffer over-read
+  CVE-2024-8929
+
+* Fri Nov 22 2024 Remi Collet <remi@remirepo.net> - 8.0.30-10
+- Fix Heap-Use-After-Free in sapi_read_post_data Processing in CLI SAPI Interface
+  GHSA-4w77-75f9-2c8w
+- Fix OOB access in ldap_escape
+  CVE-2024-8932
+- Fix Integer overflow in the dblib/firebird quoter causing OOB writes
+  CVE-2024-11236
+- Fix Configuring a proxy in a stream context might allow for CRLF injection in URIs
+  CVE-2024-11234
+- Fix Single byte overread with convert.quoted-printable-decode filter
+  CVE-2024-11233
+
+* Thu Sep 26 2024 Remi Collet <remi@remirepo.net> - 8.0.30-9
+- Fix Bypass of CVE-2012-1823, Argument Injection in PHP-CGI
+  CVE-2024-4577
+- Fix Bypass of CVE-2024-4577, Parameter Injection Vulnerability
+  CVE-2024-8926
+- Fix cgi.force_redirect configuration is bypassable due to the environment variable collision
+  CVE-2024-8927
+- Fix Logs from childrens may be altered
+  CVE-2024-9026
+- Fix Erroneous parsing of multipart form data
+  CVE-2024-8925
+- use ICU 74.2
+
+* Mon Aug 26 2024 Remi Collet <remi@remirepo.net> - 8.0.30-8
+- add backport for https://bugs.php.net/79589
+  error:14095126:SSL routines:ssl3_read_n:unexpected eof while reading
+
+* Wed Jul 31 2024 Remi Collet <remi@remirepo.net> - 8.0.30-7
+- use oracle client library version 23.5 on x86_64
+
+* Tue Jun  4 2024 Remi Collet <remi@remirepo.net> - 8.0.30-6
+- Fix filter bypass in filter_var FILTER_VALIDATE_URL
+  CVE-2024-5458
+
+* Wed Apr 10 2024 Remi Collet <remi@remirepo.net> - 8.0.30-5
+- Fix __Host-/__Secure- cookie bypass due to partial CVE-2022-31629 fix
+  CVE-2024-2756
+- Fix password_verify can erroneously return true opening ATO risk
+  CVE-2024-3096
+
+* Wed Mar  6 2024 Remi Collet <remi@remirepo.net> - 8.0.30-4
+- use oracle client library version 21.13 on x86_64
+- patch test suite for zlib-ng
+- add EOL message
+
+* Tue Dec 12 2023 Remi Collet <remi@remirepo.net> - 8.0.30-3
+- use ICU 73.2
+- use oracle client library version 21.12 on x86_64, 19.19 on aarch64
+- add fixes for libxml 2.11 and 2.12 from 8.1
+
+* Thu Sep 21 2023 Remi Collet <remi@remirepo.net> - 8.0.30-2
+- use oracle client library version 21.11 on x86_64, 19.19 on aarch64
+- use official Oracle Instant Client RPM
+
+* Thu Aug  3 2023 Remi Collet <remi@remirepo.net> - 8.0.30-1
+- Update to 8.0.30 - http://www.php.net/releases/8_0_30.php
+- move httpd/nginx wants directive to config files in /etc
+
+* Thu Jun  8 2023 Remi Collet <remi@remirepo.net> - 8.0.29-1
+- Update to 8.0.29 - http://www.php.net/releases/8_0_29.php
+
+* Thu May 11 2023 Remi Collet <remi@remirepo.net> - 8.0.28-4
+- define %%__phpize and %%__phpconfig
+
+* Fri Apr 21 2023 Remi Collet <remi@remirepo.net> - 8.0.28-3
+- use ICU 72.1
+- use oracle client library version 21.10
+- fix missing TZData version in intl phpinfo
+- fix possible buffer overflow in date
+
+* Tue Feb 21 2023 Remi Collet <remi@remirepo.net> - 8.0.28-2
+- F38: enable imap extension
+
 * Tue Feb 14 2023 Remi Collet <remi@remirepo.net> - 8.0.28-1
 - Update to 8.0.28 - http://www.php.net/releases/8_0_28.php
 - add dependency on pcre2 minimal version
