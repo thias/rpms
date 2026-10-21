@@ -24,7 +24,7 @@
 
 %global mysql_sock %(mysql_config --socket 2>/dev/null || echo /var/lib/mysql/mysql.sock)
 
-%global oraclever 23.9
+%global oraclever 23.26.3
 %global oraclemax 24
 %global oraclelib 23.1
 %global oracledir 23
@@ -68,7 +68,7 @@
 %endif
 
 # Build firebird extensions, you can disable using --without firebird
-%if 0%{?rhel} == 10
+%if 0%{?rhel} > 10
 %bcond_with           firebird
 %else
 %bcond_without        firebird
@@ -124,7 +124,7 @@
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{rcver}}
-Release: 1%{?dist}
+Release: 6%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -187,6 +187,25 @@ Patch91: php-7.2.0-oci8conf.patch
 # Upstream fixes (100+)
 
 # Security fixes (200+)
+Patch200: php-cve-2025-14179.patch
+Patch201: php-cve-2026-6722.patch
+Patch202: php-cve-2026-7261.patch
+Patch203: php-cve-2026-7262.patch
+Patch204: php-cve-2026-6735.patch
+Patch205: php-cve-2026-7259.patch
+Patch206: php-cve-2026-7568.patch
+Patch207: php-cve-2026-7258.patch
+# From 8.2.32
+Patch208: php-cve-2026-14355.patch
+# From 8.2.33
+Patch209: php-cve-2026-9672.patch
+Patch210: php-cve-2026-17543.patch
+Patch211: php-cve-2026-7260.patch
+Patch212: php-gh22643.patch
+# One cumulative patch per version
+Patch213: php-from-8.2.34-to-8.1.patch
+# Minimal mitigation
+Patch214: php-8.1-cve-2026-109618.patch
 
 # Fixes for tests (300+)
 # Factory is droped from system tzdata
@@ -1205,6 +1224,21 @@ in pure PHP.
 # upstream patches
 
 # security patches
+%patch -P200 -p1 -b .cve14179
+%patch -P201 -p1 -b .cve6722
+%patch -P202 -p1 -b .cve7261
+%patch -P203 -p1 -b .cve7262
+%patch -P204 -p1 -b .cve6735
+%patch -P205 -p1 -b .cve7259
+%patch -P206 -p1 -b .cve7268
+%patch -P207 -p1 -b .cve7258
+%patch -P208 -p1 -b .gh22187
+%patch -P209 -p1 -b .cve9672
+%patch -P210 -p1 -b .cve17543
+%patch -P211 -p1 -b .cve7260
+%patch -P212 -p1 -b .gh22643
+%patch -P213 -p1 -b .8234
+%patch -P214 -p1 -b .cve109618
 
 # Fixes for tests related to tzdata
 %if %{with tzdata}
@@ -1258,6 +1292,11 @@ rm ext/zlib/tests/004-mb.phpt
 # failed when systemd is enabled
 rm sapi/fpm/tests/gh8885-stderr-fd-reload-usr1.phpt
 rm sapi/fpm/tests/gh8885-stderr-fd-reload-usr2.phpt
+# Outdated cert
+rm ext/openssl/tests/openssl_x509_parse_basic.phpt
+rm ext/openssl/tests/bug74341.phpt
+rm ext/openssl/tests/sni_server.phpt
+rm ext/openssl/tests/sni_server_key_cert.phpt
 # avoid issue when 2 builds run simultaneously (keep 64321 for the SCL)
 %ifarch x86_64
 sed -e 's/64321/64322/' -i ext/openssl/tests/*.phpt
@@ -2037,6 +2076,19 @@ fi
 %endif
 
 
+%posttrans common
+cat << EOF
+=====================================================================
+
+  WARNING : PHP 8.1 have reached its "End of Life" in
+  December 2025. Even, if this package includes some of
+  the important security fixes, backported from 8.2, the
+  UPGRADE to a maintained version is very strongly RECOMMENDED.
+
+=====================================================================
+EOF
+
+
 %{!?_licensedir:%global license %%doc}
 
 %files
@@ -2201,6 +2253,62 @@ fi
 
 
 %changelog
+* Wed Oct 21 2026 Remi Collet <remi@remirepo.net> - 8.1.34-6
+- Mitigation fix Avoid state corruption via bailout
+  CVE-2026-109618, CVE-2026-109619
+
+* Thu Oct  1 2026 Remi Collet <remi@remirepo.net> - 8.1.34-5
+- Fix FILTER_SANITIZE_ENCODED does not encode 0xFF
+- Fix IPv6 ACL bypass in FastCGI listen.allowed_clients due to partial address comparison
+  CVE-2026-91768
+- Fixed Various packet overreads in mysqlnd wire protocol
+  CVE-2025-1218
+- Fix TLS hostname verification falls back to CN after SAN mismatch
+  CVE-2026-91769
+- Fix Heap buffer overflow in php_openssl_matches_wildcard_name() on crafted server certificate wildcard CN
+  CVE-2026-91767
+- Fix Integer overflow in phar_tar_number() allowing TAR archive entry injection
+  CVE-2026-6103
+- Fix Unbounded recursion in server-side cleanup_xml_node()
+  CVE-2026-91765
+- Fix Integer overflow to buffer overflow in SOAP HTTP parsing
+  CVE-2025-14181
+- Fix Out-of-bounds read in convert.* stream filters when line-break-chars contains NUL
+  CVE-2026-92842
+- Fix Cross-origin credential leak in HTTP stream wrapper redirects
+  CVE-2026-91766
+- Fix Out-of-bounds read in the HTTP stream wrapper when following a redirect with an empty Location header
+  CVE-2026-93682
+
+* Thu Jul 30 2026 Remi Collet <remi@remirepo.net> - 8.1.34-4
+- Fix leak on double DatePeriod::__construct() call
+- Fixed SQL injection via E'...' backslash breakout
+  CVE-2026-17543
+- Fixed GHSA-vc5h-9ppw-p5f3 Crash via recursive symlinks
+  CVE-2026-7260
+
+* Wed Jul  1 2026 Remi Collet <remi@remirepo.net> - 8.1.34-3
+- Fix Memory corruption (zend_mm_heap corrupted) in openssl_encrypt with AES-WRAP-PAD
+  CVE-2026-14355
+
+* Thu May  7 2026 Remi Collet <remi@remirepo.net> - 8.1.34-2
+- Fix XSS within status endpoint
+  CVE-2026-6735
+- Fix Null pointer dereference in php_mb_check_encoding() via mb_ereg_search_init()
+  CVE-2026-7259
+- Fix SQL injection via NUL bytes in quoted strings
+  CVE-2025-14179
+- Fix Stale SOAP_GLOBAL(ref_map) pointer with Apache Map
+  CVE-2026-6722
+- Fix Use-after-free after header parsing failure with SOAP_PERSISTENCE_SESSION
+  CVE-2026-7261
+- Fix Broken Apache map value NULL check
+  CVE-2026-7262
+- Fix Signed integer overflow of char array offset
+  CVE-2026-7568
+- Fix Consistently pass unsigned char to ctype.h functions
+  CVE-2026-7258
+
 * Wed Dec 17 2025 Remi Collet <remi@remirepo.net> - 8.1.34-1
 - Update to 8.1.34 - http://www.php.net/releases/8_1_34.php
 
