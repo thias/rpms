@@ -123,7 +123,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.2.34
+%global upver          8.2.36
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
@@ -202,7 +202,9 @@ Patch302: php-8.2.28-zlibtests.patch
 
 # WIP
 
-BuildRequires: gnupg2
+%if 0%{?rhel} != 8
+BuildRequires: openpgpverify
+%endif
 BuildRequires: bzip2-devel
 BuildRequires: pkgconfig(libcurl)  >= 7.29.0
 BuildRequires: httpd-devel >= 2.0.46-1
@@ -1048,9 +1050,9 @@ Summary: Internationalization extension for PHP applications
 # All files licensed under PHP version 3.01
 License:  PHP-3.01
 Requires: php-common%{?_isa} = %{version}-%{release}
-BuildRequires: pkgconfig(icu-i18n) >= 74
-BuildRequires: pkgconfig(icu-io)   >= 74
-BuildRequires: pkgconfig(icu-uc)   >= 74
+BuildRequires: pkgconfig(icu-i18n) >= 78
+BuildRequires: pkgconfig(icu-io)   >= 78
+BuildRequires: pkgconfig(icu-uc)   >= 78
 %if 0%{?rhel} == 7
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
 Obsoletes: php70u-intl, php70w-intl, php71u-intl, php71w-intl, php72u-intl, php72w-intl
@@ -1187,7 +1189,7 @@ in pure PHP.
 : Enable Dtrace build
 %endif
 
-%{?gpgverify:%{gpgverify} --keyring='%{SOURCE20}' --signature='%{SOURCE21}' --data='%{SOURCE0}'}
+%{?openpgpverify:%{openpgpverify} --keyring='%{SOURCE20}' --signature='%{SOURCE21}' --data='%{SOURCE0}'}
 
 %setup -q -n php-%{upver}%{?rcver}
 
@@ -2206,6 +2208,13 @@ fi
 
 
 %changelog
+* Wed Nov 18 2026 Remi Collet <remi@remirepo.net> - 8.2.36-1
+- Update to 8.2.36 - http://www.php.net/releases/8_2_36.php
+- use ICU 78.3
+
+* Wed Oct 21 2026 Remi Collet <remi@remirepo.net> - 8.2.35-1
+- Update to 8.2.35 - http://www.php.net/releases/8_2_35.php
+
 * Tue Sep 22 2026 Remi Collet <remi@remirepo.net> - 8.2.34-1
 - Update to 8.2.34 - http://www.php.net/releases/8_2_34.php
 
