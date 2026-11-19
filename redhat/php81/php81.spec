@@ -124,7 +124,7 @@
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{rcver}}
-Release: 6%{?dist}
+Release: 7%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
@@ -204,8 +204,8 @@ Patch211: php-cve-2026-7260.patch
 Patch212: php-gh22643.patch
 # One cumulative patch per version
 Patch213: php-from-8.2.34-to-8.1.patch
-# Minimal mitigation
-Patch214: php-8.1-cve-2026-109618.patch
+Patch214: php-from-8.2.35-to-8.1.patch
+Patch215: php-from-8.2.36-to-8.1.patch
 
 # Fixes for tests (300+)
 # Factory is droped from system tzdata
@@ -1061,9 +1061,9 @@ Summary: Internationalization extension for PHP applications
 # All files licensed under PHP version 3.01
 License: PHP
 Requires: php-common%{?_isa} = %{version}-%{release}
-BuildRequires: pkgconfig(icu-i18n) >= 74
-BuildRequires: pkgconfig(icu-io)   >= 74
-BuildRequires: pkgconfig(icu-uc)   >= 74
+BuildRequires: pkgconfig(icu-i18n) >= 78
+BuildRequires: pkgconfig(icu-io)   >= 78
+BuildRequires: pkgconfig(icu-uc)   >= 78
 %if 0%{?rhel} == 7
 Obsoletes: php53-intl, php53u-intl, php54-intl, php54w-intl, php55u-intl, php55w-intl, php56u-intl, php56w-intl
 Obsoletes: php70u-intl, php70w-intl, php71u-intl, php71w-intl, php72u-intl, php72w-intl
@@ -1238,7 +1238,8 @@ in pure PHP.
 %patch -P211 -p1 -b .cve7260
 %patch -P212 -p1 -b .gh22643
 %patch -P213 -p1 -b .8234
-%patch -P214 -p1 -b .cve109618
+%patch -P214 -p1 -b .8235
+%patch -P215 -p1 -b .8236
 
 # Fixes for tests related to tzdata
 %if %{with tzdata}
@@ -2253,6 +2254,35 @@ EOF
 
 
 %changelog
+* Wed Nov 18 2026 Remi Collet <remi@remirepo.net> - 8.1.34-7
+- Fix PHP-CGI out-of-bounds read and write during PATH_INFO correction
+  CVE-2026-129538
+- Fix Timezone cache use-after-free can lead to remote code execution
+  CVE-2026-129496
+- Fix PHP-FPM request smuggling through an unread HTTP request body
+  CVE-2026-129289
+- Fix PHP-FPM status endpoint XSS via unescaped user and script fields
+  CVE-2026-129292
+- Fix PHP-FPM epoll use-after-free can lead to local privilege escalation
+  CVE-2026-129291
+- Fix PHAR OpenSSL signature bypass via algorithm downgrade
+  CVE-2026-128090
+- Fix Partially overwritten session files can lead to remote code execution
+  CVE-2026-126714
+- Mitigated Session serializer mismatch can lead to remote code execution
+  session.upload_progress.enabled is now off by default
+  CVE-2026-115560
+- Fix SOAP information disclosure through malformed array dimensions
+  CVE-2026-15353
+- Fix SOAP use-after-free when processing DTD entity references
+  CVE-2026-129506
+- Fix Mixed-case HTTPS and FTPS URLs can expose data in plaintext
+  CVE-2026-128064
+- Fix Denial of service through folded HTTP response headers
+  CVE-2026-127960
+- Fix Reference counting in php_request_shutdown causes Use-After-Free
+  CVE-2024-11235
+
 * Wed Oct 21 2026 Remi Collet <remi@remirepo.net> - 8.1.34-6
 - Mitigation fix Avoid state corruption via bailout
   CVE-2026-109618, CVE-2026-109619
