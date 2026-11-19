@@ -126,13 +126,13 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.3.35
+%global upver          8.3.36
 # TODO set PHP_EXTRA_VERSION for EOL version
 
 Summary: PHP scripting language for creating dynamic web sites
 Name: php
 Version: %{upver}%{?rcver:~%{rcver}}
-Release: 1%{?dist}
+Release: 0%{?dist}
 # All files licensed under PHP version 3.01, except
 # Zend is licensed under Zend
 # TSRM is licensed under BSD
