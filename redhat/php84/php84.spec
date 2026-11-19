@@ -80,7 +80,7 @@
 %bcond_without         libgd
 %bcond_with            zip
 
-%global upver          8.4.26
+%global upver          8.4.28
 #global rcver          RC1
 # TODO set PHP_EXTRA_VERSION for EOL version
 
@@ -155,7 +155,9 @@ Patch300: php-7.4.0-datetests.patch
 
 # WIP
 
-BuildRequires: gnupg2
+#if 0%{?rhel} != 8
+#BuildRequires: openpgpverify
+#endif
 BuildRequires: bzip2-devel
 BuildRequires: pkgconfig(libcurl)  >= 7.29.0
 BuildRequires: httpd-devel >= 2.0.46-1
@@ -976,7 +978,7 @@ in pure PHP.
 : Enable Dtrace build
 %endif
 
-%{?gpgverify:%{gpgverify} --keyring='%{SOURCE20}' --signature='%{SOURCE21}' --data='%{SOURCE0}'}
+%{?openpgpverify:%{openpgpverify} --keyring='%{SOURCE20}' --signature='%{SOURCE21}' --data='%{SOURCE0}'}
 
 %setup -q -n php-%{upver}%{?rcver}
 
@@ -1864,6 +1866,19 @@ systemctl try-restart php-fpm.service >/dev/null 2>&1 || :
 
 
 %changelog
+* Wed Nov 18 2026 Remi Collet <remi@remirepo.net> - 8.4.28-1
+- Update to 8.4.28 - http://www.php.net/releases/8_4_28.php
+
+* Wed Nov  4 2026 Remi Collet <remi@remirepo.net> - 8.4.28~RC1-1
+- update to 8.4.28RC1
+- use ICU 78.3
+
+* Thu Oct 22 2026 Remi Collet <remi@remirepo.net> - 8.4.27-1
+- Update to 8.4.27 - http://www.php.net/releases/8_4_27.php
+
+* Wed Oct  7 2026 Remi Collet <remi@remirepo.net> - 8.4.27~RC1-1
+- update to 8.4.27RC1
+
 * Tue Sep 22 2026 Remi Collet <remi@remirepo.net> - 8.4.26-1
 - Update to 8.4.26 - http://www.php.net/releases/8_4_26.php
 
